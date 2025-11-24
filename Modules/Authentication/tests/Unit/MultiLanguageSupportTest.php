@@ -3,6 +3,7 @@
 namespace Modules\Authentication\Tests\Unit;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 /**
@@ -13,7 +14,7 @@ use Tests\TestCase;
  */
 class MultiLanguageSupportTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     /**
      * Test English translations exist and are not empty
@@ -206,11 +207,13 @@ class MultiLanguageSupportTest extends TestCase
             'auth.user.email_already_exists',
         ];
 
+        $phone = $this->faker->numerify('+628##########');
+
         foreach (['en', 'id'] as $locale) {
             app()->setLocale($locale);
 
             foreach ($messagesWithParams as $messageKey) {
-                $translated = __('authentication::' . $messageKey, ['phone' => '+6281234567890']);
+                $translated = __('authentication::' . $messageKey, ['phone' => $phone]);
                 $this->assertNotNull($translated, "Parameterized translation missing for: {$messageKey} in {$locale}");
                 $this->assertNotEmpty($translated, "Empty parameterized translation for: {$messageKey} in {$locale}");
                 $this->assertIsString($translated, "Parameterized translation is not a string for: {$messageKey} in {$locale}");

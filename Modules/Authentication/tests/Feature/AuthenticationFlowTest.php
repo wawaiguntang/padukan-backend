@@ -3,6 +3,7 @@
 namespace Modules\Authentication\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Authentication\Database\Factories\UserFactory;
 use Modules\Authentication\Enums\IdentifierType;
 use Modules\Authentication\Enums\UserStatus;
 use Modules\Authentication\Models\User;
@@ -132,7 +133,7 @@ class AuthenticationFlowTest extends TestCase
     public function test_password_reset_flow()
     {
         // Create active user
-        $user = User::factory()->create([
+        $user = UserFactory::new()->create([
             'email' => 'user@example.com',
             'status' => UserStatus::ACTIVE,
         ]);
@@ -192,7 +193,7 @@ class AuthenticationFlowTest extends TestCase
      */
     public function test_otp_rate_limiting_and_resend_flow()
     {
-        $user = User::factory()->create();
+        $user = UserFactory::new()->create();
 
         // Step 1: Send initial OTP
         $firstOtpResponse = $this->postJson('/api/v1/auth/send-otp', [
@@ -239,7 +240,7 @@ class AuthenticationFlowTest extends TestCase
     public function test_multiple_identifier_login_scenarios()
     {
         // Create user with both phone and email
-        $user = User::factory()->create([
+        $user = UserFactory::new()->create([
             'phone' => '+6281234567890',
             'email' => 'multi@example.com',
             'password' => bcrypt('TestPass123!'),
@@ -290,7 +291,7 @@ class AuthenticationFlowTest extends TestCase
      */
     public function test_concurrent_otp_requests_different_types()
     {
-        $user = User::factory()->create([
+        $user = UserFactory::new()->create([
             'phone' => '+6281234567890',
             'email' => 'test@example.com',
         ]);
@@ -330,7 +331,7 @@ class AuthenticationFlowTest extends TestCase
      */
     public function test_expired_token_cleanup()
     {
-        $user = User::factory()->create();
+        $user = UserFactory::new()->create();
 
         // Create expired OTP
         VerificationToken::factory()->create([
@@ -386,7 +387,7 @@ class AuthenticationFlowTest extends TestCase
     public function test_user_status_validation_in_login()
     {
         // Test pending user
-        $pendingUser = User::factory()->create([
+        $pendingUser = UserFactory::new()->create([
             'email' => 'pending@example.com',
             'password' => bcrypt('TestPass123!'),
             'status' => UserStatus::PENDING,
@@ -400,7 +401,7 @@ class AuthenticationFlowTest extends TestCase
         $pendingLoginResponse->assertStatus(200); // Should still allow login for pending users
 
         // Test suspended user
-        $suspendedUser = User::factory()->create([
+        $suspendedUser = UserFactory::new()->create([
             'email' => 'suspended@example.com',
             'password' => bcrypt('TestPass123!'),
             'status' => UserStatus::SUSPEND,
@@ -421,7 +422,7 @@ class AuthenticationFlowTest extends TestCase
      */
     public function test_password_reset_security_features()
     {
-        $user = User::factory()->create(['email' => 'secure@example.com']);
+        $user = UserFactory::new()->create(['email' => 'secure@example.com']);
 
         // Request password reset
         $this->postJson('/api/v1/auth/forgot-password', [

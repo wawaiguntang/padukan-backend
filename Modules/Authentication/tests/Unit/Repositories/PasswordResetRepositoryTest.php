@@ -4,6 +4,7 @@ namespace Modules\Authentication\Tests\Unit\Repositories;
 
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Cache;
 use Modules\Authentication\Database\Factories\UserFactory;
 use Modules\Authentication\Models\PasswordResetToken;
@@ -20,7 +21,7 @@ use Tests\TestCase;
  */
 class PasswordResetRepositoryTest extends TestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions, WithFaker;
 
     /**
      * The PasswordResetRepository instance
@@ -50,7 +51,7 @@ class PasswordResetRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = 'reset-token-123';
+        $token = $this->faker->sha256();
         $expiresInMinutes = 30;
 
         // Act
@@ -74,7 +75,7 @@ class PasswordResetRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = 'reset-token-123';
+        $token = $this->faker->sha256();
         $this->repository->createResetToken($user->id, $token, 60);
 
         // Act
@@ -113,7 +114,7 @@ class PasswordResetRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = 'reset-token-123';
+        $token = $this->faker->sha256();
         $resetToken = $this->repository->createResetToken($user->id, $token, 60);
         $resetToken->update(['is_used' => true]);
 
@@ -133,7 +134,7 @@ class PasswordResetRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = 'reset-token-123';
+        $token = $this->faker->sha256();
         $resetToken = $this->repository->createResetToken($user->id, $token, -1); // Already expired
 
         // Act
@@ -152,7 +153,7 @@ class PasswordResetRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = 'reset-token-123';
+        $token = $this->faker->sha256();
         $resetToken = $this->repository->createResetToken($user->id, $token, 60);
 
         // Act
@@ -189,10 +190,10 @@ class PasswordResetRepositoryTest extends TestCase
         $user = UserFactory::new()->create();
 
         // Create expired token
-        $expiredToken = $this->repository->createResetToken($user->id, 'expired-token', -1);
+        $expiredToken = $this->repository->createResetToken($user->id, $this->faker->sha256(), -1);
 
         // Create valid token
-        $validToken = $this->repository->createResetToken($user->id, 'valid-token', 60);
+        $validToken = $this->repository->createResetToken($user->id, $this->faker->sha256(), 60);
 
         // Act
         $deletedCount = $this->repository->deleteExpiredResetTokens();
@@ -212,7 +213,7 @@ class PasswordResetRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $resetToken = $this->repository->createResetToken($user->id, 'reset-token-123', 60);
+        $resetToken = $this->repository->createResetToken($user->id, $this->faker->sha256(), 60);
 
         // Act
         $foundToken = $this->repository->findById($resetToken->id);
@@ -245,7 +246,7 @@ class PasswordResetRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $resetToken = $this->repository->createResetToken($user->id, 'reset-token-123', 60);
+        $resetToken = $this->repository->createResetToken($user->id, $this->faker->sha256(), 60);
 
         // Act
         $result = $this->repository->delete($resetToken->id);

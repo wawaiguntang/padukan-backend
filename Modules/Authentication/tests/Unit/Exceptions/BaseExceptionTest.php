@@ -3,6 +3,7 @@
 namespace Modules\Authentication\Tests\Unit\Exceptions;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Modules\Authentication\Exceptions\BaseException;
 use Tests\TestCase;
 
@@ -13,7 +14,7 @@ use Tests\TestCase;
  */
 class BaseExceptionTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     /**
      * Test BaseException creation with message key
@@ -23,7 +24,7 @@ class BaseExceptionTest extends TestCase
     public function test_base_exception_creation()
     {
         $messageKey = 'auth.user.not_found';
-        $parameters = ['id' => 'uuid-123'];
+        $parameters = ['id' => $this->faker->uuid()];
 
         $exception = new BaseException($messageKey, $parameters);
 
@@ -56,7 +57,7 @@ class BaseExceptionTest extends TestCase
     public function test_get_message_translate()
     {
         $messageKey = 'auth.user.not_found';
-        $parameters = ['id' => 'uuid-123'];
+        $parameters = ['id' => $this->faker->uuid()];
 
         $exception = new BaseException($messageKey, $parameters);
 
@@ -76,7 +77,7 @@ class BaseExceptionTest extends TestCase
     public function test_get_message_translate_with_locale()
     {
         $messageKey = 'auth.user.not_found';
-        $parameters = ['id' => 'uuid-123'];
+        $parameters = ['id' => $this->faker->uuid()];
 
         $exception = new BaseException($messageKey, $parameters);
 
@@ -115,18 +116,23 @@ class BaseExceptionTest extends TestCase
      */
     public function test_base_exception_with_complex_parameters()
     {
+        $id = $this->faker->uuid();
+        $email = $this->faker->email();
+        $phone = $this->faker->numerify('+628##########');
+
         $messageKey = 'auth.user.not_found';
         $parameters = [
-            'id' => 'uuid-123',
-            'email' => 'test@example.com',
-            'phone' => '+6281234567890',
+            'id' => $id,
+            'email' => $email,
+            'phone' => $phone,
             'timestamp' => now(),
         ];
 
         $exception = new BaseException($messageKey, $parameters);
 
         $this->assertEquals($parameters, $exception->getParameters());
-        $this->assertEquals('uuid-123', $exception->getParameters()['id']);
-        $this->assertEquals('test@example.com', $exception->getParameters()['email']);
+        $this->assertEquals($id, $exception->getParameters()['id']);
+        $this->assertEquals($email, $exception->getParameters()['email']);
+        $this->assertEquals($phone, $exception->getParameters()['phone']);
     }
 }

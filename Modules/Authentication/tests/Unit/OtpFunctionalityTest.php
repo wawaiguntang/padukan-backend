@@ -3,6 +3,7 @@
 namespace Modules\Authentication\Tests\Unit;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Modules\Authentication\Enums\IdentifierType;
 use Modules\Authentication\Models\User;
 use Modules\Authentication\Models\VerificationToken;
@@ -15,7 +16,7 @@ use Tests\TestCase;
  */
 class OtpFunctionalityTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     /**
      * Test OTP token format is always 6 digits
@@ -135,11 +136,17 @@ class OtpFunctionalityTest extends TestCase
      */
     public function test_otp_validation_format()
     {
-        $user = User::factory()->create();
+        $user = \Modules\Authentication\Database\Factories\UserFactory::new()->create();
         $service = app(\Modules\Authentication\Services\Verification\VerificationService::class);
 
         // Test valid 6-digit OTPs
-        $validOtps = ['123456', '000000', '999999', '012345', '987654'];
+        $validOtps = [
+            $this->faker->numerify('######'),
+            $this->faker->numerify('######'),
+            $this->faker->numerify('######'),
+            $this->faker->numerify('######'),
+            $this->faker->numerify('######'),
+        ];
 
         foreach ($validOtps as $otp) {
             // This should not throw InvalidTokenException for format
@@ -188,21 +195,26 @@ class OtpFunctionalityTest extends TestCase
      */
     public function test_otp_expiry_logic()
     {
-        $user = User::factory()->create();
+        $user = \Modules\Authentication\Database\Factories\UserFactory::new()->create();
+
+        $expiredOtpToken = $this->faker->numerify('######');
+        $validOtpToken = $this->faker->numerify('######');
 
         // Create expired OTP
-        $expiredOtp = VerificationToken::factory()->create([
+        $expiredOtp = new VerificationToken([
+            'id' => $this->faker->uuid(),
             'user_id' => $user->id,
             'type' => IdentifierType::PHONE,
-            'token' => '123456',
+            'token' => $expiredOtpToken,
             'is_used' => false,
             'expires_at' => now()->subMinutes(1), // 1 minute ago
         ]);
+        $expiredOtp->save();
 
         $service = app(\Modules\Authentication\Services\Verification\VerificationService::class);
 
         try {
-            $service->validateOtp($user->id, IdentifierType::PHONE, '123456');
+            $service->validateOtp($user->id, IdentifierType::PHONE, $expiredOtpToken);
             $this->fail('Expired OTP should have thrown OtpExpiredException');
         } catch (\Modules\Authentication\Exceptions\OtpExpiredException $e) {
             $this->assertInstanceOf(\Modules\Authentication\Exceptions\OtpExpiredException::class, $e);
@@ -211,17 +223,19 @@ class OtpFunctionalityTest extends TestCase
         }
 
         // Create valid OTP
-        $validOtp = VerificationToken::factory()->create([
+        $validOtp = new VerificationToken([
+            'id' => $this->faker->uuid(),
             'user_id' => $user->id,
             'type' => IdentifierType::PHONE,
-            'token' => '654321',
+            'token' => $validOtpToken,
             'is_used' => false,
             'expires_at' => now()->addMinutes(5), // 5 minutes from now
         ]);
+        $validOtp->save();
 
         // This should work (might throw other exceptions but not expiry)
         try {
-            $service->validateOtp($user->id, IdentifierType::PHONE, '654321');
+            $service->validateOtp($user->id, IdentifierType::PHONE, $validOtpToken);
         } catch (\Modules\Authentication\Exceptions\OtpExpiredException $e) {
             $this->fail('Valid OTP should not be expired');
         } catch (\Exception $e) {
@@ -236,21 +250,25 @@ class OtpFunctionalityTest extends TestCase
      */
     public function test_otp_reuse_prevention()
     {
-        $user = User::factory()->create();
+        $user = \Modules\Authentication\Database\Factories\UserFactory::new()->create();
+
+        $usedOtpToken = $this->faker->numerify('######');
 
         // Create used OTP
-        $usedOtp = VerificationToken::factory()->create([
+        $usedOtp = new VerificationToken([
+            'id' => $this->faker->uuid(),
             'user_id' => $user->id,
             'type' => IdentifierType::PHONE,
-            'token' => '123456',
+            'token' => $usedOtpToken,
             'is_used' => true, // Already used
             'expires_at' => now()->addMinutes(5),
         ]);
+        $usedOtp->save();
 
         $service = app(\Modules\Authentication\Services\Verification\VerificationService::class);
 
         try {
-            $service->validateOtp($user->id, IdentifierType::PHONE, '123456');
+            $service->validateOtp($user->id, IdentifierType::PHONE, $usedOtpToken);
             $this->fail('Used OTP should have thrown InvalidTokenException');
         } catch (\Modules\Authentication\Exceptions\InvalidTokenException $e) {
             $this->assertInstanceOf(\Modules\Authentication\Exceptions\InvalidTokenException::class, $e);
@@ -266,25 +284,31 @@ class OtpFunctionalityTest extends TestCase
      */
     public function test_otp_uniqueness_per_user_and_type()
     {
-        $user1 = User::factory()->create();
-        $user2 = User::factory()->create();
+        $user1 = \Modules\Authentication\Database\Factories\UserFactory::new()->create();
+        $user2 = \Modules\Authentication\Database\Factories\UserFactory::new()->create();
+
+        $sharedOtpToken = $this->faker->numerify('######');
 
         // Create same token for different users
-        VerificationToken::factory()->create([
+        $token1 = new VerificationToken([
+            'id' => $this->faker->uuid(),
             'user_id' => $user1->id,
             'type' => IdentifierType::PHONE,
-            'token' => '111111',
+            'token' => $sharedOtpToken,
             'is_used' => false,
             'expires_at' => now()->addMinutes(5),
         ]);
+        $token1->save();
 
-        VerificationToken::factory()->create([
+        $token2 = new VerificationToken([
+            'id' => $this->faker->uuid(),
             'user_id' => $user2->id,
             'type' => IdentifierType::PHONE,
-            'token' => '111111', // Same token
+            'token' => $sharedOtpToken, // Same token
             'is_used' => false,
             'expires_at' => now()->addMinutes(5),
         ]);
+        $token2->save();
 
         $service = app(\Modules\Authentication\Services\Verification\VerificationService::class);
 
@@ -292,13 +316,13 @@ class OtpFunctionalityTest extends TestCase
         $this->assertDatabaseHas('verification_tokens', [
             'user_id' => $user1->id,
             'type' => IdentifierType::PHONE->value,
-            'token' => '111111',
+            'token' => $sharedOtpToken,
         ]);
 
         $this->assertDatabaseHas('verification_tokens', [
             'user_id' => $user2->id,
             'type' => IdentifierType::PHONE->value,
-            'token' => '111111',
+            'token' => $sharedOtpToken,
         ]);
     }
 
@@ -309,22 +333,36 @@ class OtpFunctionalityTest extends TestCase
      */
     public function test_otp_cleanup_removes_expired_tokens()
     {
-        $user = User::factory()->create();
+        $user = \Modules\Authentication\Database\Factories\UserFactory::new()->create();
 
         // Create mix of expired and valid tokens
-        $expiredTokens = VerificationToken::factory()->count(3)->create([
-            'user_id' => $user->id,
-            'type' => IdentifierType::PHONE,
-            'is_used' => false,
-            'expires_at' => now()->subMinutes(10), // Expired
-        ]);
+        $expiredTokens = [];
+        for ($i = 0; $i < 3; $i++) {
+            $token = new VerificationToken([
+                'id' => $this->faker->uuid(),
+                'user_id' => $user->id,
+                'type' => IdentifierType::PHONE,
+                'token' => $this->faker->numerify('######'),
+                'is_used' => false,
+                'expires_at' => now()->subMinutes(10), // Expired
+            ]);
+            $token->save();
+            $expiredTokens[] = $token;
+        }
 
-        $validTokens = VerificationToken::factory()->count(2)->create([
-            'user_id' => $user->id,
-            'type' => IdentifierType::PHONE,
-            'is_used' => false,
-            'expires_at' => now()->addMinutes(10), // Still valid
-        ]);
+        $validTokens = [];
+        for ($i = 0; $i < 2; $i++) {
+            $token = new VerificationToken([
+                'id' => $this->faker->uuid(),
+                'user_id' => $user->id,
+                'type' => IdentifierType::PHONE,
+                'token' => $this->faker->numerify('######'),
+                'is_used' => false,
+                'expires_at' => now()->addMinutes(10), // Still valid
+            ]);
+            $token->save();
+            $validTokens[] = $token;
+        }
 
         // Verify tokens exist before cleanup
         foreach ($expiredTokens as $token) {
@@ -359,14 +397,16 @@ class OtpFunctionalityTest extends TestCase
      */
     public function test_otp_rate_limiting_logic()
     {
-        $user = User::factory()->create();
+        $user = \Modules\Authentication\Database\Factories\UserFactory::new()->create();
         $repository = app(\Modules\Authentication\Repositories\Verification\IVerificationRepository::class);
 
         // Initially should be allowed
         $this->assertTrue($repository->canSendOtp($user->id, IdentifierType::PHONE));
 
+        $rateLimitOtpToken = $this->faker->numerify('######');
+
         // Create recent OTP
-        $repository->createOtp($user->id, IdentifierType::PHONE, '123456', 5);
+        $repository->createOtp($user->id, IdentifierType::PHONE, $rateLimitOtpToken, 5);
 
         // Should not be allowed immediately
         $this->assertFalse($repository->canSendOtp($user->id, IdentifierType::PHONE));
@@ -386,20 +426,24 @@ class OtpFunctionalityTest extends TestCase
     {
         $user = User::factory()->create();
 
+        $caseSensitivityOtpToken = $this->faker->numerify('######');
+
         // Create OTP with lowercase (though OTPs are numeric, test the concept)
-        VerificationToken::factory()->create([
+        $otpToken = new VerificationToken([
+            'id' => $this->faker->uuid(),
             'user_id' => $user->id,
             'type' => IdentifierType::PHONE,
-            'token' => '123456',
+            'token' => $caseSensitivityOtpToken,
             'is_used' => false,
             'expires_at' => now()->addMinutes(5),
         ]);
+        $otpToken->save();
 
         $service = app(\Modules\Authentication\Services\Verification\VerificationService::class);
 
         // Should work with exact match
         try {
-            $service->validateOtp($user->id, IdentifierType::PHONE, '123456');
+            $service->validateOtp($user->id, IdentifierType::PHONE, $caseSensitivityOtpToken);
         } catch (\Modules\Authentication\Exceptions\InvalidTokenException $e) {
             // If it fails, it should not be due to format - just check it's InvalidTokenException
             $this->assertInstanceOf(\Modules\Authentication\Exceptions\InvalidTokenException::class, $e);

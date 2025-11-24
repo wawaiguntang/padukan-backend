@@ -3,6 +3,7 @@
 namespace Modules\Authentication\Tests\Unit\Services;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Modules\Authentication\Models\PasswordResetToken;
 use Modules\Authentication\Models\User;
 use Modules\Authentication\Repositories\PasswordReset\IPasswordResetRepository;
@@ -16,7 +17,7 @@ use Tests\TestCase;
  */
 class PasswordResetServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     /**
      * The PasswordResetService instance
@@ -69,17 +70,19 @@ class PasswordResetServiceTest extends TestCase
      */
     public function test_forgot_password_success()
     {
-        $identifier = 'test@example.com';
+        $identifier = $this->faker->email();
+        $userId = $this->faker->uuid();
+        $resetTokenValue = $this->faker->sha256();
 
         $user = new User([
-            'id' => 'uuid-123',
+            'id' => $userId,
             'email' => $identifier,
         ]);
 
         $resetToken = new PasswordResetToken([
-            'id' => 'reset-uuid',
+            'id' => $this->faker->uuid(),
             'user_id' => $user->id,
-            'token' => 'reset-token-123',
+            'token' => $resetTokenValue,
             'is_used' => false,
         ]);
 
@@ -106,7 +109,7 @@ class PasswordResetServiceTest extends TestCase
      */
     public function test_forgot_password_user_not_found()
     {
-        $identifier = 'nonexistent@example.com';
+        $identifier = $this->faker->email();
 
         $this->userRepositoryMock
             ->shouldReceive('findByIdentifier')
@@ -126,18 +129,18 @@ class PasswordResetServiceTest extends TestCase
      */
     public function test_reset_password_success()
     {
-        $userId = 'uuid-123';
-        $token = 'reset-token-123';
-        $newPassword = 'NewSecurePass123!';
+        $userId = $this->faker->uuid();
+        $token = $this->faker->sha256();
+        $newPassword = $this->faker->password();
 
         $user = new User([
             'id' => $userId,
-            'email' => 'test@example.com',
-            'password' => bcrypt('OldPassword123!'),
+            'email' => $this->faker->email(),
+            'password' => bcrypt($this->faker->password()),
         ]);
 
         $resetToken = new PasswordResetToken([
-            'id' => 'reset-uuid',
+            'id' => $this->faker->uuid(),
             'user_id' => $userId,
             'token' => $token,
             'is_used' => false,
@@ -156,7 +159,7 @@ class PasswordResetServiceTest extends TestCase
 
         $this->passwordResetRepositoryMock
             ->shouldReceive('markResetTokenUsed')
-            ->with('reset-uuid')
+            ->with($resetToken->id)
             ->andReturn(true);
 
         $result = $this->passwordResetService->resetPassword($userId, $token, $newPassword);
@@ -173,9 +176,9 @@ class PasswordResetServiceTest extends TestCase
      */
     public function test_reset_password_user_not_found()
     {
-        $userId = 'nonexistent-id';
-        $token = 'reset-token-123';
-        $newPassword = 'NewSecurePass123!';
+        $userId = $this->faker->uuid();
+        $token = $this->faker->sha256();
+        $newPassword = $this->faker->password();
 
         $this->userRepositoryMock
             ->shouldReceive('findById')
@@ -194,13 +197,13 @@ class PasswordResetServiceTest extends TestCase
      */
     public function test_reset_password_invalid_token()
     {
-        $userId = 'uuid-123';
-        $token = 'invalid-token';
-        $newPassword = 'NewSecurePass123!';
+        $userId = $this->faker->uuid();
+        $token = $this->faker->sha256();
+        $newPassword = $this->faker->password();
 
         $user = new User([
             'id' => $userId,
-            'email' => 'test@example.com',
+            'email' => $this->faker->email(),
         ]);
 
         $this->userRepositoryMock
@@ -225,13 +228,13 @@ class PasswordResetServiceTest extends TestCase
      */
     public function test_reset_password_expired_token()
     {
-        $userId = 'uuid-123';
-        $token = 'expired-token';
-        $newPassword = 'NewSecurePass123!';
+        $userId = $this->faker->uuid();
+        $token = $this->faker->sha256();
+        $newPassword = $this->faker->password();
 
         $user = new User([
             'id' => $userId,
-            'email' => 'test@example.com',
+            'email' => $this->faker->email(),
         ]);
 
         $this->userRepositoryMock
@@ -256,13 +259,13 @@ class PasswordResetServiceTest extends TestCase
      */
     public function test_reset_password_used_token()
     {
-        $userId = 'uuid-123';
-        $token = 'used-token';
-        $newPassword = 'NewSecurePass123!';
+        $userId = $this->faker->uuid();
+        $token = $this->faker->sha256();
+        $newPassword = $this->faker->password();
 
         $user = new User([
             'id' => $userId,
-            'email' => 'test@example.com',
+            'email' => $this->faker->email(),
         ]);
 
         $this->userRepositoryMock

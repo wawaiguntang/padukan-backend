@@ -4,6 +4,7 @@ namespace Modules\Authentication\Tests\Unit\Repositories;
 
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Cache;
 use Modules\Authentication\Database\Factories\UserFactory;
 use Modules\Authentication\Enums\IdentifierType;
@@ -21,7 +22,7 @@ use Tests\TestCase;
  */
 class VerificationRepositoryTest extends TestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions, WithFaker;
 
     /**
      * The VerificationRepository instance
@@ -49,7 +50,7 @@ class VerificationRepositoryTest extends TestCase
      */
     private function generateUniquePhone(): string
     {
-        return '+628' . rand(100000000, 999999999);
+        return $this->faker->numerify('+628##########');
     }
 
     /**
@@ -59,7 +60,7 @@ class VerificationRepositoryTest extends TestCase
      */
     private function generateUniqueEmail(): string
     {
-        return 'test' . rand(1000, 9999) . '@example.com';
+        return $this->faker->unique()->email();
     }
 
     /**
@@ -71,7 +72,7 @@ class VerificationRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = '123456';
+        $token = $this->faker->numerify('######');
         $expiresInMinutes = 10;
 
         // Act
@@ -96,7 +97,7 @@ class VerificationRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = '123456';
+        $token = $this->faker->numerify('######');
         $this->repository->createOtp($user->id, IdentifierType::PHONE, $token, 10);
 
         // Act
@@ -121,7 +122,7 @@ class VerificationRepositoryTest extends TestCase
         $user = UserFactory::new()->create();
 
         // Act
-        $foundOtp = $this->repository->findValidOtp($user->id, IdentifierType::PHONE, '999999');
+        $foundOtp = $this->repository->findValidOtp($user->id, IdentifierType::PHONE, $this->faker->numerify('######'));
 
         // Assert
         $this->assertNull($foundOtp);
@@ -136,7 +137,7 @@ class VerificationRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = '123456';
+        $token = $this->faker->numerify('######');
         $otp = $this->repository->createOtp($user->id, IdentifierType::PHONE, $token, 10);
         $otp->update(['is_used' => true]);
 
@@ -156,7 +157,7 @@ class VerificationRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = '123456';
+        $token = $this->faker->numerify('######');
         $otp = $this->repository->createOtp($user->id, IdentifierType::PHONE, $token, -1); // Already expired
 
         // Act
@@ -175,7 +176,7 @@ class VerificationRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $token = '123456';
+        $token = $this->faker->numerify('######');
         $otp = $this->repository->createOtp($user->id, IdentifierType::PHONE, $token, 10);
 
         // Act
@@ -212,10 +213,10 @@ class VerificationRepositoryTest extends TestCase
         $user = UserFactory::new()->create();
 
         // Create expired OTP
-        $expiredOtp = $this->repository->createOtp($user->id, IdentifierType::PHONE, '111111', -1);
+        $expiredOtp = $this->repository->createOtp($user->id, IdentifierType::PHONE, $this->faker->numerify('######'), -1);
 
         // Create valid OTP
-        $validOtp = $this->repository->createOtp($user->id, IdentifierType::PHONE, '222222', 10);
+        $validOtp = $this->repository->createOtp($user->id, IdentifierType::PHONE, $this->faker->numerify('######'), 10);
 
         // Act
         $deletedCount = $this->repository->deleteExpiredOtps();
@@ -240,7 +241,7 @@ class VerificationRepositoryTest extends TestCase
         $this->assertTrue($this->repository->canSendOtp($user->id, IdentifierType::PHONE));
 
         // Create recent OTP
-        $this->repository->createOtp($user->id, IdentifierType::PHONE, '123456', 10);
+        $this->repository->createOtp($user->id, IdentifierType::PHONE, $this->faker->numerify('######'), 10);
 
         // Should not be able to send within 1 minute
         $this->assertFalse($this->repository->canSendOtp($user->id, IdentifierType::PHONE));
@@ -260,7 +261,7 @@ class VerificationRepositoryTest extends TestCase
         $this->assertNull($this->repository->getLastOtpSentAt($user->id, IdentifierType::PHONE));
 
         // Create OTP
-        $otp = $this->repository->createOtp($user->id, IdentifierType::PHONE, '123456', 10);
+        $otp = $this->repository->createOtp($user->id, IdentifierType::PHONE, $this->faker->numerify('######'), 10);
 
         // Act
         $lastSentAt = $this->repository->getLastOtpSentAt($user->id, IdentifierType::PHONE);
@@ -279,7 +280,7 @@ class VerificationRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $otp = $this->repository->createOtp($user->id, IdentifierType::PHONE, '123456', 10);
+        $otp = $this->repository->createOtp($user->id, IdentifierType::PHONE, $this->faker->numerify('######'), 10);
 
         // Act
         $foundOtp = $this->repository->findById($otp->id);
@@ -312,7 +313,7 @@ class VerificationRepositoryTest extends TestCase
     {
         // Arrange
         $user = UserFactory::new()->create();
-        $otp = $this->repository->createOtp($user->id, IdentifierType::PHONE, '123456', 10);
+        $otp = $this->repository->createOtp($user->id, IdentifierType::PHONE, $this->faker->numerify('######'), 10);
 
         // Act
         $result = $this->repository->delete($otp->id);

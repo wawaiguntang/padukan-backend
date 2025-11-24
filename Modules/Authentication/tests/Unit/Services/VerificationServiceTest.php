@@ -3,6 +3,7 @@
 namespace Modules\Authentication\Tests\Unit\Services;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Modules\Authentication\Enums\IdentifierType;
 use Modules\Authentication\Models\User;
 use Modules\Authentication\Models\VerificationToken;
@@ -17,7 +18,7 @@ use Tests\TestCase;
  */
 class VerificationServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     /**
      * The VerificationService instance
@@ -70,19 +71,21 @@ class VerificationServiceTest extends TestCase
      */
     public function test_send_otp_success()
     {
-        $userId = 'uuid-123';
+        $userId = $this->faker->uuid();
+        $phone = $this->faker->numerify('+628##########');
+        $otpTokenValue = $this->faker->numerify('######');
         $type = IdentifierType::PHONE;
 
         $user = new \Modules\Authentication\Models\User([
             'id' => $userId,
-            'phone' => '+6281234567890',
+            'phone' => $phone,
         ]);
 
         $otpToken = new VerificationToken([
-            'id' => 'otp-uuid',
+            'id' => $this->faker->uuid(),
             'user_id' => $userId,
             'type' => $type,
-            'token' => '123456',
+            'token' => $otpTokenValue,
             'is_used' => false,
         ]);
 
@@ -114,7 +117,7 @@ class VerificationServiceTest extends TestCase
      */
     public function test_send_otp_rate_limited()
     {
-        $userId = 'uuid-123';
+        $userId = $this->faker->uuid();
         $type = IdentifierType::PHONE;
 
         $this->verificationRepositoryMock
@@ -134,19 +137,21 @@ class VerificationServiceTest extends TestCase
      */
     public function test_resend_otp_success()
     {
-        $userId = 'uuid-123';
+        $userId = $this->faker->uuid();
+        $phone = $this->faker->numerify('+628##########');
+        $otpTokenValue = $this->faker->numerify('######');
         $type = IdentifierType::PHONE;
 
         $user = new \Modules\Authentication\Models\User([
             'id' => $userId,
-            'phone' => '+6281234567890',
+            'phone' => $phone,
         ]);
 
         $otpToken = new VerificationToken([
-            'id' => 'otp-uuid',
+            'id' => $this->faker->uuid(),
             'user_id' => $userId,
             'type' => $type,
-            'token' => '123456',
+            'token' => $otpTokenValue,
             'is_used' => false,
         ]);
 
@@ -178,12 +183,12 @@ class VerificationServiceTest extends TestCase
      */
     public function test_validate_otp_success()
     {
-        $userId = 'uuid-123';
+        $userId = $this->faker->uuid();
         $type = IdentifierType::PHONE;
-        $token = '123456';
+        $token = $this->faker->numerify('######');
 
         $otpToken = new VerificationToken([
-            'id' => 'otp-uuid',
+            'id' => $this->faker->uuid(),
             'user_id' => $userId,
             'type' => $type,
             'token' => $token,
@@ -198,7 +203,7 @@ class VerificationServiceTest extends TestCase
 
         $this->verificationRepositoryMock
             ->shouldReceive('markOtpUsed')
-            ->with('otp-uuid')
+            ->with($otpToken->id)
             ->andReturn(true);
 
         $result = $this->verificationService->validateOtp($userId, $type, $token);
@@ -213,9 +218,9 @@ class VerificationServiceTest extends TestCase
      */
     public function test_validate_otp_invalid_token()
     {
-        $userId = 'uuid-123';
+        $userId = $this->faker->uuid();
         $type = IdentifierType::PHONE;
-        $token = '999999';
+        $token = $this->faker->numerify('######');
 
         $this->verificationRepositoryMock
             ->shouldReceive('findValidOtp')
@@ -234,13 +239,13 @@ class VerificationServiceTest extends TestCase
      */
     public function test_validate_otp_expired_token()
     {
-        $userId = 'uuid-123';
+        $userId = $this->faker->uuid();
         $type = IdentifierType::PHONE;
-        $token = '123456';
+        $token = $this->faker->numerify('######');
 
         // Create expired token
         $expiredToken = new VerificationToken([
-            'id' => 'otp-uuid',
+            'id' => $this->faker->uuid(),
             'user_id' => $userId,
             'type' => $type,
             'token' => $token,
@@ -265,9 +270,9 @@ class VerificationServiceTest extends TestCase
      */
     public function test_validate_otp_already_used_token()
     {
-        $userId = 'uuid-123';
+        $userId = $this->faker->uuid();
         $type = IdentifierType::PHONE;
-        $token = '123456';
+        $token = $this->faker->numerify('######');
 
         $this->verificationRepositoryMock
             ->shouldReceive('findValidOtp')
@@ -278,5 +283,4 @@ class VerificationServiceTest extends TestCase
 
         $this->verificationService->validateOtp($userId, $type, $token);
     }
-
 }

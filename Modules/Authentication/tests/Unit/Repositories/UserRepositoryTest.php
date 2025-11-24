@@ -3,6 +3,7 @@
 namespace Modules\Authentication\Tests\Unit\Repositories;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Modules\Authentication\Database\Factories\UserFactory;
@@ -20,7 +21,7 @@ use Tests\TestCase;
  */
 class UserRepositoryTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     /**
      * The UserRepository instance
@@ -48,7 +49,7 @@ class UserRepositoryTest extends TestCase
      */
     private function generateUniquePhone(): string
     {
-        return '+628' . rand(100000000, 999999999);
+        return $this->faker->numerify('+628##########');
     }
 
     /**
@@ -58,7 +59,7 @@ class UserRepositoryTest extends TestCase
      */
     private function generateUniqueEmail(): string
     {
-        return 'test' . rand(1000, 9999) . '@example.com';
+        return $this->faker->unique()->email();
     }
 
     /**
@@ -69,7 +70,7 @@ class UserRepositoryTest extends TestCase
     public function test_find_by_identifier_with_phone()
     {
         // Arrange
-        $phone = '+628' . rand(100000000, 999999999);
+        $phone = $this->faker->numerify('+628##########');
         $user = UserFactory::new()->create(['phone' => $phone, 'email' => null]);
 
         // Act
@@ -89,7 +90,7 @@ class UserRepositoryTest extends TestCase
     public function test_find_by_identifier_with_email()
     {
         // Arrange
-        $email = 'test' . rand(1000, 9999) . '@example.com';
+        $email = $this->faker->unique()->email();
         $user = UserFactory::new()->create(['phone' => null, 'email' => $email]);
 
         // Act

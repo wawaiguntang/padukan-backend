@@ -3,6 +3,7 @@
 namespace Modules\Authentication\Tests\Unit\Services;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Hash;
 use Modules\Authentication\Enums\UserStatus;
 use Modules\Authentication\Models\User;
@@ -18,7 +19,7 @@ use Tests\TestCase;
  */
 class UserServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     /**
      * The UserService instance
@@ -74,37 +75,42 @@ class UserServiceTest extends TestCase
      */
     public function test_register_success()
     {
+        $phone = $this->faker->numerify('+628##########');
+        $email = $this->faker->email();
+        $password = $this->faker->password();
+        $userId = $this->faker->uuid();
+
         $userData = [
-            'phone' => '+6281234567890',
-            'email' => 'test@example.com',
-            'password' => 'Password123!',
+            'phone' => $phone,
+            'email' => $email,
+            'password' => $password,
         ];
 
         $expectedUser = new User([
-            'id' => 'uuid-123',
-            'phone' => '+6281234567890',
-            'email' => 'test@example.com',
-            'password' => Hash::make('Password123!'),
+            'id' => $userId,
+            'phone' => $phone,
+            'email' => $email,
+            'password' => Hash::make($password),
             'status' => UserStatus::PENDING,
         ]);
-        $expectedUser->id = 'uuid-123'; // Ensure ID is set
+        $expectedUser->id = $userId; // Ensure ID is set
 
         // Mock repository calls
         $this->userRepositoryMock
             ->shouldReceive('existsByIdentifier')
-            ->with('+6281234567890')
+            ->with($phone)
             ->andReturn(false);
 
         $this->userRepositoryMock
             ->shouldReceive('existsByIdentifier')
-            ->with('test@example.com')
+            ->with($email)
             ->andReturn(false);
 
         $this->userRepositoryMock
             ->shouldReceive('create')
-            ->with(\Mockery::on(function ($data) {
-                return isset($data['phone']) && $data['phone'] === '+6281234567890' &&
-                       isset($data['email']) && $data['email'] === 'test@example.com' &&
+            ->with(\Mockery::on(function ($data) use ($phone, $email) {
+                return isset($data['phone']) && $data['phone'] === $phone &&
+                       isset($data['email']) && $data['email'] === $email &&
                        isset($data['password']) && is_string($data['password']) &&
                        isset($data['status']) && $data['status'] instanceof UserStatus;
             }))
@@ -113,13 +119,13 @@ class UserServiceTest extends TestCase
         // Mock verification service call
         $this->verificationServiceMock
             ->shouldReceive('sendOtp')
-            ->with('uuid-123', \Modules\Authentication\Enums\IdentifierType::PHONE)
+            ->with($userId, \Modules\Authentication\Enums\IdentifierType::PHONE)
             ->andReturn('otp-sent-message');
 
         $result = $this->userService->register(
-            '+6281234567890',
-            'test@example.com',
-            'Password123!'
+            $phone,
+            $email,
+            $password
         );
 
         $this->assertEquals($expectedUser, $result);
@@ -132,17 +138,21 @@ class UserServiceTest extends TestCase
      */
     public function test_register_with_existing_phone()
     {
+        $phone = $this->faker->numerify('+628##########');
+        $email = $this->faker->email();
+        $password = $this->faker->password();
+
         $this->userRepositoryMock
             ->shouldReceive('existsByIdentifier')
-            ->with('+6281234567890')
+            ->with($phone)
             ->andReturn(true);
 
         $this->expectException(\Modules\Authentication\Exceptions\UserAlreadyExistsException::class);
 
         $this->userService->register(
-            '+6281234567890',
-            'test@example.com',
-            'Password123!'
+            $phone,
+            $email,
+            $password
         );
     }
 
@@ -153,22 +163,26 @@ class UserServiceTest extends TestCase
      */
     public function test_register_with_existing_email()
     {
+        $phone = $this->faker->numerify('+628##########');
+        $email = $this->faker->email();
+        $password = $this->faker->password();
+
         $this->userRepositoryMock
             ->shouldReceive('existsByIdentifier')
-            ->with('+6281234567890')
+            ->with($phone)
             ->andReturn(false);
 
         $this->userRepositoryMock
             ->shouldReceive('existsByIdentifier')
-            ->with('test@example.com')
+            ->with($email)
             ->andReturn(true);
 
         $this->expectException(\Modules\Authentication\Exceptions\UserAlreadyExistsException::class);
 
         $this->userService->register(
-            '+6281234567890',
-            'test@example.com',
-            'Password123!'
+            $phone,
+            $email,
+            $password
         );
     }
 
@@ -179,22 +193,28 @@ class UserServiceTest extends TestCase
      */
     public function test_login_success()
     {
+        $userId = $this->faker->uuid();
+        $email = $this->faker->email();
+        $password = $this->faker->password();
+        $accessToken = $this->faker->sha256();
+        $refreshToken = $this->faker->sha256();
+
         $user = new User([
-            'id' => 'uuid-123',
-            'email' => 'test@example.com',
-            'password' => Hash::make('Password123!'),
+            'id' => $userId,
+            'email' => $email,
+            'password' => Hash::make($password),
             'status' => UserStatus::ACTIVE,
         ]);
 
         $expectedTokens = [
-            'access_token' => 'access-token-123',
-            'refresh_token' => 'refresh-token-456',
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken,
         ];
 
         // Mock repository call
         $this->userRepositoryMock
             ->shouldReceive('findByIdentifier')
-            ->with('test@example.com')
+            ->with($email)
             ->andReturn($user);
 
         // Mock JWT service calls
@@ -203,11 +223,11 @@ class UserServiceTest extends TestCase
             ->with($user)
             ->andReturn($expectedTokens);
 
-        $result = $this->userService->login('test@example.com', 'Password123!');
+        $result = $this->userService->login($email, $password);
 
         $this->assertEquals($user, $result['user']);
-        $this->assertEquals('access-token-123', $result['access_token']);
-        $this->assertEquals('refresh-token-456', $result['refresh_token']);
+        $this->assertEquals($accessToken, $result['access_token']);
+        $this->assertEquals($refreshToken, $result['refresh_token']);
     }
 
     /**
@@ -217,14 +237,17 @@ class UserServiceTest extends TestCase
      */
     public function test_login_user_not_found()
     {
+        $email = $this->faker->email();
+        $password = $this->faker->password();
+
         $this->userRepositoryMock
             ->shouldReceive('findByIdentifier')
-            ->with('nonexistent@example.com')
+            ->with($email)
             ->andReturn(null);
 
         $this->expectException(\Modules\Authentication\Exceptions\UserNotFoundException::class);
 
-        $this->userService->login('nonexistent@example.com', 'Password123!');
+        $this->userService->login($email, $password);
     }
 
     /**
@@ -234,21 +257,26 @@ class UserServiceTest extends TestCase
      */
     public function test_login_invalid_password()
     {
+        $userId = $this->faker->uuid();
+        $email = $this->faker->email();
+        $password = $this->faker->password();
+        $wrongPassword = $this->faker->password();
+
         $user = new User([
-            'id' => 'uuid-123',
-            'email' => 'test@example.com',
-            'password' => Hash::make('Password123!'),
+            'id' => $userId,
+            'email' => $email,
+            'password' => Hash::make($password),
             'status' => UserStatus::ACTIVE,
         ]);
 
         $this->userRepositoryMock
             ->shouldReceive('findByIdentifier')
-            ->with('test@example.com')
+            ->with($email)
             ->andReturn($user);
 
         $this->expectException(\Modules\Authentication\Exceptions\InvalidCredentialsException::class);
 
-        $this->userService->login('test@example.com', 'WrongPassword!');
+        $this->userService->login($email, $wrongPassword);
     }
 
     /**
@@ -258,17 +286,21 @@ class UserServiceTest extends TestCase
      */
     public function test_refresh_token_success()
     {
+        $validRefreshToken = $this->faker->sha256();
+        $newAccessToken = $this->faker->sha256();
+        $newRefreshToken = $this->faker->sha256();
+
         $newTokens = [
-            'access_token' => 'new-access-token',
-            'refresh_token' => 'new-refresh-token',
+            'access_token' => $newAccessToken,
+            'refresh_token' => $newRefreshToken,
         ];
 
         $this->jwtServiceMock
             ->shouldReceive('refreshAccessToken')
-            ->with('valid-refresh-token')
+            ->with($validRefreshToken)
             ->andReturn($newTokens);
 
-        $result = $this->userService->refreshToken('valid-refresh-token');
+        $result = $this->userService->refreshToken($validRefreshToken);
 
         $this->assertEquals($newTokens, $result);
     }
@@ -280,12 +312,14 @@ class UserServiceTest extends TestCase
      */
     public function test_refresh_token_invalid()
     {
+        $invalidToken = $this->faker->sha256();
+
         $this->jwtServiceMock
             ->shouldReceive('refreshAccessToken')
-            ->with('invalid-token')
+            ->with($invalidToken)
             ->andReturn(null);
 
-        $result = $this->userService->refreshToken('invalid-token');
+        $result = $this->userService->refreshToken($invalidToken);
 
         $this->assertNull($result);
     }
@@ -297,12 +331,14 @@ class UserServiceTest extends TestCase
      */
     public function test_logout_success()
     {
+        $validRefreshToken = $this->faker->sha256();
+
         $this->jwtServiceMock
             ->shouldReceive('invalidateRefreshToken')
-            ->with('valid-refresh-token')
+            ->with($validRefreshToken)
             ->andReturn(true);
 
-        $result = $this->userService->logout('valid-refresh-token');
+        $result = $this->userService->logout($validRefreshToken);
 
         $this->assertTrue($result);
     }
@@ -314,12 +350,14 @@ class UserServiceTest extends TestCase
      */
     public function test_logout_invalid_token()
     {
+        $invalidToken = $this->faker->sha256();
+
         $this->jwtServiceMock
             ->shouldReceive('invalidateRefreshToken')
-            ->with('invalid-token')
+            ->with($invalidToken)
             ->andReturn(false);
 
-        $result = $this->userService->logout('invalid-token');
+        $result = $this->userService->logout($invalidToken);
 
         $this->assertFalse($result);
     }
@@ -331,17 +369,20 @@ class UserServiceTest extends TestCase
      */
     public function test_get_user_by_id()
     {
+        $userId = $this->faker->uuid();
+        $email = $this->faker->email();
+
         $user = new User([
-            'id' => 'uuid-123',
-            'email' => 'test@example.com',
+            'id' => $userId,
+            'email' => $email,
         ]);
 
         $this->userRepositoryMock
             ->shouldReceive('findById')
-            ->with('uuid-123')
+            ->with($userId)
             ->andReturn($user);
 
-        $result = $this->userService->getUserById('uuid-123');
+        $result = $this->userService->getUserById($userId);
 
         $this->assertEquals($user, $result);
     }
@@ -353,13 +394,15 @@ class UserServiceTest extends TestCase
      */
     public function test_get_user_by_id_not_found()
     {
+        $nonexistentId = $this->faker->uuid();
+
         $this->userRepositoryMock
             ->shouldReceive('findById')
-            ->with('nonexistent-id')
+            ->with($nonexistentId)
             ->andReturn(null);
 
         $this->expectException(\Modules\Authentication\Exceptions\UserNotFoundException::class);
 
-        $this->userService->getUserById('nonexistent-id');
+        $this->userService->getUserById($nonexistentId);
     }
 }
