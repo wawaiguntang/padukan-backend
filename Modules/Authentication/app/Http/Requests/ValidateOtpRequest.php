@@ -29,7 +29,7 @@ class ValidateOtpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'string', 'uuid'],
+            'identifier' => ['required', 'string'],
             'type' => ['required', 'string', 'in:phone,email'],
             'token' => ['required', 'string', 'regex:/^\d{6}$/'],
         ];
@@ -43,9 +43,26 @@ class ValidateOtpRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'user_id' => __('authentication::validation.attributes.user_id'),
+            'identifier' => __('authentication::validation.attributes.identifier'),
             'type' => __('authentication::validation.attributes.type'),
             'token' => __('authentication::validation.attributes.token'),
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @return void
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        $response = response()->json([
+            'status' => false,
+            'message' => __('authentication::auth.validation.failed'),
+            'errors' => $validator->errors(),
+        ], 422);
+
+        throw new \Illuminate\Validation\ValidationException($validator, $response);
     }
 }

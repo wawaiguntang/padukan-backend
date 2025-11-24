@@ -16,15 +16,14 @@ interface IVerificationService
      * Send OTP to user
      *
      * Generates a 6-digit numeric OTP and sends it to the user's
-     * phone or email based on the identifier type. Includes rate limiting.
+     * phone or email based on the identifier. Includes rate limiting.
      *
-     * @param string $userId The user's UUID
-     * @param IdentifierType $type The identifier type (PHONE or EMAIL)
+     * @param string $identifier The user's email or phone number
      * @return string Success message key
      * @throws \Modules\Authentication\Exceptions\RateLimitExceededException
      * @throws \Modules\Authentication\Exceptions\UserNotFoundException
      */
-    public function sendOtp(string $userId, IdentifierType $type): string;
+    public function sendOtp(string $identifier): string;
 
     /**
      * Resend OTP to user
@@ -32,13 +31,12 @@ interface IVerificationService
      * Resends the existing OTP or generates a new one if expired.
      * Includes rate limiting (same as sendOtp).
      *
-     * @param string $userId The user's UUID
-     * @param IdentifierType $type The identifier type (PHONE or EMAIL)
+     * @param string $identifier The user's email or phone number
      * @return string Success message key
      * @throws \Modules\Authentication\Exceptions\RateLimitExceededException
      * @throws \Modules\Authentication\Exceptions\UserNotFoundException
      */
-    public function resendOtp(string $userId, IdentifierType $type): string;
+    public function resendOtp(string $identifier): string;
 
     /**
      * Validate OTP token
@@ -46,7 +44,7 @@ interface IVerificationService
      * Validates the provided OTP token for the user and identifier type.
      * Marks the token as used upon successful validation.
      *
-     * @param string $userId The user's UUID
+     * @param string $identifier The user's email or phone number
      * @param IdentifierType $type The identifier type (PHONE or EMAIL)
      * @param string $token The 6-digit OTP token
      * @return bool True if validation successful
@@ -54,5 +52,5 @@ interface IVerificationService
      * @throws \Modules\Authentication\Exceptions\OtpExpiredException
      * @throws \Modules\Authentication\Exceptions\UserNotFoundException
      */
-    public function validateOtp(string $userId, IdentifierType $type, string $token): bool;
+    public function validateOtp(string $identifier, IdentifierType $type, string $token): bool;
 }

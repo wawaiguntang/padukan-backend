@@ -52,6 +52,12 @@ class AuthenticationServiceProvider extends ServiceProvider
 
         // Register services
         $this->registerServices();
+
+        // Register shared repositories
+        $this->registerSharedRepositories();
+
+        // Register shared services
+        $this->registerSharedServices();
     }
 
     /**
@@ -102,6 +108,29 @@ class AuthenticationServiceProvider extends ServiceProvider
         $this->app->bind(
             \Modules\Authentication\Services\PasswordReset\IPasswordResetService::class,
             \Modules\Authentication\Services\PasswordReset\PasswordResetService::class
+        );
+    }
+
+    /**
+     * Register shared repository bindings
+     */
+    protected function registerSharedRepositories(): void
+    {
+        $this->app->bind(
+            \App\Shared\Repositories\IUserRepository::class,
+            \Modules\Authentication\Repositories\User\UserRepository::class
+        );
+    }
+
+    /**
+     * Register service bindings
+     */
+    protected function registerSharedServices(): void
+    {
+        // JWT Service
+        $this->app->bind(
+            \App\Shared\Authentication\Services\IJWTService::class,
+            \Modules\Authentication\Services\JWT\JWTService::class
         );
     }
 
@@ -196,6 +225,7 @@ class AuthenticationServiceProvider extends ServiceProvider
         $router = $this->app['router'];
 
         $router->aliasMiddleware('throttle.otp', \Modules\Authentication\Http\Middleware\ThrottleOtp::class);
+        $router->aliasMiddleware('jwt.auth', \Modules\Authentication\Http\Middleware\JWTMiddleware::class);
     }
 
     /**

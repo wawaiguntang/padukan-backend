@@ -44,4 +44,21 @@ class RefreshTokenRequest extends FormRequest
             'refresh_token' => __('authentication::validation.attributes.refresh_token'),
         ];
     }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @return void
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        $response = response()->json([
+            'status' => false,
+            'message' => __('authentication::auth.validation.failed'),
+            'errors' => $validator->errors(),
+        ], 422);
+
+        throw new \Illuminate\Validation\ValidationException($validator, $response);
+    }
 }

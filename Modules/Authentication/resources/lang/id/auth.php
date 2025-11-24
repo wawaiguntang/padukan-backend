@@ -43,6 +43,9 @@ return [
         'phone_already_exists' => 'Nomor telepon sudah digunakan.',
         'email_already_exists' => 'Alamat email sudah digunakan.',
         'already_exists' => 'Pengguna sudah ada.',
+        'pending_verification' => 'Pengguna menunggu verifikasi.',
+        'account_suspended' => 'Akun pengguna ditangguhkan.',
+        'inactive' => 'Akun pengguna tidak aktif.',
     ],
 
     'invalid_credentials' => 'Kredensial yang diberikan tidak valid.',
@@ -55,6 +58,7 @@ return [
         'refreshed' => 'Token berhasil diperbarui.',
         'refresh_token_required' => 'Token refresh diperlukan.',
         'invalid' => 'Token tidak valid.',
+        'missing' => 'Token akses diperlukan.',
     ],
 
     'otp' => [
@@ -81,4 +85,8 @@ return [
         'retrieved' => 'Profil berhasil diambil.',
         'failed' => 'Gagal mengambil profil.',
     ],
+
+    'validation' => [
+        'failed' => 'Validasi data gagal.',
+    ]
 ];

@@ -43,6 +43,9 @@ return [
         'phone_already_exists' => 'Phone number already exists.',
         'email_already_exists' => 'Email address already exists.',
         'already_exists' => 'User already exists.',
+        'pending_verification' => 'User pending verification.',
+        'account_suspended' => 'User account is suspended.',
+        'inactive' => 'User account is inactive.',
     ],
 
     'invalid_credentials' => 'Invalid credentials provided.',
@@ -55,6 +58,7 @@ return [
         'refreshed' => 'Token refreshed successfully.',
         'refresh_token_required' => 'Refresh token is required.',
         'invalid' => 'Invalid token.',
+        'missing' => 'Access token is required.',
     ],
 
     'otp' => [
@@ -81,4 +85,8 @@ return [
         'retrieved' => 'Profile retrieved successfully.',
         'failed' => 'Failed to retrieve profile.',
     ],
+
+    'validation' => [
+        'failed' => 'Data validation failed.',
+    ]
 ];

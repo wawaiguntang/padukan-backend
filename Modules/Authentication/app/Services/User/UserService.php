@@ -7,6 +7,7 @@ use Modules\Authentication\Enums\IdentifierType;
 use Modules\Authentication\Enums\UserStatus;
 use Modules\Authentication\Exceptions\InvalidCredentialsException;
 use Modules\Authentication\Exceptions\UserAlreadyExistsException;
+use Modules\Authentication\Exceptions\UserInactiveException;
 use Modules\Authentication\Exceptions\UserNotFoundException;
 use Modules\Authentication\Models\User;
 use Modules\Authentication\Repositories\User\IUserRepository;
@@ -113,6 +114,17 @@ class UserService implements IUserService
         // Verify password
         if (!Hash::check($password, $user->password)) {
             throw new InvalidCredentialsException('auth.invalid_credentials');
+        }
+
+        // Check user status
+        if ($user->status !== UserStatus::ACTIVE) {
+            if ($user->status === UserStatus::PENDING) {
+                throw new UserInactiveException('auth.user.pending_verification');
+            } elseif ($user->status === UserStatus::SUSPEND) {
+                throw new UserInactiveException('auth.user.account_suspended');
+            } else {
+                throw new UserInactiveException('auth.user.inactive');
+            }
         }
 
         // Generate JWT tokens

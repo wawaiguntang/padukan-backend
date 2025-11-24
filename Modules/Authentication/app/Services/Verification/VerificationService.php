@@ -49,16 +49,19 @@ class VerificationService implements IVerificationService
     /**
      * {@inheritDoc}
      */
-    public function sendOtp(string $userId, IdentifierType $type): string
+    public function sendOtp(string $identifier): string
     {
-        // Verify user exists
-        $user = $this->userRepository->findById($userId);
+        // Find user by identifier and determine type
+        $user = $this->userRepository->findByIdentifier($identifier);
         if (!$user) {
-            throw new UserNotFoundException('auth.user.not_found', ['id' => $userId]);
+            throw new UserNotFoundException('auth.user.not_found', ['identifier' => $identifier]);
         }
 
+        // Determine identifier type
+        $type = $this->determineIdentifierType($identifier);
+
         // Check rate limiting
-        if (!$this->verificationRepository->canSendOtp($userId, $type)) {
+        if (!$this->verificationRepository->canSendOtp($user->id, $type)) {
             throw new RateLimitExceededException('auth.otp.rate_limit_exceeded');
         }
 
@@ -66,7 +69,7 @@ class VerificationService implements IVerificationService
         $otp = $this->generateOtp();
 
         // Create OTP record
-        $this->verificationRepository->createOtp($userId, $type, $otp);
+        $this->verificationRepository->createOtp($user->id, $type, $otp);
 
         // Send OTP via SMS/Email (placeholder implementation)
         $this->sendOtpToUser($user, $type, $otp);
@@ -77,16 +80,19 @@ class VerificationService implements IVerificationService
     /**
      * {@inheritDoc}
      */
-    public function resendOtp(string $userId, IdentifierType $type): string
+    public function resendOtp(string $identifier): string
     {
-        // Verify user exists
-        $user = $this->userRepository->findById($userId);
+        // Find user by identifier and determine type
+        $user = $this->userRepository->findByIdentifier($identifier);
         if (!$user) {
-            throw new UserNotFoundException('auth.user.not_found', ['id' => $userId]);
+            throw new UserNotFoundException('auth.user.not_found', ['identifier' => $identifier]);
         }
 
+        // Determine identifier type
+        $type = $this->determineIdentifierType($identifier);
+
         // Check rate limiting
-        if (!$this->verificationRepository->canSendOtp($userId, $type)) {
+        if (!$this->verificationRepository->canSendOtp($user->id, $type)) {
             throw new RateLimitExceededException('auth.otp.rate_limit_exceeded');
         }
 
@@ -94,7 +100,7 @@ class VerificationService implements IVerificationService
         $otp = $this->generateOtp();
 
         // Create OTP record
-        $this->verificationRepository->createOtp($userId, $type, $otp);
+        $this->verificationRepository->createOtp($user->id, $type, $otp);
 
         // Send OTP via SMS/Email (placeholder implementation)
         $this->sendOtpToUser($user, $type, $otp);
@@ -105,12 +111,12 @@ class VerificationService implements IVerificationService
     /**
      * {@inheritDoc}
      */
-    public function validateOtp(string $userId, IdentifierType $type, string $token): bool
+    public function validateOtp(string $identifier, IdentifierType $type, string $token): bool
     {
         // Verify user exists
-        $user = $this->userRepository->findById($userId);
+        $user = $this->userRepository->findByIdentifier($identifier);
         if (!$user) {
-            throw new UserNotFoundException('auth.user.not_found', ['id' => $userId]);
+            throw new UserNotFoundException('auth.user.not_found', ['identifier' => $identifier, 'type' => $type->value]);
         }
 
         // Validate token format (6 digits)
@@ -118,12 +124,7 @@ class VerificationService implements IVerificationService
             throw new InvalidTokenException('auth.otp.invalid_format');
         }
 
-        // Find OTP (including potentially expired ones)
-        $otp = VerificationToken::where('user_id', $userId)
-            ->where('type', $type)
-            ->where('token', $token)
-            ->where('is_used', false)
-            ->first();
+        $otp = $this->verificationRepository->findValidOtp($user->id, $type, $token);
 
         if (!$otp) {
             throw new InvalidTokenException('auth.otp.invalid');
@@ -133,8 +134,9 @@ class VerificationService implements IVerificationService
             throw new OtpExpiredException('auth.otp.expired');
         }
 
-        // Mark OTP as used
         $this->verificationRepository->markOtpUsed($otp->id);
+
+        $this->userRepository->updateStatus($user->id, \Modules\Authentication\Enums\UserStatus::ACTIVE);
 
         return true;
     }
@@ -147,6 +149,23 @@ class VerificationService implements IVerificationService
     protected function generateOtp(): string
     {
         return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Determine identifier type from the identifier string
+     *
+     * @param string $identifier The email or phone identifier
+     * @return IdentifierType The determined identifier type
+     */
+    protected function determineIdentifierType(string $identifier): IdentifierType
+    {
+        // Simple email validation regex
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            return IdentifierType::EMAIL;
+        }
+
+        // Assume it's a phone number if it contains digits and possibly + prefix
+        return IdentifierType::PHONE;
     }
 
     /**

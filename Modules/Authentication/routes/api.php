@@ -1,7 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Authentication\Http\Controllers\AuthenticationController;
+use Modules\Authentication\Http\Controllers\RegisterController;
+use Modules\Authentication\Http\Controllers\LoginController;
+use Modules\Authentication\Http\Controllers\OtpController;
+use Modules\Authentication\Http\Controllers\PasswordResetController;
+use Modules\Authentication\Http\Controllers\TokenController;
+use Modules\Authentication\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,25 +22,25 @@ use Modules\Authentication\Http\Controllers\AuthenticationController;
 Route::prefix('v1/auth')->group(function () {
 
     // Public authentication routes
-    Route::post('/register', [AuthenticationController::class, 'register']);
-    Route::post('/login', [AuthenticationController::class, 'login']);
-    Route::post('/refresh-token', [AuthenticationController::class, 'refreshToken']);
+    Route::post('/register', [RegisterController::class, 'register']);
+    Route::post('/login', [LoginController::class, 'login']);
+    Route::post('/refresh-token', [TokenController::class, 'refreshToken']);
 
     // Password reset routes
-    Route::post('/forgot-password', [AuthenticationController::class, 'forgotPassword']);
-    Route::post('/reset-password', [AuthenticationController::class, 'resetPassword']);
+    Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
     // OTP routes with rate limiting
     Route::middleware(['throttle.otp:phone'])->group(function () {
-        Route::post('/send-otp', [AuthenticationController::class, 'sendOtp']);
-        Route::post('/resend-otp', [AuthenticationController::class, 'resendOtp']);
+        Route::post('/send-otp', [OtpController::class, 'sendOtp']);
+        Route::post('/resend-otp', [OtpController::class, 'resendOtp']);
     });
 
-    Route::post('/validate-otp', [AuthenticationController::class, 'validateOtp']);
+    Route::post('/validate-otp', [OtpController::class, 'validateOtp']);
 
     // Protected routes (require authentication)
-    Route::middleware(['auth:api'])->group(function () {
-        Route::post('/logout', [AuthenticationController::class, 'logout']);
-        Route::get('/profile', [AuthenticationController::class, 'profile']);
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::post('/logout', [TokenController::class, 'logout']);
+        Route::get('/profile', [ProfileController::class, 'profile']);
     });
 });

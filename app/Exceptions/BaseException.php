@@ -5,73 +5,80 @@ namespace App\Exceptions;
 use Exception;
 
 /**
- * Base Exception Class
+ * Base Exception for Authentication Module
  *
- * Provides common functionality for all application exceptions
- * including automatic message translation based on current locale.
+ * This class provides a base exception with translation support
+ * for all authentication-related exceptions.
  */
 class BaseException extends Exception
 {
     /**
-     * Additional context data
+     * The message key for translation
+     *
+     * @var string
+     */
+    protected string $messageKey;
+
+    /**
+     * The parameters for message translation
      *
      * @var array
      */
-    protected array $context;
+    protected array $parameters;
 
     /**
-     * Module name for translation namespace
+     * The module name
      *
      * @var string
      */
     protected string $module;
 
     /**
-     * Create a new BaseException instance
+     * Constructor
      *
-     * @param string $messageKey The message key for translation
-     * @param array $context Additional context data
-     * @param string $module Module name for translation namespace (default: 'app')
-     * @param int $code HTTP status code
+     * @param string $messageKey The translation key for the message
+     * @param array $parameters Parameters for message translation
+     * @param int $code The exception code
+     * @param \Throwable|null $previous The previous exception
      */
-    public function __construct(string $messageKey, array $context = [], string $module = 'app', int $code = 400)
+    public function __construct(string $messageKey, array $parameters = [], ?string $module = null, int $code = 0, ?\Throwable $previous = null)
     {
-        parent::__construct($messageKey, $code);
-        $this->context = $context;
-        $this->module = $module;
+        $this->messageKey = $messageKey;
+        $this->parameters = $parameters;
+        $this->module = $module ?? 'authentication';
+
+        $translatedMessage = $this->getMessageTranslate();
+
+        parent::__construct($translatedMessage, $code, $previous);
+    }
+
+    /**
+     * Get the message key
+     *
+     * @return string
+     */
+    public function getMessageKey(): string
+    {
+        return $this->messageKey;
+    }
+
+    /**
+     * Get the translation parameters
+     *
+     * @return array
+     */
+    public function getParameters(): array
+    {
+        return $this->parameters;
     }
 
     /**
      * Get the translated message
      *
-     * @return string The translated message
+     * @return string
      */
     public function getMessageTranslate(): string
     {
-        $translationKey = $this->module === 'app'
-            ? $this->getMessage()
-            : $this->module . '::' . $this->getMessage();
-
-        return __($translationKey, $this->context);
-    }
-
-    /**
-     * Get the context data
-     *
-     * @return array
-     */
-    public function getContext(): array
-    {
-        return $this->context;
-    }
-
-    /**
-     * Get the module name
-     *
-     * @return string
-     */
-    public function getModule(): string
-    {
-        return $this->module;
+        return __($this->module . '::' . $this->messageKey, $this->parameters);
     }
 }
