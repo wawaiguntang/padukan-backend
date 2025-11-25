@@ -2,209 +2,103 @@
 
 namespace Modules\Authorization\Repositories\Permission;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Modules\Authorization\Models\Permission;
+use Modules\Authorization\Models\UserRole;
+use Modules\Authorization\Models\RolePermission;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
-/**
- * Permission Repository Implementation
- *
- * This class handles all permission-related database operations
- * for the authorization module with caching support.
- */
 class PermissionRepository implements IPermissionRepository
 {
     /**
-     * The Permission model instance
-     *
-     * @var Permission
+     * Find permission by ID
      */
-    protected Permission $model;
-
-    /**
-     * The cache repository instance
-     *
-     * @var Cache
-     */
-    protected Cache $cache;
-
-    /**
-     * Cache TTL in seconds (30 minutes - reasonable for permission data)
-     *
-     * @var int
-     */
-    protected int $cacheTtl = 1800;
-
-    /**
-     * Constructor
-     *
-     * @param Permission $model The Permission model instance
-     * @param Cache $cache The cache repository instance
-     */
-    public function __construct(Permission $model, Cache $cache)
+    public function findById(string $id): ?Permission
     {
-        $this->model = $model;
-        $this->cache = $cache;
+        return Permission::find($id);
     }
 
     /**
-     * {@inheritDoc}
+     * Find permission by slug
      */
     public function findBySlug(string $slug): ?Permission
     {
-        $cacheKey = "permission:slug:{$slug}";
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($slug) {
-            return $this->model->where('slug', $slug)->first();
-        });
+        return Permission::where('slug', $slug)->first();
     }
 
     /**
-     * {@inheritDoc}
+     * Get all active permissions
      */
-    public function findById(int $id): ?Permission
+    public function getActivePermissions(): Collection
     {
-        return $this->model->find($id);
+        return Permission::active()->get();
     }
 
     /**
-     * {@inheritDoc}
+     * Get permissions for user
      */
-    public function getAll()
+    public function getUserPermissions(string $userId): Collection
     {
-        return $this->model->orderBy('name')->get();
+        return Permission::whereHas('rolePermissions', function ($query) use ($userId) {
+            $query->whereHas('role', function ($subQuery) use ($userId) {
+                $subQuery->whereHas('userRoles', function ($subSubQuery) use ($userId) {
+                    $subSubQuery->where('user_id', $userId);
+                });
+            });
+        })->get();
     }
 
     /**
-     * {@inheritDoc}
+     * Check if user has permission
      */
-    public function getByModule(string $module)
+    public function userHasPermission(string $userId, string $permissionSlug): bool
     {
-        return $this->model->where('module', $module)->orderBy('name')->get();
+        return Permission::where('slug', $permissionSlug)
+                        ->whereHas('rolePermissions', function ($query) use ($userId) {
+                            $query->whereHas('role', function ($subQuery) use ($userId) {
+                                $subQuery->whereHas('userRoles', function ($subSubQuery) use ($userId) {
+                                    $subSubQuery->where('user_id', $userId);
+                                });
+                            });
+                        })
+                        ->exists();
     }
 
     /**
-     * {@inheritDoc}
+     * Get permissions for role
      */
-    public function create(array $data): Permission
+    public function getRolePermissions(string $roleId): Collection
     {
-        $permission = $this->model->create($data);
-
-        // Cache the new permission data
-        $this->cachePermissionData($permission);
-
-        return $permission;
+        return Permission::whereHas('rolePermissions', function ($query) use ($roleId) {
+            $query->where('role_id', $roleId);
+        })->get();
     }
 
     /**
-     * {@inheritDoc}
+     * Check if role has permission
      */
-    public function update(int $id, array $data): bool
+    public function roleHasPermission(string $roleId, string $permissionSlug): bool
     {
-        $permission = $this->model->find($id);
-
-        if (!$permission) {
-            return false;
-        }
-
-        // Store old slug for cache invalidation
-        $oldSlug = $permission->slug;
-
-        $result = $permission->update($data);
-
-        if ($result) {
-            $permission->refresh();
-
-            // Invalidate old slug cache if it changed
-            if (isset($data['slug']) && $data['slug'] !== $oldSlug && $oldSlug) {
-                $this->cache->forget("permission:slug:{$oldSlug}");
-            }
-
-            // Invalidate and recache permission data
-            $this->invalidatePermissionCaches($id);
-            $this->cachePermissionData($permission);
-        }
-
-        return $result;
+        return Permission::where('slug', $permissionSlug)
+                        ->whereHas('rolePermissions', function ($query) use ($roleId) {
+                            $query->where('role_id', $roleId);
+                        })
+                        ->exists();
     }
 
     /**
-     * {@inheritDoc}
+     * Get permissions by resource
      */
-    public function delete(int $id): bool
+    public function getPermissionsByResource(string $resource): Collection
     {
-        $permission = $this->model->find($id);
-
-        if (!$permission) {
-            return false;
-        }
-
-        $result = $permission->delete();
-
-        if ($result) {
-            // Invalidate all permission caches
-            $this->invalidatePermissionCaches($id);
-        }
-
-        return $result;
+        return Permission::forResource($resource)->active()->get();
     }
 
     /**
-     * {@inheritDoc}
+     * Get permissions by action
      */
-    public function existsBySlug(string $slug): bool
+    public function getPermissionsByAction(string $action): Collection
     {
-        return $this->model->where('slug', $slug)->exists();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getRoles(int $permissionId)
-    {
-        $permission = $this->model->find($permissionId);
-
-        return $permission ? $permission->roles : collect();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function search(string $query)
-    {
-        return $this->model
-            ->where('name', 'LIKE', "%{$query}%")
-            ->orWhere('description', 'LIKE', "%{$query}%")
-            ->orWhere('slug', 'LIKE', "%{$query}%")
-            ->orderBy('name')
-            ->get();
-    }
-
-    /**
-     * Cache permission data in multiple cache keys
-     *
-     * @param Permission $permission The permission model to cache
-     * @return void
-     */
-    protected function cachePermissionData(Permission $permission): void
-    {
-        // Cache by slug (most commonly accessed)
-        $this->cache->put("permission:slug:{$permission->slug}", $permission, $this->cacheTtl);
-    }
-
-    /**
-     * Invalidate all cache keys related to a permission
-     *
-     * @param int $permissionId The permission ID
-     * @return void
-     */
-    protected function invalidatePermissionCaches(int $permissionId): void
-    {
-        // Get permission data to know which slug to invalidate
-        $permission = $this->model->find($permissionId);
-
-        if ($permission) {
-            // Invalidate by slug
-            $this->cache->forget("permission:slug:{$permission->slug}");
-        }
+        return Permission::forAction($action)->active()->get();
     }
 }

@@ -2,253 +2,120 @@
 
 namespace Modules\Authorization\Repositories\Role;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Modules\Authorization\Models\Role;
+use Modules\Authorization\Models\UserRole;
+use Modules\Authorization\Models\Permission;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
-/**
- * Role Repository Implementation
- *
- * This class handles all role-related database operations
- * for the authorization module with caching support.
- */
 class RoleRepository implements IRoleRepository
 {
     /**
-     * The Role model instance
-     *
-     * @var Role
+     * Find role by ID
      */
-    protected Role $model;
-
-    /**
-     * The cache repository instance
-     *
-     * @var Cache
-     */
-    protected Cache $cache;
-
-    /**
-     * Cache TTL in seconds (30 minutes - reasonable for role data)
-     *
-     * @var int
-     */
-    protected int $cacheTtl = 1800;
-
-    /**
-     * Constructor
-     *
-     * @param Role $model The Role model instance
-     * @param Cache $cache The cache repository instance
-     */
-    public function __construct(Role $model, Cache $cache)
+    public function findById(string $id): ?Role
     {
-        $this->model = $model;
-        $this->cache = $cache;
+        return Role::find($id);
     }
 
     /**
-     * {@inheritDoc}
+     * Find role by slug
      */
     public function findBySlug(string $slug): ?Role
     {
-        $cacheKey = "role:slug:{$slug}";
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($slug) {
-            return $this->model->where('slug', $slug)->first();
-        });
+        return Role::where('slug', $slug)->first();
     }
 
     /**
-     * {@inheritDoc}
+     * Get all active roles
      */
-    public function findById(int $id): ?Role
+    public function getActiveRoles(): Collection
     {
-        return $this->model->find($id);
+        return Role::active()->get();
     }
 
     /**
-     * {@inheritDoc}
+     * Get roles for user
      */
-    public function getAll()
+    public function getUserRoles(string $userId): Collection
     {
-        return $this->model->orderBy('name')->get();
+        return Role::whereHas('userRoles', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })->get();
     }
 
     /**
-     * {@inheritDoc}
+     * Check if user has role
      */
-    public function getActive()
+    public function userHasRole(string $userId, string $roleSlug): bool
     {
-        return $this->model->orderBy('name')->get();
+        return UserRole::where('user_id', $userId)
+                      ->whereHas('role', function ($query) use ($roleSlug) {
+                          $query->where('slug', $roleSlug);
+                      })
+                      ->exists();
     }
 
     /**
-     * {@inheritDoc}
+     * Assign role to user
      */
-    public function create(array $data): Role
+    public function assignRoleToUser(string $userId, string $roleSlug): bool
     {
-        $role = $this->model->create($data);
-
-        // Cache the new role data
-        $this->cacheRoleData($role);
-
-        return $role;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function update(int $id, array $data): bool
-    {
-        $role = $this->model->find($id);
-
+        $role = $this->findBySlug($roleSlug);
         if (!$role) {
             return false;
         }
 
-        // Store old slug for cache invalidation
-        $oldSlug = $role->slug;
-
-        $result = $role->update($data);
-
-        if ($result) {
-            $role->refresh();
-
-            // Invalidate old slug cache if it changed
-            if (isset($data['slug']) && $data['slug'] !== $oldSlug && $oldSlug) {
-                $this->cache->forget("role:slug:{$oldSlug}");
-            }
-
-            // Invalidate and recache role data
-            $this->invalidateRoleCaches($id);
-            $this->cacheRoleData($role);
+        // Check if already assigned
+        if ($this->userHasRole($userId, $roleSlug)) {
+            return true;
         }
 
-        return $result;
+        try {
+            UserRole::create([
+                'user_id' => $userId,
+                'role_id' => $role->id
+            ]);
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
-     * {@inheritDoc}
+     * Remove role from user
      */
-    public function delete(int $id): bool
+    public function removeRoleFromUser(string $userId, string $roleSlug): bool
     {
-        $role = $this->model->find($id);
-
+        $role = $this->findBySlug($roleSlug);
         if (!$role) {
             return false;
         }
 
-        $result = $role->delete();
-
-        if ($result) {
-            // Invalidate all role caches
-            $this->invalidateRoleCaches($id);
-        }
-
-        return $result;
+        return UserRole::where('user_id', $userId)
+                      ->where('role_id', $role->id)
+                      ->delete() > 0;
     }
 
     /**
-     * {@inheritDoc}
+     * Get role permissions
      */
-    public function existsBySlug(string $slug): bool
+    public function getRolePermissions(string $roleId): Collection
     {
-        return $this->model->where('slug', $slug)->exists();
+        return Permission::whereHas('rolePermissions', function ($query) use ($roleId) {
+            $query->where('role_id', $roleId);
+        })->get();
     }
 
     /**
-     * {@inheritDoc}
+     * Check if role has permission
      */
-    public function getPermissions(int $roleId)
+    public function roleHasPermission(string $roleId, string $permissionSlug): bool
     {
-        $role = $this->model->find($roleId);
-
-        return $role ? $role->permissions : collect();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function assignPermissions(int $roleId, array $permissionIds): bool
-    {
-        $role = $this->model->find($roleId);
-
-        if (!$role) {
-            return false;
-        }
-
-        $role->permissions()->attach($permissionIds);
-
-        // Invalidate role caches
-        $this->invalidateRoleCaches($roleId);
-
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function removePermissions(int $roleId, array $permissionIds): bool
-    {
-        $role = $this->model->find($roleId);
-
-        if (!$role) {
-            return false;
-        }
-
-        $role->permissions()->detach($permissionIds);
-
-        // Invalidate role caches
-        $this->invalidateRoleCaches($roleId);
-
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function syncPermissions(int $roleId, array $permissionIds): bool
-    {
-        $role = $this->model->find($roleId);
-
-        if (!$role) {
-            return false;
-        }
-
-        $role->permissions()->sync($permissionIds);
-
-        // Invalidate role caches
-        $this->invalidateRoleCaches($roleId);
-
-        return true;
-    }
-
-    /**
-     * Cache role data in multiple cache keys
-     *
-     * @param Role $role The role model to cache
-     * @return void
-     */
-    protected function cacheRoleData(Role $role): void
-    {
-        // Cache by slug (most commonly accessed)
-        $this->cache->put("role:slug:{$role->slug}", $role, $this->cacheTtl);
-    }
-
-    /**
-     * Invalidate all cache keys related to a role
-     *
-     * @param int $roleId The role ID
-     * @return void
-     */
-    protected function invalidateRoleCaches(int $roleId): void
-    {
-        // Get role data to know which slug to invalidate
-        $role = $this->model->find($roleId);
-
-        if ($role) {
-            // Invalidate by slug
-            $this->cache->forget("role:slug:{$role->slug}");
-        }
+        return Permission::where('slug', $permissionSlug)
+                        ->whereHas('rolePermissions', function ($query) use ($roleId) {
+                            $query->where('role_id', $roleId);
+                        })
+                        ->exists();
     }
 }

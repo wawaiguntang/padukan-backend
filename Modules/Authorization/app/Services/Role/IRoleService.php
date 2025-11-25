@@ -1,21 +1,21 @@
 <?php
 
-namespace Modules\Authorization\Repositories\Role;
+namespace Modules\Authorization\Services\Role;
 
 use Modules\Authorization\Models\Role;
 use Illuminate\Database\Eloquent\Collection;
 
-interface IRoleRepository
+interface IRoleService
 {
     /**
-     * Find role by ID
+     * Get role by ID
      */
-    public function findById(string $id): ?Role;
+    public function getRoleById(string $id): Role;
 
     /**
-     * Find role by slug
+     * Get role by slug
      */
-    public function findBySlug(string $slug): ?Role;
+    public function getRoleBySlug(string $slug): Role;
 
     /**
      * Get all active roles
@@ -23,7 +23,7 @@ interface IRoleRepository
     public function getActiveRoles(): Collection;
 
     /**
-     * Get roles for user
+     * Get user roles
      */
     public function getUserRoles(string $userId): Collection;
 
@@ -51,4 +51,19 @@ interface IRoleRepository
      * Check if role has permission
      */
     public function roleHasPermission(string $roleId, string $permissionSlug): bool;
+
+    /**
+     * Create new role
+     */
+    public function createRole(array $data): Role;
+
+    /**
+     * Update role
+     */
+    public function updateRole(string $id, array $data): bool;
+
+    /**
+     * Delete role
+     */
+    public function deleteRole(string $id): bool;
 }

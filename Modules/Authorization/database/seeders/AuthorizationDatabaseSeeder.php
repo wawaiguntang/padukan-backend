@@ -12,9 +12,7 @@ class AuthorizationDatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            RoleSeeder::class,
-            PermissionSeeder::class,
-            PolicySeeder::class,
+            AuthorizationEngineSeeder::class,
         ]);
     }
 }

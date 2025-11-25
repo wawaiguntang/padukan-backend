@@ -4,11 +4,9 @@ namespace Modules\Authorization\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-class Permission extends Model
+class PolicySetting extends Model
 {
     use HasFactory;
 
@@ -31,12 +29,11 @@ class Permission extends Model
      * The attributes that are mass assignable.
      */
     protected $fillable = [
+        'key',
         'name',
-        'slug',
-        'description',
-        'resource',
-        'action',
+        'settings',
         'is_active',
+        'description',
     ];
 
     /**
@@ -45,28 +42,34 @@ class Permission extends Model
     protected function casts(): array
     {
         return [
+            'settings' => 'array',
             'is_active' => 'boolean',
         ];
     }
 
     /**
-     * Get the roles for the permission.
+     * Get policy setting by key.
      */
-    public function roles(): BelongsToMany
+    public static function get(string $key): ?array
     {
-        return $this->belongsToMany(Role::class, 'role_permissions');
+        $setting = static::where('key', $key)->where('is_active', true)->first();
+
+        return $setting ? $setting->settings : null;
     }
 
     /**
-     * Get the role permissions for the permission.
+     * Update policy setting.
      */
-    public function rolePermissions(): HasMany
+    public static function updateSetting(string $key, array $settings): bool
     {
-        return $this->hasMany(RolePermission::class);
+        return static::where('key', $key)->update([
+            'settings' => $settings,
+            'updated_at' => now()
+        ]) > 0;
     }
 
     /**
-     * Check if permission is active.
+     * Check if setting is active.
      */
     public function isActive(): bool
     {
@@ -74,7 +77,7 @@ class Permission extends Model
     }
 
     /**
-     * Scope a query to only include active permissions.
+     * Scope a query to only include active settings.
      */
     public function scopeActive($query)
     {
@@ -82,19 +85,11 @@ class Permission extends Model
     }
 
     /**
-     * Scope a query to filter by resource.
+     * Scope a query to filter by key.
      */
-    public function scopeForResource($query, string $resource)
+    public function scopeByKey($query, string $key)
     {
-        return $query->where('resource', $resource);
-    }
-
-    /**
-     * Scope a query to filter by action.
-     */
-    public function scopeForAction($query, string $action)
-    {
-        return $query->where('action', $action);
+        return $query->where('key', $key);
     }
 
     /**

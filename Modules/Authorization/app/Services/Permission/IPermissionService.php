@@ -1,21 +1,21 @@
 <?php
 
-namespace Modules\Authorization\Repositories\Permission;
+namespace Modules\Authorization\Services\Permission;
 
 use Modules\Authorization\Models\Permission;
 use Illuminate\Database\Eloquent\Collection;
 
-interface IPermissionRepository
+interface IPermissionService
 {
     /**
-     * Find permission by ID
+     * Get permission by ID
      */
-    public function findById(string $id): ?Permission;
+    public function getPermissionById(string $id): Permission;
 
     /**
-     * Find permission by slug
+     * Get permission by slug
      */
-    public function findBySlug(string $slug): ?Permission;
+    public function getPermissionBySlug(string $slug): Permission;
 
     /**
      * Get all active permissions
@@ -23,7 +23,7 @@ interface IPermissionRepository
     public function getActivePermissions(): Collection;
 
     /**
-     * Get permissions for user
+     * Get user permissions
      */
     public function getUserPermissions(string $userId): Collection;
 
@@ -33,7 +33,7 @@ interface IPermissionRepository
     public function userHasPermission(string $userId, string $permissionSlug): bool;
 
     /**
-     * Get permissions for role
+     * Get role permissions
      */
     public function getRolePermissions(string $roleId): Collection;
 
@@ -51,4 +51,19 @@ interface IPermissionRepository
      * Get permissions by action
      */
     public function getPermissionsByAction(string $action): Collection;
+
+    /**
+     * Create new permission
+     */
+    public function createPermission(array $data): Permission;
+
+    /**
+     * Update permission
+     */
+    public function updatePermission(string $id, array $data): bool;
+
+    /**
+     * Delete permission
+     */
+    public function deletePermission(string $id): bool;
 }

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Authentication\Models\User;
 use Modules\Authentication\Repositories\User\IUserRepository;
+use App\Shared\Authentication\Services\IJWTService as SharedIJWTService;
 
 /**
  * JWT Service Implementation
@@ -15,7 +16,7 @@ use Modules\Authentication\Repositories\User\IUserRepository;
  * This class handles JWT token generation, validation, and refresh token management
  * with caching for optimal performance.
  */
-class JWTService implements IJWTService
+class JWTService implements IJWTService, SharedIJWTService
 {
     /**
      * The cache repository instance

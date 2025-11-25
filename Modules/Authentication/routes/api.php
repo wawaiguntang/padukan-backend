@@ -31,7 +31,7 @@ Route::prefix('v1/auth')->group(function () {
     Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
     // OTP routes with rate limiting
-    Route::middleware(['throttle.otp:phone'])->group(function () {
+    Route::middleware(['throttle.otp:phone', 'throttle.otp:email'])->group(function () {
         Route::post('/send-otp', [OtpController::class, 'sendOtp']);
         Route::post('/resend-otp', [OtpController::class, 'resendOtp']);
     });
