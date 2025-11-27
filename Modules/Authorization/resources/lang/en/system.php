@@ -13,4 +13,5 @@ return [
     'initialization_failed' => 'Authorization system initialization failed.',
     'cache_cleared' => 'Authorization cache cleared successfully.',
     'settings_updated' => 'Authorization settings updated successfully.',
+    'error_occurred' => 'An error occurred while processing your request.',
 ];

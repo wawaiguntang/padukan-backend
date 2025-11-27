@@ -19,10 +19,16 @@ class PolicyService implements IPolicyService
 
     /**
      * Get policy setting by key
+     *
+     * @cache-category Basic Data Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.policy_ttl') - 30 minutes
+     * @cache-key authorization:policy:{key}
+     * @cache-invalidation When policy setting is updated/deleted
      */
     public function getPolicySetting(string $key): array
     {
         $setting = $this->policyRepository->getSetting($key);
+
         if (!$setting) {
             throw new PolicyNotFoundException('policy.not_found', ['policy_key' => $key]);
         }

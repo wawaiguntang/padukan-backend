@@ -7,8 +7,9 @@ use Modules\Authorization\Repositories\Permission\IPermissionRepository;
 use Modules\Authorization\Exceptions\PermissionNotFoundException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Shared\Authorization\Services\IPermissionService as SharedIPermissionService;
 
-class PermissionService implements IPermissionService
+class PermissionService implements IPermissionService, SharedIPermissionService
 {
     private IPermissionRepository $permissionRepository;
 
@@ -19,10 +20,16 @@ class PermissionService implements IPermissionService
 
     /**
      * Get permission by ID
+     *
+     * @cache-category Basic Data Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.lookup_ttl') - 1 hour
+     * @cache-key authorization:permission:id:{id}
+     * @cache-invalidation When permission is updated/deleted
      */
     public function getPermissionById(string $id): Permission
     {
         $permission = $this->permissionRepository->findById($id);
+
         if (!$permission) {
             throw new PermissionNotFoundException('permission.not_found', ['permission_id' => $id]);
         }
@@ -35,6 +42,7 @@ class PermissionService implements IPermissionService
     public function getPermissionBySlug(string $slug): Permission
     {
         $permission = $this->permissionRepository->findBySlug($slug);
+
         if (!$permission) {
             throw new PermissionNotFoundException('permission.not_found', ['permission_slug' => $slug]);
         }
@@ -51,6 +59,11 @@ class PermissionService implements IPermissionService
 
     /**
      * Get user permissions
+     *
+     * @cache-category Business Logic Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.user_permissions_ttl') - 1 hour
+     * @cache-key authorization:user:{userId}:permissions
+     * @cache-invalidation When user role assignments change
      */
     public function getUserPermissions(string $userId): Collection
     {
@@ -62,11 +75,18 @@ class PermissionService implements IPermissionService
      */
     public function userHasPermission(string $userId, string $permissionSlug): bool
     {
-        return $this->permissionRepository->userHasPermission($userId, $permissionSlug);
+        // Use cached user permissions for better performance
+        $userPermissions = $this->getUserPermissions($userId);
+        return $userPermissions->contains('slug', $permissionSlug);
     }
 
     /**
      * Get role permissions
+     *
+     * @cache-category Business Logic Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.role_permissions_ttl') - 1 hour
+     * @cache-key authorization:role:{roleId}:permissions
+     * @cache-invalidation When role permission assignments change
      */
     public function getRolePermissions(string $roleId): Collection
     {
@@ -78,7 +98,9 @@ class PermissionService implements IPermissionService
      */
     public function roleHasPermission(string $roleId, string $permissionSlug): bool
     {
-        return $this->permissionRepository->roleHasPermission($roleId, $permissionSlug);
+        // Use cached role permissions for better performance
+        $rolePermissions = $this->getRolePermissions($roleId);
+        return $rolePermissions->contains('slug', $permissionSlug);
     }
 
     /**
@@ -136,4 +158,5 @@ class PermissionService implements IPermissionService
             return $permission->delete();
         });
     }
+
 }

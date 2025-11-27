@@ -19,10 +19,16 @@ class RoleService implements IRoleService
 
     /**
      * Get role by ID
+     *
+     * @cache-category Basic Data Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.lookup_ttl') - 1 hour
+     * @cache-key authorization:role:id:{id}
+     * @cache-invalidation When role is updated/deleted
      */
     public function getRoleById(string $id): Role
     {
         $role = $this->roleRepository->findById($id);
+
         if (!$role) {
             throw new RoleNotFoundException('role.not_found', ['role_id' => $id]);
         }
@@ -31,10 +37,16 @@ class RoleService implements IRoleService
 
     /**
      * Get role by slug
+     *
+     * @cache-category Basic Data Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.lookup_ttl') - 1 hour
+     * @cache-key authorization:role:slug:{slug}
+     * @cache-invalidation When role is updated/deleted
      */
     public function getRoleBySlug(string $slug): Role
     {
         $role = $this->roleRepository->findBySlug($slug);
+
         if (!$role) {
             throw new RoleNotFoundException('role.not_found', ['role_slug' => $slug]);
         }
@@ -51,6 +63,11 @@ class RoleService implements IRoleService
 
     /**
      * Get user roles
+     *
+     * @cache-category Business Logic Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.user_roles_ttl') - 1 hour
+     * @cache-key authorization:user:{userId}:roles
+     * @cache-invalidation When user role assignments change
      */
     public function getUserRoles(string $userId): Collection
     {
@@ -62,7 +79,9 @@ class RoleService implements IRoleService
      */
     public function userHasRole(string $userId, string $roleSlug): bool
     {
-        return $this->roleRepository->userHasRole($userId, $roleSlug);
+        // Use cached user roles for better performance
+        $userRoles = $this->getUserRoles($userId);
+        return $userRoles->contains('slug', $roleSlug);
     }
 
     /**
@@ -96,6 +115,7 @@ class RoleService implements IRoleService
     {
         return $this->roleRepository->roleHasPermission($roleId, $permissionSlug);
     }
+
 
     /**
      * Create new role

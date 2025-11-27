@@ -47,6 +47,9 @@ class AuthenticationServiceProvider extends ServiceProvider
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
 
+        // Register cache key manager
+        $this->registerCacheKeyManager();
+
         // Register repositories
         $this->registerRepositories();
 
@@ -131,6 +134,17 @@ class AuthenticationServiceProvider extends ServiceProvider
         $this->app->bind(
             \App\Shared\Authentication\Services\IJWTService::class,
             \Modules\Authentication\Services\JWT\JWTService::class
+        );
+    }
+
+    /**
+     * Register cache key manager binding
+     */
+    protected function registerCacheKeyManager(): void
+    {
+        $this->app->bind(
+            \Modules\Authentication\Cache\KeyManager\IKeyManager::class,
+            \Modules\Authentication\Cache\KeyManager\KeyManager::class
         );
     }
 

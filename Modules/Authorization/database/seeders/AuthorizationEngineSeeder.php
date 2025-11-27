@@ -14,16 +14,20 @@ class AuthorizationEngineSeeder extends Seeder
     public function run(): void
     {
         // Seed roles
-        $this->seedRoles();
+        // $this->seedRoles();
 
         // Seed permissions
-        $this->seedPermissions();
+        // $this->seedPermissions();
 
         // Seed role permissions
-        $this->seedRolePermissions();
+        // $this->seedRolePermissions();
 
         // Seed policy settings
-        $this->seedPolicySettings();
+        // $this->seedPolicySettings();
+
+        // Seed Profile module permissions and policies
+        $this->call(ProfilePermissionSeeder::class);
+        $this->call(ProfilePolicySeeder::class);
     }
 
     private function seedRoles(): void

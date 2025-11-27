@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Authentication\Models\User;
 use Modules\Authentication\Repositories\User\IUserRepository;
+use Modules\Authentication\Cache\KeyManager\IKeyManager;
 use App\Shared\Authentication\Services\IJWTService as SharedIJWTService;
 
 /**
@@ -24,6 +25,13 @@ class JWTService implements IJWTService, SharedIJWTService
      * @var Cache
      */
     protected Cache $cache;
+
+    /**
+     * The cache key manager instance
+     *
+     * @var IKeyManager
+     */
+    protected IKeyManager $cacheKeyManager;
 
     /**
      * The user repository instance
@@ -57,11 +65,13 @@ class JWTService implements IJWTService, SharedIJWTService
      * Constructor
      *
      * @param Cache $cache The cache repository instance
+     * @param IKeyManager $cacheKeyManager The cache key manager instance
      * @param IUserRepository $userRepository The user repository instance
      */
-    public function __construct(Cache $cache, IUserRepository $userRepository)
+    public function __construct(Cache $cache, IKeyManager $cacheKeyManager, IUserRepository $userRepository)
     {
         $this->cache = $cache;
+        $this->cacheKeyManager = $cacheKeyManager;
         $this->userRepository = $userRepository;
         $this->secretKey = config('app.key', 'default-secret-key');
     }
@@ -145,7 +155,7 @@ class JWTService implements IJWTService, SharedIJWTService
      */
     public function invalidateRefreshToken(string $refreshToken): bool
     {
-        $cacheKey = "refresh_token:{$refreshToken}";
+        $cacheKey = $this->cacheKeyManager::refreshToken($refreshToken);
         return $this->cache->forget($cacheKey);
     }
 
@@ -245,7 +255,7 @@ class JWTService implements IJWTService, SharedIJWTService
      */
     protected function storeRefreshToken(string $refreshToken, string $userId): void
     {
-        $cacheKey = "refresh_token:{$refreshToken}";
+        $cacheKey = $this->cacheKeyManager::refreshToken($refreshToken);
         $this->cache->put($cacheKey, $userId, Carbon::now()->addDays($this->refreshTokenExpiration));
     }
 
@@ -257,7 +267,7 @@ class JWTService implements IJWTService, SharedIJWTService
      */
     protected function getUserIdFromRefreshToken(string $refreshToken): ?string
     {
-        $cacheKey = "refresh_token:{$refreshToken}";
+        $cacheKey = $this->cacheKeyManager::refreshToken($refreshToken);
         return $this->cache->get($cacheKey);
     }
 }

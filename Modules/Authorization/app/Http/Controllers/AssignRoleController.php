@@ -28,27 +28,37 @@ class AssignRoleController extends Controller
      */
     public function assignRole(Request $request, string $roleType): JsonResponse
     {
-        $userId = $request->authenticated_user_id;
+        try {
+            $userId = $request->authenticated_user_id;
 
-        // Validate role assignment using policy
-        if (!$this->roleAssignmentPolicy->evaluate($userId, $roleType)) {
-            throw new RoleAssignmentNotAllowedException();
+            // Validate role assignment using policy
+            if (!$this->roleAssignmentPolicy->evaluate($userId, $roleType)) {
+                throw new RoleAssignmentNotAllowedException();
+            }
+
+            $success = $this->roleService->assignRoleToUser($userId, $roleType);
+            if (!$success) {
+                throw new RoleAssignmentFailedException();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => __('authorization::role.role_assigned_successfully'),
+                'data' => [
+                    'user_id' => $userId,
+                    'role' => $roleType,
+                ]
+            ]);
+        } catch (RoleAssignmentNotAllowedException | RoleAssignmentFailedException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessageTranslate(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => __('authorization::system.error_occurred'),
+            ], 500);
         }
-
-
-        $success = $this->roleService->assignRoleToUser($userId, $roleType);
-        if (!$success) {
-            throw new RoleAssignmentFailedException();
-        }
-
-
-        return response()->json([
-            'success' => true,
-            'message' => __('authorization::role.role_assigned_successfully'),
-            'data' => [
-                'user_id' => $userId,
-                'role' => $roleType,
-            ]
-        ]);
     }
 }

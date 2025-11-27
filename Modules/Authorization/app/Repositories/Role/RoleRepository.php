@@ -5,25 +5,51 @@ namespace Modules\Authorization\Repositories\Role;
 use Modules\Authorization\Models\Role;
 use Modules\Authorization\Models\UserRole;
 use Modules\Authorization\Models\Permission;
+use Modules\Authorization\Cache\KeyManager\IKeyManager;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Cache\Repository as Cache;
 
 class RoleRepository implements IRoleRepository
 {
+    private IKeyManager $cacheKeyManager;
+    private Cache $cache;
+
+    public function __construct(IKeyManager $cacheKeyManager, Cache $cache)
+    {
+        $this->cacheKeyManager = $cacheKeyManager;
+        $this->cache = $cache;
+    }
     /**
      * Find role by ID
+     *
+     * @cache-category Basic Data Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.lookup_ttl') - 1 hour
+     * @cache-key authorization:role:id:{id}
      */
     public function findById(string $id): ?Role
     {
-        return Role::find($id);
+        $cacheKey = $this->cacheKeyManager::roleById($id);
+
+        return $this->cache->remember($cacheKey, config('authorization.cache.lookup_ttl'), function () use ($id) {
+            return Role::find($id);
+        });
     }
 
     /**
      * Find role by slug
+     *
+     * @cache-category Basic Data Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.lookup_ttl') - 1 hour
+     * @cache-key authorization:role:slug:{slug}
      */
     public function findBySlug(string $slug): ?Role
     {
-        return Role::where('slug', $slug)->first();
+        $cacheKey = $this->cacheKeyManager::roleBySlug($slug);
+
+        return $this->cache->remember($cacheKey, config('authorization.cache.lookup_ttl'), function () use ($slug) {
+            return Role::where('slug', $slug)->first();
+        });
     }
 
     /**
@@ -36,12 +62,20 @@ class RoleRepository implements IRoleRepository
 
     /**
      * Get roles for user
+     *
+     * @cache-category Business Logic Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.user_roles_ttl') - 1 hour
+     * @cache-key authorization:user:{userId}:roles
      */
     public function getUserRoles(string $userId): Collection
     {
-        return Role::whereHas('userRoles', function ($query) use ($userId) {
-            $query->where('user_id', $userId);
-        })->get();
+        $cacheKey = $this->cacheKeyManager::userRoles($userId);
+
+        return $this->cache->remember($cacheKey, config('authorization.cache.user_roles_ttl'), function () use ($userId) {
+            return Role::whereHas('userRoles', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })->get();
+        });
     }
 
     /**

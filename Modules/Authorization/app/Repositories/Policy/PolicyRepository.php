@@ -3,10 +3,20 @@
 namespace Modules\Authorization\Repositories\Policy;
 
 use Modules\Authorization\Models\PolicySetting;
+use Modules\Authorization\Cache\KeyManager\IKeyManager;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Cache\Repository as Cache;
 
 class PolicyRepository implements IPolicyRepository
 {
+    private IKeyManager $cacheKeyManager;
+    private Cache $cache;
+
+    public function __construct(IKeyManager $cacheKeyManager, Cache $cache)
+    {
+        $this->cacheKeyManager = $cacheKeyManager;
+        $this->cache = $cache;
+    }
     /**
      * Find policy setting by key
      */
@@ -17,10 +27,18 @@ class PolicyRepository implements IPolicyRepository
 
     /**
      * Get policy setting value by key
+     *
+     * @cache-category Basic Data Cache (Repository Layer)
+     * @cache-ttl config('authorization.cache.policy_ttl') - 30 minutes
+     * @cache-key authorization:policy:{key}
      */
     public function getSetting(string $key): ?array
     {
-        return PolicySetting::get($key);
+        $cacheKey = $this->cacheKeyManager::policySetting($key);
+
+        return $this->cache->remember($cacheKey, config('authorization.cache.policy_ttl'), function () use ($key) {
+            return PolicySetting::get($key);
+        });
     }
 
     /**

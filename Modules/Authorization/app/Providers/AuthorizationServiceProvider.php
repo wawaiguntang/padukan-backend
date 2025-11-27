@@ -82,6 +82,9 @@ class AuthorizationServiceProvider extends ServiceProvider
             \Modules\Authorization\Repositories\Policy\IPolicyRepository::class,
             \Modules\Authorization\Repositories\Policy\PolicyRepository::class
         );
+
+        // Register shared repositories
+        $this->registerSharedRepositories();
     }
 
     /**
@@ -89,6 +92,12 @@ class AuthorizationServiceProvider extends ServiceProvider
      */
     protected function registerServices(): void
     {
+        // Cache Key Manager
+        $this->app->bind(
+            \Modules\Authorization\Cache\KeyManager\IKeyManager::class,
+            \Modules\Authorization\Cache\KeyManager\KeyManager::class
+        );
+
         $this->app->bind(
             \Modules\Authorization\Services\Role\IRoleService::class,
             \Modules\Authorization\Services\Role\RoleService::class
@@ -161,7 +170,7 @@ class AuthorizationServiceProvider extends ServiceProvider
         $router = $this->app['router'];
 
         // Authentication middleware (JWT validation only)
-        $router->aliasMiddleware('jwt.auth', \Modules\Authorization\Http\Middleware\AuthenticationMiddleware::class);
+        $router->aliasMiddleware('jwt.authz', \Modules\Authorization\Http\Middleware\AuthenticationMiddleware::class);
 
         // Authorization middleware (JWT + permission check)
         $router->aliasMiddleware('permission.authz', \Modules\Authorization\Http\Middleware\AuthorizationMiddleware::class);
@@ -272,6 +281,7 @@ class AuthorizationServiceProvider extends ServiceProvider
     {
         return [];
     }
+
 
     private function getPublishableViewPaths(): array
     {

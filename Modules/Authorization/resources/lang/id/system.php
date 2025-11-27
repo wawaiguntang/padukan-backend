@@ -13,4 +13,5 @@ return [
     'initialization_failed' => 'Inisialisasi sistem authorization gagal.',
     'cache_cleared' => 'Cache authorization berhasil dibersihkan.',
     'settings_updated' => 'Pengaturan authorization berhasil diperbarui.',
+    'error_occurred' => 'Terjadi kesalahan saat memproses permintaan Anda.',
 ];

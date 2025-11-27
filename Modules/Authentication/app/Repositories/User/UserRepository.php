@@ -5,6 +5,7 @@ namespace Modules\Authentication\Repositories\User;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Modules\Authentication\Enums\UserStatus;
 use Modules\Authentication\Models\User;
+use Modules\Authentication\Cache\KeyManager\IKeyManager;
 
 /**
  * User Repository Implementation
@@ -29,6 +30,13 @@ class UserRepository implements IUserRepository
     protected Cache $cache;
 
     /**
+     * The cache key manager instance
+     *
+     * @var IKeyManager
+     */
+    protected IKeyManager $cacheKeyManager;
+
+    /**
      * Cache TTL in seconds (15 minutes - more reasonable for user data)
      *
      * @var int
@@ -40,11 +48,13 @@ class UserRepository implements IUserRepository
      *
      * @param User $model The User model instance
      * @param Cache $cache The cache repository instance
+     * @param IKeyManager $cacheKeyManager The cache key manager instance
      */
-    public function __construct(User $model, Cache $cache)
+    public function __construct(User $model, Cache $cache, IKeyManager $cacheKeyManager)
     {
         $this->model = $model;
         $this->cache = $cache;
+        $this->cacheKeyManager = $cacheKeyManager;
     }
 
     /**
@@ -52,7 +62,7 @@ class UserRepository implements IUserRepository
      */
     public function findByIdentifier(string $identifier): ?User
     {
-        $cacheKey = "user:identifier:{$identifier}";
+        $cacheKey = $this->cacheKeyManager::userByIdentifier($identifier);
 
         return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($identifier) {
             return $this->model
@@ -105,10 +115,10 @@ class UserRepository implements IUserRepository
 
             // Invalidate old identifier caches if they changed
             if (isset($data['phone']) && $data['phone'] !== $oldPhone && $oldPhone) {
-                $this->cache->forget("user:identifier:{$oldPhone}");
+                $this->cache->forget($this->cacheKeyManager::userByIdentifier($oldPhone));
             }
             if (isset($data['email']) && $data['email'] !== $oldEmail && $oldEmail) {
-                $this->cache->forget("user:identifier:{$oldEmail}");
+                $this->cache->forget($this->cacheKeyManager::userByIdentifier($oldEmail));
             }
 
             // Invalidate and recache user data
@@ -169,10 +179,10 @@ class UserRepository implements IUserRepository
     {
         // Cache by identifiers only (most commonly accessed)
         if ($user->email) {
-            $this->cache->put("user:identifier:{$user->email}", $user, $this->cacheTtl);
+            $this->cache->put($this->cacheKeyManager::userByIdentifier($user->email), $user, $this->cacheTtl);
         }
         if ($user->phone) {
-            $this->cache->put("user:identifier:{$user->phone}", $user, $this->cacheTtl);
+            $this->cache->put($this->cacheKeyManager::userByIdentifier($user->phone), $user, $this->cacheTtl);
         }
     }
 
@@ -190,10 +200,10 @@ class UserRepository implements IUserRepository
         if ($user) {
             // Invalidate by identifiers
             if ($user->email) {
-                $this->cache->forget("user:identifier:{$user->email}");
+                $this->cache->forget($this->cacheKeyManager::userByIdentifier($user->email));
             }
             if ($user->phone) {
-                $this->cache->forget("user:identifier:{$user->phone}");
+                $this->cache->forget($this->cacheKeyManager::userByIdentifier($user->phone));
             }
         }
     }
