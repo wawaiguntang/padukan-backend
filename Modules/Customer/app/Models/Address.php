@@ -2,9 +2,10 @@
 
 namespace Modules\Customer\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 // use Modules\Profile\Database\Factories\AddressFactory;
 
 class Address extends Model
@@ -61,4 +62,18 @@ class Address extends Model
     // {
     //     // return AddressFactory::new();
     // }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) Str::uuid();
+            }
+        });
+    }
 }

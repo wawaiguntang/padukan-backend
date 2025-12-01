@@ -55,6 +55,7 @@ class VehicleObserver
         $originalProfileId = $vehicle->getOriginal('driver_profile_id');
 
         // Invalidate caches
+        $this->invalidateVehicleCaches($vehicle->id);
         $this->invalidateProfileVehiclesCache($originalProfileId);
 
         // If profile changed, invalidate new profile cache too
@@ -68,7 +69,8 @@ class VehicleObserver
      */
     public function deleted(Vehicle $vehicle): void
     {
-        // Invalidate profile vehicles cache
+        // Invalidate all related caches
+        $this->invalidateVehicleCaches($vehicle->id);
         $this->invalidateProfileVehiclesCache($vehicle->driver_profile_id);
     }
 
@@ -78,5 +80,13 @@ class VehicleObserver
     protected function invalidateProfileVehiclesCache(string $profileId): void
     {
         $this->cache->forget($this->keyManager::vehiclesByProfileId($profileId));
+    }
+
+    /**
+     * Invalidate all cache keys related to a vehicle
+     */
+    protected function invalidateVehicleCaches(string $vehicleId): void
+    {
+        $this->cache->forget($this->keyManager::vehicleById($vehicleId));
     }
 }

@@ -3,7 +3,7 @@
 namespace Modules\Driver\Policies\ProfileOwnership;
 
 use Modules\Driver\Repositories\Profile\IProfileRepository;
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
 {

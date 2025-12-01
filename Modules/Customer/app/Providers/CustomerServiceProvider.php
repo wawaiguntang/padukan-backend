@@ -32,6 +32,7 @@ class CustomerServiceProvider extends ServiceProvider
 
         $this->registerViews();
         $this->registerMiddleware();
+        $this->registerObservers();
 
         // Only load migrations if not in testing environment
         if (app()->environment() !== 'testing') {
@@ -308,6 +309,17 @@ class CustomerServiceProvider extends ServiceProvider
             \Modules\Customer\Policies\DocumentUpload\IDocumentUploadPolicy::class,
             \Modules\Customer\Policies\DocumentUpload\DocumentUploadPolicy::class
         );
+    }
+
+    /**
+     * Register model observers
+     */
+    protected function registerObservers(): void
+    {
+        // Register model observers for cache management
+        \Modules\Customer\Models\Profile::observe(\Modules\Customer\Observers\ProfileObserver::class);
+        \Modules\Customer\Models\Document::observe(\Modules\Customer\Observers\DocumentObserver::class);
+        \Modules\Customer\Models\Address::observe(\Modules\Customer\Observers\AddressObserver::class);
     }
 
     /**

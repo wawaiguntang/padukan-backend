@@ -63,13 +63,20 @@ class DriverStatusObserver
     }
 
     /**
-     * Cache driver status data
+     * Cache driver status data in multiple cache keys
      */
     protected function cacheDriverStatusData(DriverAvailabilityStatus $driverStatus): void
     {
         // Cache by profile ID (most commonly accessed)
         $this->cache->put(
             $this->keyManager::driverStatusByProfileId($driverStatus->profile_id),
+            $driverStatus,
+            $this->cacheTtl
+        );
+
+        // Cache by driver status ID
+        $this->cache->put(
+            $this->keyManager::driverStatusById($driverStatus->id),
             $driverStatus,
             $this->cacheTtl
         );
@@ -82,5 +89,8 @@ class DriverStatusObserver
     {
         // Invalidate by profile ID
         $this->cache->forget($this->keyManager::driverStatusByProfileId($driverStatus->profile_id));
+
+        // Invalidate by driver status ID
+        $this->cache->forget($this->keyManager::driverStatusById($driverStatus->id));
     }
 }

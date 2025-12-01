@@ -174,4 +174,22 @@ class ProfileService implements IProfileService
 
         return $fileDeleted;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateVerificationStatus(string $userId, bool $isVerified, string $status, ?string $verifiedBy = null): bool
+    {
+        $profile = $this->profileRepository->findByUserId($userId);
+
+        if (!$profile) {
+            return false;
+        }
+
+        return $this->profileRepository->update($profile->id, [
+            'is_verified' => $isVerified,
+            'verification_status' => $status,
+            'verified_at' => $verifiedBy ? now() : null,
+        ]);
+    }
 }

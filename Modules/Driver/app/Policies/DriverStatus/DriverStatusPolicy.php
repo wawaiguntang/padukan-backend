@@ -3,7 +3,7 @@
 namespace Modules\Driver\Policies\DriverStatus;
 
 use Modules\Driver\Repositories\Profile\IProfileRepository;
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class DriverStatusPolicy implements IDriverStatusPolicy
 {

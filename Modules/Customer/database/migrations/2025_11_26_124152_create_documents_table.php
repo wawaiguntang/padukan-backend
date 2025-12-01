@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('documents', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('profile_id');
+            $table->uuid('documentable_id');
+            $table->string('documentable_type');
             $table->enum('type', array_column(\Modules\Customer\Enums\DocumentTypeEnum::cases(), 'value'));
             $table->string('file_path');
             $table->string('file_name');
@@ -27,8 +28,8 @@ return new class extends Migration
             $table->string('verified_by')->nullable();
             $table->timestamps();
 
-            $table->foreign('profile_id')->references('id')->on('profiles')->onDelete('cascade');
-            $table->index('profile_id');
+            $table->index(['documentable_id', 'documentable_type']);
+            $table->index(['type', 'verification_status']);
         });
     }
 

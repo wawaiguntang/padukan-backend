@@ -15,4 +15,10 @@ return [
     'update_failed' => 'Gagal memperbarui profil.',
     'not_found' => 'Profil tidak ditemukan.',
     'access_denied' => 'Anda tidak memiliki izin untuk mengakses profil ini.',
+
+    'verification' => [
+        'submitted_successfully' => 'Verifikasi profil berhasil dikirimkan.',
+        'submission_failed' => 'Gagal mengirim verifikasi profil.',
+        'cannot_submit' => 'Anda tidak dapat mengirim verifikasi pada saat ini.',
+    ],
 ];

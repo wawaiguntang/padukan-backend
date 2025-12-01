@@ -184,4 +184,17 @@ class FileUploadService implements IFileUploadService
         // Generate unique filename
         return $basename . '_' . Str::uuid() . '.' . $extension;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function generateTemporaryUrl(string $filePath): string
+    {
+        // For local storage, we'll use a signed URL approach
+        // In production, you might want to use AWS S3 or similar service
+        return route('customer.temporary.file', [
+            'path' => base64_encode($filePath),
+            'expires' => time() + 3600, // 1 hour expiry
+        ]);
+    }
 }

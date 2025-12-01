@@ -19,9 +19,12 @@ return new class extends Migration
             $table->string('avatar')->nullable();
             $table->enum('gender', array_column(\Modules\Customer\Enums\GenderEnum::cases(), 'value'))->nullable();
             $table->string('language')->default('id');
+            $table->boolean('is_verified')->default(false);
+            $table->enum('verification_status', array_column(\Modules\Customer\Enums\VerificationStatusEnum::cases(), 'value'))->default('pending');
             $table->timestamps();
 
             $table->index('user_id');
+            $table->index(['is_verified', 'verification_status']);
         });
     }
 

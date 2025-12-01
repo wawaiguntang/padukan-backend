@@ -17,6 +17,8 @@ use Modules\Driver\Http\Controllers\Vehicle\ResubmitVehicleVerificationControlle
 use Modules\Driver\Http\Controllers\Vehicle\GetVehiclesVerificationStatusController;
 use Modules\Driver\Http\Controllers\DriverStatus\GetDriverStatusController;
 use Modules\Driver\Http\Controllers\DriverStatus\UpdateOnlineStatusController;
+use Modules\Driver\Http\Controllers\DriverStatus\UpdateOperationalStatusController;
+use Modules\Driver\Http\Controllers\DriverStatus\UpdateActiveServiceController;
 use Modules\Driver\Http\Controllers\DriverStatus\UpdateLocationController;
 
 /*

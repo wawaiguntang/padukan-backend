@@ -1,9 +1,17 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Customer\Http\Controllers\ProfileController;
-use Modules\Customer\Http\Controllers\AddressController;
-use Modules\Customer\Http\Controllers\DocumentController;
+use Modules\Customer\Http\Controllers\Profile\GetProfileController;
+use Modules\Customer\Http\Controllers\Profile\UpdateProfileController;
+use Modules\Customer\Http\Controllers\Profile\SubmitProfileVerificationController;
+use Modules\Customer\Http\Controllers\Profile\GetProfileVerificationStatusController;
+use Modules\Customer\Http\Controllers\Profile\ResubmitProfileVerificationController;
+use Modules\Customer\Http\Controllers\Address\IndexAddressController;
+use Modules\Customer\Http\Controllers\Address\StoreAddressController;
+use Modules\Customer\Http\Controllers\Address\ShowAddressController;
+use Modules\Customer\Http\Controllers\Address\UpdateAddressController;
+use Modules\Customer\Http\Controllers\Address\DestroyAddressController;
+use Modules\Customer\Http\Controllers\Address\SetPrimaryAddressController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,18 +24,26 @@ use Modules\Customer\Http\Controllers\DocumentController;
 |
 */
 
-Route::middleware(['customer.auth'])->group(function () {
+Route::middleware(['customer.auth'])->prefix('v1/customer')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Profile Routes
+    | Profile Management Routes
     |--------------------------------------------------------------------------
     */
     Route::prefix('profile')->group(function () {
-        Route::get('/', [ProfileController::class, 'show'])
-            ->middleware('customer.permission:customer.profile.view');
-        Route::put('/', [ProfileController::class, 'update'])
-            ->middleware('customer.permission:customer.profile.update');
+        Route::get('/', GetProfileController::class)
+            ->middleware('customer.permission:customer-profile-view');
+        Route::put('/', UpdateProfileController::class)
+            ->middleware('customer.permission:customer-profile-update');
+
+        // Profile Verification
+        Route::post('/verification/submit', SubmitProfileVerificationController::class)
+            ->middleware('customer.permission:customer-profile-submit-verification');
+        Route::get('/verification/status', GetProfileVerificationStatusController::class)
+            ->middleware('customer.permission:customer-profile-check-verification-status');
+        Route::post('/verification/resubmit', ResubmitProfileVerificationController::class)
+            ->middleware('customer.permission:customer-profile-resubmit-verification');
     });
 
     /*
@@ -36,33 +52,17 @@ Route::middleware(['customer.auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('addresses')->group(function () {
-        Route::get('/', [AddressController::class, 'index'])
-            ->middleware('customer.permission:customer.address.view');
-        Route::post('/', [AddressController::class, 'store'])
-            ->middleware('customer.permission:customer.address.create');
-        Route::get('/{id}', [AddressController::class, 'show'])
-            ->middleware('customer.permission:customer.address.view');
-        Route::put('/{id}', [AddressController::class, 'update'])
-            ->middleware('customer.permission:customer.address.update');
-        Route::delete('/{id}', [AddressController::class, 'destroy'])
-            ->middleware('customer.permission:customer.address.delete');
-        Route::patch('/{id}/primary', [AddressController::class, 'setPrimary'])
-            ->middleware('customer.permission:customer.address.set_primary');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Document Routes
-    |--------------------------------------------------------------------------
-    */
-    Route::prefix('documents')->group(function () {
-        Route::get('/', [DocumentController::class, 'index'])
-            ->middleware('customer.permission:customer.document.view');
-        Route::post('/', [DocumentController::class, 'store'])
-            ->middleware('customer.permission:customer.document.upload');
-        Route::get('/{id}', [DocumentController::class, 'show'])
-            ->middleware('customer.permission:customer.document.view');
-        Route::delete('/{id}', [DocumentController::class, 'destroy'])
-            ->middleware('customer.permission:customer.document.delete');
+        Route::get('/', IndexAddressController::class)
+            ->middleware('customer.permission:customer-address-view');
+        Route::post('/', StoreAddressController::class)
+            ->middleware('customer.permission:customer-address-create');
+        Route::get('/{id}', ShowAddressController::class)
+            ->middleware('customer.permission:customer-address-view');
+        Route::put('/{id}', UpdateAddressController::class)
+            ->middleware('customer.permission:customer-address-update');
+        Route::delete('/{id}', DestroyAddressController::class)
+            ->middleware('customer.permission:customer-address-delete');
+        Route::patch('/{id}/primary', SetPrimaryAddressController::class)
+            ->middleware('customer.permission:customer-address-set-primary');
     });
 });

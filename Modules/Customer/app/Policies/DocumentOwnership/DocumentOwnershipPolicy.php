@@ -4,7 +4,7 @@ namespace Modules\Customer\Policies\DocumentOwnership;
 
 use Modules\Customer\Repositories\Profile\IProfileRepository;
 use Modules\Customer\Repositories\Document\IDocumentRepository;
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class DocumentOwnershipPolicy implements IDocumentOwnershipPolicy
 {
@@ -36,7 +36,6 @@ class DocumentOwnershipPolicy implements IDocumentOwnershipPolicy
         } else {
             // Fallback to default
             $this->policySettings = [
-                'enabled' => true,
                 'strict_ownership' => true,
                 'check_user_active' => true,
                 'allow_admin_override' => false,
@@ -49,10 +48,6 @@ class DocumentOwnershipPolicy implements IDocumentOwnershipPolicy
      */
     public function canAccessDocument(string $userId, string $documentId): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         return $this->ownsDocument($userId, $documentId);
     }
 
@@ -61,10 +56,6 @@ class DocumentOwnershipPolicy implements IDocumentOwnershipPolicy
      */
     public function ownsDocument(string $userId, string $documentId): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         $profile = $this->profileRepository->findByUserId($userId);
 
         if (!$profile) {
@@ -86,10 +77,6 @@ class DocumentOwnershipPolicy implements IDocumentOwnershipPolicy
      */
     public function canModifyDocument(string $userId, string $documentId): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         return $this->ownsDocument($userId, $documentId);
     }
 
@@ -98,10 +85,6 @@ class DocumentOwnershipPolicy implements IDocumentOwnershipPolicy
      */
     public function canDeleteDocument(string $userId, string $documentId): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         return $this->ownsDocument($userId, $documentId);
     }
 }

@@ -80,4 +80,12 @@ interface IFileUploadService
      * @return string The unique filename
      */
     public function generateUniqueFilename(string $originalName): string;
+
+    /**
+     * Generate a temporary URL for a private document file
+     *
+     * @param string $filePath The file path
+     * @return string The temporary URL
+     */
+    public function generateTemporaryUrl(string $filePath): string;
 }

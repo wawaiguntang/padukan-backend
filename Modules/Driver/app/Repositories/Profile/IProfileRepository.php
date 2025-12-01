@@ -2,7 +2,9 @@
 
 namespace Modules\Driver\Repositories\Profile;
 
+use Modules\Driver\Enums\GenderEnum;
 use Modules\Driver\Models\Profile;
+use App\Enums\ServiceTypeEnum;
 
 /**
  * Interface for Profile Repository
@@ -19,6 +21,14 @@ interface IProfileRepository
      * @return Profile|null The profile model if found, null otherwise
      */
     public function findByUserId(string $userId): ?Profile;
+
+    /**
+     * Find a profile by ID
+     *
+     * @param string $id The profile's UUID
+     * @return Profile|null The profile model if found, null otherwise
+     */
+    public function findById(string $id): ?Profile;
 
     /**
      * Create a new profile
@@ -46,10 +56,63 @@ interface IProfileRepository
     public function update(string $id, array $data): bool;
 
     /**
+     * Delete a profile
+     *
+     * @param string $id The profile's UUID
+     * @return bool True if deletion was successful, false otherwise
+     */
+    public function delete(string $id): bool;
+
+    /**
      * Check if a profile exists by user ID
      *
      * @param string $userId The user's UUID
      * @return bool True if profile exists, false otherwise
      */
     public function existsByUserId(string $userId): bool;
+
+    /**
+     * Update profile's gender
+     *
+     * @param string $id The profile's UUID
+     * @param GenderEnum $gender The new gender
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateGender(string $id, GenderEnum $gender): bool;
+
+    /**
+     * Update profile verification status
+     *
+     * @param string $id The profile's UUID
+     * @param bool $isVerified The verification status
+     * @param string|null $verificationStatus The verification status enum value
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateVerificationStatus(string $id, bool $isVerified, ?string $verificationStatus = null): bool;
+
+    /**
+     * Update verified services for profile
+     *
+     * @param string $id The profile's UUID
+     * @param array $verifiedServices Array of verified service types
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateVerifiedServices(string $id, array $verifiedServices): bool;
+
+    /**
+     * Get available services for a profile based on verified vehicles
+     *
+     * @param string $id The profile's UUID
+     * @return array Array of available service types
+     */
+    public function getAvailableServices(string $id): array;
+
+    /**
+     * Check if profile can provide a specific service
+     *
+     * @param string $id The profile's UUID
+     * @param ServiceTypeEnum $service The service to check
+     * @return bool True if service is available, false otherwise
+     */
+    public function canProvideService(string $id, ServiceTypeEnum $service): bool;
 }

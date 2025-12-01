@@ -66,9 +66,9 @@ class SelfRoleAssignmentPolicy implements ISelfRoleAssignmentPolicy
         }
 
         // Check duplicate prevention
-        if ($this->policySettings['prevent_duplicates'] && $this->roleService->userHasRole($userId, $roleSlug)) {
-            return false;
-        }
+        // if ($this->policySettings['prevent_duplicates'] && $this->roleService->userHasRole($userId, $roleSlug)) {
+        //     return false;
+        // }
 
         // Check multiple roles allowance
         if (!$this->policySettings['allow_multiple_roles']) {

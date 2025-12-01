@@ -2,13 +2,16 @@
 
 namespace Modules\Driver\Services\Profile;
 
+use Modules\Driver\Enums\GenderEnum;
 use Modules\Driver\Enums\DocumentTypeEnum;
 use Modules\Driver\Models\Profile;
 use Modules\Driver\Repositories\Profile\IProfileRepository;
 use Modules\Driver\Repositories\Document\IDocumentRepository;
 use Modules\Driver\Services\FileUpload\IFileUploadService;
 use Modules\Driver\Services\Document\IDocumentService;
+use Modules\Driver\Exceptions\ProfileNotFoundException;
 use Modules\Driver\Exceptions\ProfileAlreadyExistsException;
+use Modules\Driver\Exceptions\FileUploadException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
@@ -96,6 +99,14 @@ class ProfileService implements IProfileService
     /**
      * {@inheritDoc}
      */
+    public function getProfileById(string $profileId): ?Profile
+    {
+        return $this->profileRepository->findById($profileId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function updateProfile(string $userId, array $data): bool
     {
         $profile = $this->profileRepository->findByUserId($userId);
@@ -128,9 +139,73 @@ class ProfileService implements IProfileService
     /**
      * {@inheritDoc}
      */
+    public function deleteProfile(string $userId): bool
+    {
+        $profile = $this->profileRepository->findByUserId($userId);
+
+        if (!$profile) {
+            return false;
+        }
+
+        return $this->profileRepository->delete($profile->id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateGender(string $userId, GenderEnum $gender): bool
+    {
+        $profile = $this->profileRepository->findByUserId($userId);
+
+        if (!$profile) {
+            return false;
+        }
+
+        return $this->profileRepository->updateGender($profile->id, $gender);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function hasProfile(string $userId): bool
     {
         return $this->profileRepository->existsByUserId($userId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateVerificationStatus(string $userId, bool $isVerified, ?string $verificationStatus = null): bool
+    {
+        $profile = $this->profileRepository->findByUserId($userId);
+
+        if (!$profile) {
+            return false;
+        }
+
+        return $this->profileRepository->updateVerificationStatus($profile->id, $isVerified, $verificationStatus);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteAvatar(string $userId): bool
+    {
+        $profile = $this->profileRepository->findByUserId($userId);
+
+        if (!$profile || !$profile->avatar) {
+            return false;
+        }
+
+        // Delete the file
+        $fileDeleted = $this->fileUploadService->deleteAvatar($profile->avatar);
+
+        if ($fileDeleted) {
+            // Update profile to remove avatar reference
+            $this->profileRepository->update($profile->id, ['avatar' => null]);
+        }
+
+        return $fileDeleted;
     }
 
     /**

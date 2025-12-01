@@ -2,7 +2,7 @@
 
 namespace Modules\Customer\Policies\DocumentStatus;
 
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class DocumentStatusPolicy implements IDocumentStatusPolicy
 {
@@ -27,7 +27,6 @@ class DocumentStatusPolicy implements IDocumentStatusPolicy
         } else {
             // Fallback to default
             $this->policySettings = [
-                'enabled' => true,
                 'allowed_update_statuses' => ['pending', 'rejected'],
                 'allowed_delete_statuses' => ['rejected'],
                 'allowed_resubmit_statuses' => ['rejected'],
@@ -42,10 +41,6 @@ class DocumentStatusPolicy implements IDocumentStatusPolicy
      */
     public function canUpdateDocument(string $documentId, string $currentStatus): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         return in_array($currentStatus, $this->policySettings['allowed_update_statuses']);
     }
 
@@ -54,10 +49,6 @@ class DocumentStatusPolicy implements IDocumentStatusPolicy
      */
     public function canDeleteDocument(string $documentId, string $currentStatus): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         return in_array($currentStatus, $this->policySettings['allowed_delete_statuses']);
     }
 
@@ -66,10 +57,6 @@ class DocumentStatusPolicy implements IDocumentStatusPolicy
      */
     public function canResubmitDocument(string $documentId, string $currentStatus): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         return in_array($currentStatus, $this->policySettings['allowed_resubmit_statuses']);
     }
 

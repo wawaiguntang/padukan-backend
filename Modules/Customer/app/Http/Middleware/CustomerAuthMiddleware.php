@@ -4,7 +4,7 @@ namespace Modules\Customer\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Modules\Authentication\Services\JWT\IJWTService;
+use App\Shared\Authentication\Services\IJWTService;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -60,19 +60,8 @@ class CustomerAuthMiddleware
             ], 401);
         }
 
-        // Check if user has customer role
-        if (!$user->hasRole('customer')) {
-            return response()->json([
-                'status' => false,
-                'message' => __('customer::auth.insufficient_permissions'),
-            ], 403);
-        }
-
         // Set authenticated user on request
         $request->merge(['authenticated_user' => $user]);
-        $request->setUserResolver(function () use ($user) {
-            return $user;
-        });
 
         return $next($request);
     }

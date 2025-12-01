@@ -5,11 +5,18 @@ namespace Modules\Customer\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
+
 // use Modules\Profile\Database\Factories\CustomerProfileFactory;
 
 class Profile extends Model
 {
     use HasFactory;
+
+    /**
+     * The database connection that should be used by the model.
+     */
+    protected $connection = 'customer';
 
     /**
      * The data type of the primary key.
@@ -31,8 +38,34 @@ class Profile extends Model
         'avatar',
         'gender',
         'language',
+        'is_verified',
+        'verification_status',
+        'verified_services',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
+    protected function casts(): array
+    {
+        return [
+            'verified_services' => 'array',
+        ];
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) Str::uuid();
+            }
+        });
+    }
 
     /**
      * Get the documents for the customer profile.

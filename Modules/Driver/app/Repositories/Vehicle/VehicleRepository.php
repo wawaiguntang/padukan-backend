@@ -4,6 +4,7 @@ namespace Modules\Driver\Repositories\Vehicle;
 
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Driver\Enums\VehicleTypeEnum;
 use Modules\Driver\Models\Vehicle;
 use Modules\Driver\Cache\KeyManager\IKeyManager;
 
@@ -72,6 +73,18 @@ class VehicleRepository implements IVehicleRepository
     /**
      * {@inheritDoc}
      */
+    public function findById(string $id): ?Vehicle
+    {
+        $cacheKey = $this->cacheKeyManager::vehicleById($id);
+
+        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($id) {
+            return $this->model->find($id);
+        });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function create(array $data): Vehicle
     {
         $vehicle = $this->model->create($data);
@@ -97,5 +110,64 @@ class VehicleRepository implements IVehicleRepository
         // Cache invalidation is handled by VehicleObserver
 
         return $result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function delete(string $id): bool
+    {
+        $vehicle = $this->model->find($id); // Don't use cached version for deletes
+
+        if (!$vehicle) {
+            return false;
+        }
+
+        $result = $vehicle->delete();
+
+        // Cache invalidation is handled by VehicleObserver
+
+        return $result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateVerificationStatus(string $id, bool $isVerified, ?string $verificationStatus = null): bool
+    {
+        $data = ['is_verified' => $isVerified];
+
+        if ($verificationStatus) {
+            $data['verification_status'] = $verificationStatus;
+        }
+
+        return $this->update($id, $data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findByTypeAndProfileId(string $profileId, VehicleTypeEnum $type): Collection
+    {
+        return $this->model
+            ->where('driver_profile_id', $profileId)
+            ->where('type', $type)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function existsById(string $id): bool
+    {
+        return $this->model->where('id', $id)->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByProfileId(string $profileId): int
+    {
+        return $this->model->where('driver_profile_id', $profileId)->count();
     }
 }

@@ -55,6 +55,7 @@ class DocumentObserver
         $originalDocumentableType = $document->getOriginal('documentable_type');
 
         // Invalidate caches for both old and new relationships
+        $this->invalidateDocumentCaches($document->id);
         $this->invalidateDocumentableCaches($originalDocumentableId, $originalDocumentableType);
 
         // If documentable changed, invalidate new documentable cache too
@@ -71,6 +72,7 @@ class DocumentObserver
      */
     public function deleted(Document $document): void
     {
+        $this->invalidateDocumentCaches($document->id);
         $this->invalidateDocumentableCaches($document->documentable_id, $document->documentable_type);
     }
 
@@ -87,10 +89,19 @@ class DocumentObserver
     }
 
     /**
+     * Invalidate all cache keys related to a document
+     */
+    protected function invalidateDocumentCaches(string $documentId): void
+    {
+        $this->cache->forget($this->keyManager::documentById($documentId));
+    }
+
+    /**
      * Invalidate all caches related to this document
      */
     protected function invalidateRelatedCaches(Document $document): void
     {
+        $this->invalidateDocumentCaches($document->id);
         $this->invalidateDocumentableCaches($document->documentable_id, $document->documentable_type);
     }
 }

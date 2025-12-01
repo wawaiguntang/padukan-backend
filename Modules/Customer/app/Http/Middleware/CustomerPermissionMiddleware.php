@@ -2,6 +2,7 @@
 
 namespace Modules\Customer\Http\Middleware;
 
+use App\Shared\Authorization\Services\IPermissionService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -10,9 +11,27 @@ use Symfony\Component\HttpFoundation\Response;
  * Customer Permission Middleware
  *
  * This middleware checks if the authenticated user has the required permissions
+ * using the shared authorization service interface
  */
 class CustomerPermissionMiddleware
 {
+    /**
+     * The permission service instance
+     *
+     * @var IPermissionService
+     */
+    protected IPermissionService $permissionService;
+
+    /**
+     * Constructor
+     *
+     * @param IPermissionService $permissionService
+     */
+    public function __construct(IPermissionService $permissionService)
+    {
+        $this->permissionService = $permissionService;
+    }
+
     /**
      * Handle an incoming request
      *
@@ -23,19 +42,20 @@ class CustomerPermissionMiddleware
      */
     public function handle(Request $request, Closure $next, ...$permissions): Response
     {
-        $user = $request->user();
+        $user = $request->authenticated_user;
 
         if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::auth.user_not_authenticated'),
+                'message' => __('driver::auth.user_not_authenticated'),
             ], 401);
         }
 
-        // Check if user has any of the required permissions
         $hasPermission = false;
+        $userId = $user->id;
+
         foreach ($permissions as $permission) {
-            if ($user->hasPermission($permission)) {
+            if ($this->permissionService->userHasPermission($userId, $permission)) {
                 $hasPermission = true;
                 break;
             }
@@ -44,7 +64,7 @@ class CustomerPermissionMiddleware
         if (!$hasPermission) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::auth.insufficient_permissions'),
+                'message' => __('driver::auth.insufficient_permissions'),
             ], 403);
         }
 

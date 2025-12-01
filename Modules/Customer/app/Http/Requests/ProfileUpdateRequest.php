@@ -26,11 +26,11 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['nullable', 'string', 'max:255'],
-            'last_name' => ['nullable', 'string', 'max:255'],
-            'avatar' => ['nullable', 'url', 'max:2048'],
-            'gender' => ['nullable', 'string', 'in:' . implode(',', array_column(GenderEnum::cases(), 'value'))],
-            'language' => ['nullable', 'string', 'in:id,en'],
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'avatar_file' => 'nullable|file|mimes:jpeg,jpg,png|max:5120', // 5MB max
+            'gender' => 'nullable|in:male,female,other',
+            'language' => 'nullable|string|max:10',
         ];
     }
 
@@ -44,10 +44,12 @@ class ProfileUpdateRequest extends FormRequest
             'first_name.max' => __('customer::validation.first_name.max'),
             'last_name.string' => __('customer::validation.last_name.string'),
             'last_name.max' => __('customer::validation.last_name.max'),
-            'avatar.url' => __('customer::validation.avatar.url'),
-            'avatar.max' => __('customer::validation.avatar.max'),
+            'avatar_file.file' => __('customer::validation.avatar_file.file'),
+            'avatar_file.mimes' => __('customer::validation.avatar_file.mimes'),
+            'avatar_file.max' => __('customer::validation.avatar_file.max'),
             'gender.in' => __('customer::validation.gender.in'),
-            'language.in' => __('customer::validation.language.in'),
+            'language.string' => __('customer::validation.language.string'),
+            'language.max' => __('customer::validation.language.max'),
         ];
     }
 
@@ -59,10 +61,27 @@ class ProfileUpdateRequest extends FormRequest
         return [
             'first_name' => __('customer::attributes.first_name'),
             'last_name' => __('customer::attributes.last_name'),
-            'avatar' => __('customer::attributes.avatar'),
+            'avatar_file' => __('customer::attributes.avatar_file'),
             'gender' => __('customer::attributes.gender'),
             'language' => __('customer::attributes.language'),
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @return void
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        $response = response()->json([
+            'status' => false,
+            'message' => __('customer::validation.failed'),
+            'errors' => $validator->errors(),
+        ], 422);
+
+        throw new \Illuminate\Validation\ValidationException($validator, $response);
     }
 
     /**
@@ -74,7 +93,6 @@ class ProfileUpdateRequest extends FormRequest
         $this->merge([
             'first_name' => $this->first_name ? trim($this->first_name) : null,
             'last_name' => $this->last_name ? trim($this->last_name) : null,
-            'avatar' => $this->avatar ? trim($this->avatar) : null,
         ]);
     }
 }

@@ -13,6 +13,10 @@ class AuthorizationDatabaseSeeder extends Seeder
     {
         $this->call([
             AuthorizationEngineSeeder::class,
+            DriverPermissionSeeder::class,
+            DriverPolicySeeder::class,
+            CustomerPermissionSeeder::class,
+            CustomerPolicySeeder::class,
         ]);
     }
 }

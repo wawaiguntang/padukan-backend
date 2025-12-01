@@ -81,4 +81,15 @@ interface IProfileService
      * @return bool True if avatar was deleted successfully, false otherwise
      */
     public function deleteAvatar(string $userId): bool;
+
+    /**
+     * Update profile verification status
+     *
+     * @param string $userId The user's UUID
+     * @param bool $isVerified Whether the profile is verified
+     * @param string $status The verification status
+     * @param string|null $verifiedBy The ID of who verified the profile
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateVerificationStatus(string $userId, bool $isVerified, string $status, ?string $verifiedBy = null): bool;
 }

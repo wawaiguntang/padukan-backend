@@ -21,6 +21,14 @@ interface IDriverStatusRepository
     public function findByProfileId(string $profileId): ?DriverAvailabilityStatus;
 
     /**
+     * Find driver status by ID
+     *
+     * @param string $id The driver status's UUID
+     * @return DriverAvailabilityStatus|null The driver status model if found, null otherwise
+     */
+    public function findById(string $id): ?DriverAvailabilityStatus;
+
+    /**
      * Create a new driver status
      *
      * @param array $data Driver status data containing:
@@ -53,10 +61,55 @@ interface IDriverStatusRepository
     public function updateByProfileId(string $profileId, array $data): bool;
 
     /**
+     * Delete a driver status
+     *
+     * @param string $id The driver status's UUID
+     * @return bool True if deletion was successful, false otherwise
+     */
+    public function delete(string $id): bool;
+
+    /**
      * Check if driver status exists by profile ID
      *
      * @param string $profileId The profile's UUID
      * @return bool True if driver status exists, false otherwise
      */
     public function existsByProfileId(string $profileId): bool;
+
+    /**
+     * Update online status
+     *
+     * @param string $profileId The profile's UUID
+     * @param string $onlineStatus The online status
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateOnlineStatus(string $profileId, string $onlineStatus): bool;
+
+    /**
+     * Update operational status
+     *
+     * @param string $profileId The profile's UUID
+     * @param string $operationalStatus The operational status
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateOperationalStatus(string $profileId, string $operationalStatus): bool;
+
+    /**
+     * Update active service
+     *
+     * @param string $profileId The profile's UUID
+     * @param string|null $activeService The active service
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateActiveService(string $profileId, ?string $activeService): bool;
+
+    /**
+     * Update location
+     *
+     * @param string $profileId The profile's UUID
+     * @param float|null $latitude The latitude
+     * @param float|null $longitude The longitude
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateLocation(string $profileId, ?float $latitude, ?float $longitude): bool;
 }

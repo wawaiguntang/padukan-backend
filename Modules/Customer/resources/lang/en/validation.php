@@ -161,5 +161,74 @@ return [
         'is_primary' => 'primary address',
         'file' => 'file',
         'expiry_date' => 'expiry date',
+        'id_card_file' => 'ID card file',
+        'id_card_meta' => 'ID card metadata',
+        'id_card_meta.name' => 'ID card name',
+        'id_card_meta.number' => 'ID card number',
+        'id_card_expiry_date' => 'ID card expiry date',
+        'selfie_with_ktp_file' => 'selfie with KTP file',
+        'selfie_with_ktp_meta' => 'selfie metadata',
+        'avatar_file' => 'avatar file',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Validation for Profile Verification
+    |--------------------------------------------------------------------------
+    */
+
+    'profile_verification' => [
+        'id_card_file' => [
+            'required' => 'ID card file is required.',
+            'file' => 'ID card must be a valid file.',
+            'mimes' => 'ID card must be a file of type: jpeg, jpg, png, pdf.',
+            'max' => 'ID card file may not be greater than 5MB.',
+        ],
+        'id_card_meta' => [
+            'required' => 'ID card metadata is required.',
+            'array' => 'ID card metadata must be an array.',
+            'name' => [
+                'required' => 'ID card name is required.',
+            ],
+            'number' => [
+                'required' => 'ID card number is required.',
+            ],
+        ],
+        'id_card_expiry_date' => [
+            'date' => 'ID card expiry date must be a valid date.',
+            'after' => 'ID card expiry date must be a date after today.',
+        ],
+        'selfie_with_ktp_file' => [
+            'required' => 'Selfie with KTP file is required.',
+            'file' => 'Selfie must be a valid file.',
+            'mimes' => 'Selfie must be a file of type: jpeg, jpg, png.',
+            'max' => 'Selfie file may not be greater than 5MB.',
+        ],
+        'selfie_with_ktp_meta' => [
+            'array' => 'Selfie metadata must be an array.',
+        ],
+    ],
+
+    'first_name' => [
+        'string' => 'First name must be a string.',
+        'max' => 'First name may not be greater than 255 characters.',
+    ],
+    'last_name' => [
+        'string' => 'Last name must be a string.',
+        'max' => 'Last name may not be greater than 255 characters.',
+    ],
+    'avatar_file' => [
+        'file' => 'Avatar must be a valid file.',
+        'mimes' => 'Avatar must be a file of type: jpeg, jpg, png.',
+        'max' => 'Avatar file may not be greater than 5MB.',
+    ],
+    'gender' => [
+        'in' => 'Selected gender is invalid.',
+    ],
+    'language' => [
+        'string' => 'Language must be a string.',
+        'max' => 'Language may not be greater than 10 characters.',
+    ],
+
+    'failed' => 'Validation failed.',
 ];

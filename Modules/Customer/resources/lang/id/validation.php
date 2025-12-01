@@ -161,5 +161,74 @@ return [
         'is_primary' => 'alamat utama',
         'file' => 'file',
         'expiry_date' => 'tanggal kedaluwarsa',
+        'id_card_file' => 'file kartu identitas',
+        'id_card_meta' => 'metadata kartu identitas',
+        'id_card_meta.name' => 'nama kartu identitas',
+        'id_card_meta.number' => 'nomor kartu identitas',
+        'id_card_expiry_date' => 'tanggal kedaluwarsa kartu identitas',
+        'selfie_with_ktp_file' => 'file selfie dengan KTP',
+        'selfie_with_ktp_meta' => 'metadata selfie',
+        'avatar_file' => 'file avatar',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Validation for Profile Verification
+    |--------------------------------------------------------------------------
+    */
+
+    'profile_verification' => [
+        'id_card_file' => [
+            'required' => 'File kartu identitas wajib diisi.',
+            'file' => 'Kartu identitas harus berupa file yang valid.',
+            'mimes' => 'Kartu identitas harus berupa file dengan tipe: jpeg, jpg, png, pdf.',
+            'max' => 'File kartu identitas tidak boleh lebih besar dari 5MB.',
+        ],
+        'id_card_meta' => [
+            'required' => 'Metadata kartu identitas wajib diisi.',
+            'array' => 'Metadata kartu identitas harus berupa array.',
+            'name' => [
+                'required' => 'Nama kartu identitas wajib diisi.',
+            ],
+            'number' => [
+                'required' => 'Nomor kartu identitas wajib diisi.',
+            ],
+        ],
+        'id_card_expiry_date' => [
+            'date' => 'Tanggal kedaluwarsa kartu identitas harus berupa tanggal yang valid.',
+            'after' => 'Tanggal kedaluwarsa kartu identitas harus setelah hari ini.',
+        ],
+        'selfie_with_ktp_file' => [
+            'required' => 'File selfie dengan KTP wajib diisi.',
+            'file' => 'Selfie harus berupa file yang valid.',
+            'mimes' => 'Selfie harus berupa file dengan tipe: jpeg, jpg, png.',
+            'max' => 'File selfie tidak boleh lebih besar dari 5MB.',
+        ],
+        'selfie_with_ktp_meta' => [
+            'array' => 'Metadata selfie harus berupa array.',
+        ],
+    ],
+
+    'first_name' => [
+        'string' => 'Nama depan harus berupa string.',
+        'max' => 'Nama depan tidak boleh lebih dari 255 karakter.',
+    ],
+    'last_name' => [
+        'string' => 'Nama belakang harus berupa string.',
+        'max' => 'Nama belakang tidak boleh lebih dari 255 karakter.',
+    ],
+    'avatar_file' => [
+        'file' => 'Avatar harus berupa file yang valid.',
+        'mimes' => 'Avatar harus berupa file dengan tipe: jpeg, jpg, png.',
+        'max' => 'File avatar tidak boleh lebih besar dari 5MB.',
+    ],
+    'gender' => [
+        'in' => 'Jenis kelamin yang dipilih tidak valid.',
+    ],
+    'language' => [
+        'string' => 'Bahasa harus berupa string.',
+        'max' => 'Bahasa tidak boleh lebih dari 10 karakter.',
+    ],
+
+    'failed' => 'Validasi gagal.',
 ];

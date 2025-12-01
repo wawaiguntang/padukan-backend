@@ -3,7 +3,7 @@
 namespace Modules\Driver\Policies\ServiceValidation;
 
 use Modules\Driver\Repositories\Profile\IProfileRepository;
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class ServiceValidationPolicy implements IServiceValidationPolicy
 {

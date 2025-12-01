@@ -90,8 +90,7 @@ class DocumentRepository implements IDocumentRepository
     {
         $document = $this->model->create($data);
 
-        // Invalidate profile documents cache
-        $this->invalidateProfileDocumentsCache($document->profile_id);
+        // Cache invalidation is handled by DocumentObserver
 
         return $document;
     }
@@ -101,27 +100,15 @@ class DocumentRepository implements IDocumentRepository
      */
     public function update(string $id, array $data): bool
     {
-        $document = $this->model->find($id); // Don't use cached version for updates
+        $document = $this->model->find($id);
 
         if (!$document) {
             return false;
         }
 
-        $oldProfileId = $document->profile_id;
         $result = $document->update($data);
 
-        if ($result) {
-            $document->refresh();
-
-            // Invalidate caches
-            $this->invalidateDocumentCaches($id);
-            $this->invalidateProfileDocumentsCache($oldProfileId);
-
-            // If profile changed, invalidate new profile cache too
-            if (isset($data['profile_id']) && $data['profile_id'] !== $oldProfileId) {
-                $this->invalidateProfileDocumentsCache($data['profile_id']);
-            }
-        }
+        // Cache invalidation is handled by DocumentObserver
 
         return $result;
     }
@@ -131,20 +118,15 @@ class DocumentRepository implements IDocumentRepository
      */
     public function delete(string $id): bool
     {
-        $document = $this->model->find($id); // Don't use cached version for deletes
+        $document = $this->model->find($id);
 
         if (!$document) {
             return false;
         }
 
-        $profileId = $document->profile_id;
         $result = $document->delete();
 
-        if ($result) {
-            // Invalidate all document caches
-            $this->invalidateDocumentCaches($id);
-            $this->invalidateProfileDocumentsCache($profileId);
-        }
+        // Cache invalidation is handled by DocumentObserver
 
         return $result;
     }
@@ -181,27 +163,5 @@ class DocumentRepository implements IDocumentRepository
     public function existsById(string $id): bool
     {
         return $this->model->where('id', $id)->exists();
-    }
-
-    /**
-     * Invalidate profile documents cache
-     *
-     * @param string $profileId The profile ID
-     * @return void
-     */
-    protected function invalidateProfileDocumentsCache(string $profileId): void
-    {
-        $this->cache->forget($this->cacheKeyManager::documentsByProfileId($profileId));
-    }
-
-    /**
-     * Invalidate all cache keys related to a document
-     *
-     * @param string $documentId The document ID
-     * @return void
-     */
-    protected function invalidateDocumentCaches(string $documentId): void
-    {
-        $this->cache->forget($this->cacheKeyManager::documentById($documentId));
     }
 }

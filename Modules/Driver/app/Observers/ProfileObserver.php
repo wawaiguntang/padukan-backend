@@ -63,13 +63,20 @@ class ProfileObserver
     }
 
     /**
-     * Cache profile data
+     * Cache profile data in multiple cache keys
      */
     protected function cacheProfileData(Profile $profile): void
     {
         // Cache by user ID (most commonly accessed)
         $this->cache->put(
             $this->keyManager::profileByUserId($profile->user_id),
+            $profile,
+            $this->cacheTtl
+        );
+
+        // Cache by profile ID
+        $this->cache->put(
+            $this->keyManager::profileById($profile->id),
             $profile,
             $this->cacheTtl
         );
@@ -82,5 +89,8 @@ class ProfileObserver
     {
         // Invalidate by user ID
         $this->cache->forget($this->keyManager::profileByUserId($profile->user_id));
+
+        // Invalidate by profile ID
+        $this->cache->forget($this->keyManager::profileById($profile->id));
     }
 }

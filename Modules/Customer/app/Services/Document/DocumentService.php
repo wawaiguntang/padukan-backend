@@ -66,7 +66,6 @@ class DocumentService implements IDocumentService
      */
     public function uploadDocument(string $userId, DocumentTypeEnum $documentType, UploadedFile $documentFile, array $additionalData = []): Document
     {
-        // Find user profile
         $profile = $this->profileRepository->findByUserId($userId);
 
         if (!$profile) {
@@ -74,12 +73,11 @@ class DocumentService implements IDocumentService
         }
 
         try {
-            // Upload the document file
             $uploadResult = $this->fileUploadService->uploadDocument($documentFile, $userId, $documentType->value);
 
-            // Prepare document data
             $documentData = array_merge($additionalData, [
-                'profile_id' => $profile->id,
+                'documentable_id' => $profile->id,
+                'documentable_type' => \Modules\Customer\Models\Profile::class,
                 'type' => $documentType,
                 'file_path' => $uploadResult['path'],
                 'file_name' => $uploadResult['filename'],
@@ -89,10 +87,6 @@ class DocumentService implements IDocumentService
 
             return $this->documentRepository->create($documentData);
         } catch (\Exception $e) {
-            // Re-throw validation exceptions as-is, wrap others in FileUploadException
-            if ($e instanceof FileValidationException) {
-                throw $e;
-            }
             throw new FileUploadException('customer.file.upload_failed', ['error' => $e->getMessage()]);
         }
     }
@@ -162,5 +156,28 @@ class DocumentService implements IDocumentService
         }
 
         return $this->documentRepository->findByTypeAndProfileId($profile->id, $documentType);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function createDocument(string $userId, DocumentTypeEnum $documentType, string $filePath, array $additionalData = []): Document
+    {
+        // Find user profile
+        $profile = $this->profileRepository->findByUserId($userId);
+
+        if (!$profile) {
+            throw new ProfileNotFoundException();
+        }
+
+        // Prepare document data
+        $documentData = array_merge($additionalData, [
+            'documentable_id' => $profile->id,
+            'documentable_type' => \Modules\Customer\Models\Profile::class,
+            'type' => $documentType,
+            'file_path' => $filePath,
+        ]);
+
+        return $this->documentRepository->create($documentData);
     }
 }

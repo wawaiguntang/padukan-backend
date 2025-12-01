@@ -149,6 +149,11 @@ class AuthorizationServiceProvider extends ServiceProvider
             \App\Shared\Authorization\Repositories\IPermissionRepository::class,
             \Modules\Authorization\Repositories\Permission\PermissionRepository::class
         );
+
+        $this->app->bind(
+            \App\Shared\Authorization\Repositories\IPolicyRepository::class,
+            \Modules\Authorization\Repositories\Policy\PolicyRepository::class
+        );
     }
 
     /**

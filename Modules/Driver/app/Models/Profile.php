@@ -45,6 +45,7 @@ class Profile extends Model
         'language',
         'is_verified',
         'verification_status',
+        'verified_services',
     ];
 
     /**
@@ -56,6 +57,7 @@ class Profile extends Model
             'is_verified' => 'boolean',
             'verification_status' => \Modules\Driver\Enums\VerificationStatusEnum::class,
             'gender' => \Modules\Driver\Enums\GenderEnum::class,
+            'verified_services' => 'array',
         ];
     }
 
@@ -81,6 +83,78 @@ class Profile extends Model
     public function driverStatus(): HasOne
     {
         return $this->hasOne(DriverAvailabilityStatus::class, 'profile_id');
+    }
+
+    /**
+     * Check if the driver can provide a specific service based on verified vehicles
+     */
+    public function canProvideService(\App\Enums\ServiceTypeEnum $service): bool
+    {
+        return in_array($service->value, $this->getAvailableServices());
+    }
+
+    /**
+     * Check if the driver is verified for a specific service
+     */
+    public function isVerifiedForService(\App\Enums\ServiceTypeEnum $service): bool
+    {
+        return in_array($service->value, $this->verified_services ?? []);
+    }
+
+    /**
+     * Check if the driver has available services
+     */
+    public function hasAvailableServices(): bool
+    {
+        return !empty($this->getAvailableServices());
+    }
+
+    /**
+     * Get the driver's available services based on verified vehicle types
+     */
+    public function getAvailableServices(): array
+    {
+        $services = [];
+
+        // Get verified vehicles
+        $verifiedVehicles = $this->vehicles()->where('is_verified', true)->get();
+
+        foreach ($verifiedVehicles as $vehicle) {
+            switch ($vehicle->type) {
+                case \Modules\Driver\Enums\VehicleTypeEnum::MOTORCYCLE:
+                    $services = array_merge($services, [
+                        \App\Enums\ServiceTypeEnum::RIDE->value,
+                        \App\Enums\ServiceTypeEnum::FOOD->value,
+                        \App\Enums\ServiceTypeEnum::SEND->value,
+                        \App\Enums\ServiceTypeEnum::MART->value
+                    ]);
+                    break;
+                case \Modules\Driver\Enums\VehicleTypeEnum::CAR:
+                    $services = array_merge($services, [
+                        \App\Enums\ServiceTypeEnum::CAR->value,
+                        \App\Enums\ServiceTypeEnum::SEND->value
+                    ]);
+                    break;
+            }
+        }
+
+        return array_unique($services);
+    }
+
+    /**
+     * Get the driver's verified services
+     */
+    public function getVerifiedServices(): array
+    {
+        return $this->verified_services ?? [];
+    }
+
+    /**
+     * Get the current active service from driver status
+     */
+    public function getCurrentActiveService(): ?\App\Enums\ServiceTypeEnum
+    {
+        return $this->driverStatus?->active_service;
     }
 
     /**

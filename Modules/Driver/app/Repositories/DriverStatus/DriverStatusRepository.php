@@ -71,6 +71,18 @@ class DriverStatusRepository implements IDriverStatusRepository
     /**
      * {@inheritDoc}
      */
+    public function findById(string $id): ?DriverAvailabilityStatus
+    {
+        $cacheKey = $this->cacheKeyManager::driverStatusById($id);
+
+        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($id) {
+            return $this->model->find($id);
+        });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function create(array $data): DriverAvailabilityStatus
     {
         $driverStatus = $this->model->create($data);
@@ -115,8 +127,62 @@ class DriverStatusRepository implements IDriverStatusRepository
     /**
      * {@inheritDoc}
      */
+    public function delete(string $id): bool
+    {
+        $driverStatus = $this->model->find($id); // Don't use cached version for deletes
+
+        if (!$driverStatus) {
+            return false;
+        }
+
+        $result = $driverStatus->delete();
+
+        // Cache invalidation is handled by DriverStatusObserver
+
+        return $result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function existsByProfileId(string $profileId): bool
     {
         return $this->model->where('profile_id', $profileId)->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateOnlineStatus(string $profileId, string $onlineStatus): bool
+    {
+        return $this->updateByProfileId($profileId, ['online_status' => $onlineStatus]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateOperationalStatus(string $profileId, string $operationalStatus): bool
+    {
+        return $this->updateByProfileId($profileId, ['operational_status' => $operationalStatus]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateActiveService(string $profileId, ?string $activeService): bool
+    {
+        return $this->updateByProfileId($profileId, ['active_service' => $activeService]);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateLocation(string $profileId, ?float $latitude, ?float $longitude): bool
+    {
+        return $this->updateByProfileId($profileId, [
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'last_updated_at' => now(),
+        ]);
     }
 }

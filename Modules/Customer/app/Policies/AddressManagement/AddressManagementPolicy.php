@@ -3,7 +3,7 @@
 namespace Modules\Customer\Policies\AddressManagement;
 
 use Modules\Customer\Repositories\Address\IAddressRepository;
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class AddressManagementPolicy implements IAddressManagementPolicy
 {

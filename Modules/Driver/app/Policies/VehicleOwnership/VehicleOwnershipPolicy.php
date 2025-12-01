@@ -4,7 +4,7 @@ namespace Modules\Driver\Policies\VehicleOwnership;
 
 use Modules\Driver\Repositories\Vehicle\IVehicleRepository;
 use Modules\Driver\Repositories\Profile\IProfileRepository;
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class VehicleOwnershipPolicy implements IVehicleOwnershipPolicy
 {

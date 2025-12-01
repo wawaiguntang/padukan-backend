@@ -2,7 +2,7 @@
 
 namespace Modules\Customer\Policies\DocumentUpload;
 
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class DocumentUploadPolicy implements IDocumentUploadPolicy
 {
@@ -27,7 +27,6 @@ class DocumentUploadPolicy implements IDocumentUploadPolicy
         } else {
             // Fallback to default
             $this->policySettings = [
-                'enabled' => true,
                 'max_file_size' => 10485760, // 10MB
                 'allowed_mime_types' => [
                     'image/jpeg',
@@ -56,10 +55,6 @@ class DocumentUploadPolicy implements IDocumentUploadPolicy
      */
     public function isFileSizeAllowed(int $fileSize): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         return $fileSize <= $this->policySettings['max_file_size'];
     }
 
@@ -76,10 +71,6 @@ class DocumentUploadPolicy implements IDocumentUploadPolicy
      */
     public function isMimeTypeAllowed(string $mimeType): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         return in_array($mimeType, $this->policySettings['allowed_mime_types']);
     }
 

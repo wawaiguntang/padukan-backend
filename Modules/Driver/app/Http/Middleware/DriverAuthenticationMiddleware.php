@@ -5,7 +5,7 @@ namespace Modules\Driver\Http\Middleware;
 use App\Shared\Authorization\Services\IRoleService;
 use Closure;
 use Illuminate\Http\Request;
-use Modules\Authentication\Services\JWT\IJWTService;
+use App\Shared\Authentication\Services\IJWTService;
 use Symfony\Component\HttpFoundation\Response;
 
 /**

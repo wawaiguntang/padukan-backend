@@ -19,4 +19,12 @@ interface IJWTService
      * @return array|null Returns decoded payload if valid, null if invalid
      */
     public function validateAccessToken(string $token): ?array;
+
+    /**
+     * Get user from JWT token
+     *
+     * @param string $token The JWT access token
+     * @return User|null The user if token is valid, null otherwise
+     */
+    public function getUserFromToken(string $token): ?User;
 }

@@ -88,8 +88,7 @@ class ProfileRepository implements IProfileRepository
     {
         $profile = $this->model->create($data);
 
-        // Cache the new profile data
-        $this->cacheProfileData($profile);
+        // Cache invalidation is handled by ProfileObserver
 
         return $profile;
     }
@@ -99,7 +98,7 @@ class ProfileRepository implements IProfileRepository
      */
     public function update(string $id, array $data): bool
     {
-        $profile = $this->model->find($id); // Don't use cached version for updates
+        $profile = $this->model->find($id);
 
         if (!$profile) {
             return false;
@@ -107,13 +106,7 @@ class ProfileRepository implements IProfileRepository
 
         $result = $profile->update($data);
 
-        if ($result) {
-            $profile->refresh();
-
-            // Invalidate and recache profile data
-            $this->invalidateProfileCaches($id);
-            $this->cacheProfileData($profile);
-        }
+        // Cache invalidation is handled by ProfileObserver
 
         return $result;
     }
@@ -123,7 +116,7 @@ class ProfileRepository implements IProfileRepository
      */
     public function delete(string $id): bool
     {
-        $profile = $this->model->find($id); // Don't use cached version for deletes
+        $profile = $this->model->find($id);
 
         if (!$profile) {
             return false;
@@ -131,10 +124,7 @@ class ProfileRepository implements IProfileRepository
 
         $result = $profile->delete();
 
-        if ($result) {
-            // Invalidate all profile caches
-            $this->invalidateProfileCaches($id);
-        }
+        // Cache invalidation is handled by ProfileObserver
 
         return $result;
     }
@@ -153,40 +143,5 @@ class ProfileRepository implements IProfileRepository
     public function updateGender(string $id, GenderEnum $gender): bool
     {
         return $this->update($id, ['gender' => $gender]);
-    }
-
-    /**
-     * Cache profile data in multiple cache keys
-     *
-     * @param Profile $profile The profile model to cache
-     * @return void
-     */
-    protected function cacheProfileData(Profile $profile): void
-    {
-        // Cache by user ID (most commonly accessed)
-        $this->cache->put($this->cacheKeyManager::profileByUserId($profile->user_id), $profile, $this->cacheTtl);
-
-        // Cache by profile ID
-        $this->cache->put($this->cacheKeyManager::profileById($profile->id), $profile, $this->cacheTtl);
-    }
-
-    /**
-     * Invalidate all cache keys related to a profile
-     *
-     * @param string $profileId The profile ID
-     * @return void
-     */
-    protected function invalidateProfileCaches(string $profileId): void
-    {
-        // Get profile data to know which identifiers to invalidate
-        $profile = $this->model->find($profileId);
-
-        if ($profile) {
-            // Invalidate by user ID
-            $this->cache->forget($this->cacheKeyManager::profileByUserId($profile->user_id));
-
-            // Invalidate by profile ID
-            $this->cache->forget($this->cacheKeyManager::profileById($profileId));
-        }
     }
 }

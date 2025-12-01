@@ -4,7 +4,7 @@ namespace Modules\Driver\Policies\DocumentOwnership;
 
 use Modules\Driver\Repositories\Document\IDocumentRepository;
 use Modules\Driver\Repositories\Profile\IProfileRepository;
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class DocumentOwnershipPolicy implements IDocumentOwnershipPolicy
 {

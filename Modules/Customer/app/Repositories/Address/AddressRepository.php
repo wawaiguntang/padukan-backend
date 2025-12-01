@@ -89,8 +89,7 @@ class AddressRepository implements IAddressRepository
     {
         $address = $this->model->create($data);
 
-        // Invalidate profile addresses cache
-        $this->invalidateProfileAddressesCache($address->profile_id);
+        // Cache invalidation is handled by AddressObserver
 
         return $address;
     }
@@ -100,27 +99,15 @@ class AddressRepository implements IAddressRepository
      */
     public function update(string $id, array $data): bool
     {
-        $address = $this->model->find($id); // Don't use cached version for updates
+        $address = $this->model->find($id);
 
         if (!$address) {
             return false;
         }
 
-        $oldProfileId = $address->profile_id;
         $result = $address->update($data);
 
-        if ($result) {
-            $address->refresh();
-
-            // Invalidate caches
-            $this->invalidateAddressCaches($id);
-            $this->invalidateProfileAddressesCache($oldProfileId);
-
-            // If profile changed, invalidate new profile cache too
-            if (isset($data['profile_id']) && $data['profile_id'] !== $oldProfileId) {
-                $this->invalidateProfileAddressesCache($data['profile_id']);
-            }
-        }
+        // Cache invalidation is handled by AddressObserver
 
         return $result;
     }
@@ -130,20 +117,15 @@ class AddressRepository implements IAddressRepository
      */
     public function delete(string $id): bool
     {
-        $address = $this->model->find($id); // Don't use cached version for deletes
+        $address = $this->model->find($id);
 
         if (!$address) {
             return false;
         }
 
-        $profileId = $address->profile_id;
         $result = $address->delete();
 
-        if ($result) {
-            // Invalidate all address caches
-            $this->invalidateAddressCaches($id);
-            $this->invalidateProfileAddressesCache($profileId);
-        }
+        // Cache invalidation is handled by AddressObserver
 
         return $result;
     }
@@ -165,10 +147,7 @@ class AddressRepository implements IAddressRepository
         // Then set this address as primary
         $result = $address->update(['is_primary' => true]);
 
-        if ($result) {
-            // Invalidate profile addresses cache
-            $this->invalidateProfileAddressesCache($address->profile_id);
-        }
+        // Cache invalidation is handled by AddressObserver
 
         return $result;
     }
@@ -209,27 +188,5 @@ class AddressRepository implements IAddressRepository
     public function countByProfileId(string $profileId): int
     {
         return $this->model->where('profile_id', $profileId)->count();
-    }
-
-    /**
-     * Invalidate profile addresses cache
-     *
-     * @param string $profileId The profile ID
-     * @return void
-     */
-    protected function invalidateProfileAddressesCache(string $profileId): void
-    {
-        $this->cache->forget($this->cacheKeyManager::addressesByProfileId($profileId));
-    }
-
-    /**
-     * Invalidate all cache keys related to an address
-     *
-     * @param string $addressId The address ID
-     * @return void
-     */
-    protected function invalidateAddressCaches(string $addressId): void
-    {
-        $this->cache->forget($this->cacheKeyManager::addressById($addressId));
     }
 }

@@ -3,7 +3,7 @@
 namespace Modules\Customer\Policies\ProfileOwnership;
 
 use Modules\Customer\Repositories\Profile\IProfileRepository;
-use Modules\Authorization\Repositories\Policy\IPolicyRepository;
+use App\Shared\Authorization\Repositories\IPolicyRepository;
 
 class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
 {
@@ -25,14 +25,13 @@ class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
      */
     private function loadPolicySettings(): void
     {
-        $settings = $this->policyRepository->getSetting('profile.ownership');
+        $settings = $this->policyRepository->getSetting('customer.profile.ownership');
 
         if ($settings) {
             $this->policySettings = $settings;
         } else {
             // Fallback to default
             $this->policySettings = [
-                'enabled' => true,
                 'strict_ownership' => true,
                 'check_user_active' => true,
             ];
@@ -44,10 +43,6 @@ class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
      */
     public function ownsProfile(string $userId, string $profileId): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true; // If policy disabled, allow all
-        }
-
         $profile = $this->profileRepository->findById($profileId);
 
         if (!$profile) {
@@ -67,10 +62,6 @@ class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
      */
     public function canAccessProfile(string $userId, string $profileId): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         // For now, access is same as ownership
         // In future, could add admin access here
         return $this->ownsProfile($userId, $profileId);
@@ -81,10 +72,6 @@ class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
      */
     public function canModifyProfile(string $userId, string $profileId): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         // For now, modification is same as ownership
         // In future, could add role-based modification rules
         return $this->ownsProfile($userId, $profileId);
@@ -104,5 +91,42 @@ class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
     public function canDeleteAvatar(string $userId, string $profileId): bool
     {
         return $this->canModifyProfile($userId, $profileId);
+    }
+
+    /**
+     * Check if user can submit profile verification
+     */
+    public function canSubmitVerification(string $userId, string $profileId): bool
+    {
+        // First check ownership
+        if (!$this->ownsProfile($userId, $profileId)) {
+            return false;
+        }
+
+        // Load verification policy settings
+        $verificationPolicy = $this->policyRepository->getSetting('customer.profile.verification');
+
+        if (!$verificationPolicy) {
+            return true; // Allow if no verification policy is set
+        }
+
+        $profile = $this->profileRepository->findById($profileId);
+        if (!$profile) {
+            return false;
+        }
+
+        // Check if profile is already verified
+        if ($profile->is_verified) {
+            return false;
+        }
+
+        // Check if resubmission is allowed only for rejected profiles
+        if (isset($verificationPolicy['allow_resubmit_only_rejected']) && $verificationPolicy['allow_resubmit_only_rejected']) {
+            if ($profile->verification_status !== 'rejected') {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

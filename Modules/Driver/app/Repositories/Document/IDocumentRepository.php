@@ -4,6 +4,7 @@ namespace Modules\Driver\Repositories\Document;
 
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Driver\Enums\DocumentTypeEnum;
+use Modules\Driver\Enums\VerificationStatusEnum;
 use Modules\Driver\Models\Document;
 
 /**
@@ -14,6 +15,22 @@ use Modules\Driver\Models\Document;
  */
 interface IDocumentRepository
 {
+    /**
+     * Find documents by profile ID
+     *
+     * @param string $profileId The profile's UUID
+     * @return Collection<Document> Collection of document models
+     */
+    public function findByProfileId(string $profileId): Collection;
+
+    /**
+     * Find a document by ID
+     *
+     * @param string $id The document's UUID
+     * @return Document|null The document model if found, null otherwise
+     */
+    public function findById(string $id): ?Document;
+
     /**
      * Create a new document
      *
@@ -41,11 +58,37 @@ interface IDocumentRepository
     public function update(string $id, array $data): bool;
 
     /**
+     * Delete a document
+     *
+     * @param string $id The document's UUID
+     * @return bool True if deletion was successful, false otherwise
+     */
+    public function delete(string $id): bool;
+
+    /**
+     * Update document verification status
+     *
+     * @param string $id The document's UUID
+     * @param VerificationStatusEnum $status The new verification status
+     * @param string|null $verifiedBy The user who verified (optional)
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateVerificationStatus(string $id, VerificationStatusEnum $status, ?string $verifiedBy = null): bool;
+
+    /**
      * Find documents by type and profile ID
      *
      * @param string $profileId The profile's UUID
-     * @param DocumentTypeEnum $type The document type
+     * @param DriverDocumentTypeEnum $type The document type
      * @return Collection<Document> Collection of document models
      */
     public function findByTypeAndProfileId(string $profileId, DocumentTypeEnum $type): Collection;
+
+    /**
+     * Check if document exists by ID
+     *
+     * @param string $id The document's UUID
+     * @return bool True if document exists, false otherwise
+     */
+    public function existsById(string $id): bool;
 }

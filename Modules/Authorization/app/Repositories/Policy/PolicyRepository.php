@@ -6,8 +6,9 @@ use Modules\Authorization\Models\PolicySetting;
 use Modules\Authorization\Cache\KeyManager\IKeyManager;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use App\Shared\Authorization\Repositories\IPolicyRepository as SharedIPolicyRepository;
 
-class PolicyRepository implements IPolicyRepository
+class PolicyRepository implements IPolicyRepository, SharedIPolicyRepository
 {
     private IKeyManager $cacheKeyManager;
     private Cache $cache;

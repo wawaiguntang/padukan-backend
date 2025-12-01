@@ -2,14 +2,25 @@
 
 namespace Modules\Customer\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-// use Modules\Profile\Database\Factories\CustomerDocumentFactory;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Str;
 
+/**
+ * Customer Document Model
+ *
+ * Represents documents uploaded by customers
+ */
 class Document extends Model
 {
     use HasFactory;
+
+    /**
+     * The database connection that should be used by the model.
+     */
+    protected $connection = 'customer';
 
     /**
      * The data type of the primary key.
@@ -25,7 +36,8 @@ class Document extends Model
      * The attributes that are mass assignable.
      */
     protected $fillable = [
-        'profile_id',
+        'documentable_id',
+        'documentable_type',
         'type',
         'file_path',
         'file_name',
@@ -54,15 +66,24 @@ class Document extends Model
     }
 
     /**
-     * Get the customer profile that owns the document.
+     * Get the parent documentable model (profile)
      */
-    public function customerProfile(): BelongsTo
+    public function documentable(): MorphTo
     {
-        return $this->belongsTo(Profile::class);
+        return $this->morphTo();
     }
 
-    // protected static function newFactory(): CustomerDocumentFactory
-    // {
-    //     // return CustomerDocumentFactory::new();
-    // }
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) Str::uuid();
+            }
+        });
+    }
 }

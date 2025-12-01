@@ -69,4 +69,16 @@ interface IDocumentService
      * @return Collection<Document> Collection of document models
      */
     public function getDocumentsByType(string $userId, DocumentTypeEnum $documentType): Collection;
+
+    /**
+     * Create a document with direct path for a user profile
+     *
+     * @param string $userId The user's UUID
+     * @param DocumentTypeEnum $documentType The type of document
+     * @param string $filePath The file path
+     * @param array $additionalData Additional document data (optional)
+     * @return Document The created document model
+     * @throws \Exception If profile not found
+     */
+    public function createDocument(string $userId, DocumentTypeEnum $documentType, string $filePath, array $additionalData = []): Document;
 }
