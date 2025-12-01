@@ -10,9 +10,9 @@ return [
     |
     */
 
-    'invalid_role' => 'Invalid role specified.',
-    'invalid_permission' => 'Invalid permission specified.',
-    'invalid_policy' => 'Invalid policy specified.',
-    'role_required' => 'Role is required.',
-    'permission_required' => 'Permission is required.',
+    'invalid_role' => 'Please choose a valid role.',
+    'invalid_permission' => 'Please choose a valid permission.',
+    'invalid_policy' => 'Please choose a valid policy.',
+    'role_required' => 'Please provide a role.',
+    'permission_required' => 'Please provide a permission.',
 ];

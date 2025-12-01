@@ -10,10 +10,10 @@ return [
     |
     */
 
-    'not_found' => 'Permission tidak ditemukan.',
-    'denied' => 'Permission ditolak.',
-    'granted' => 'Permission diberikan.',
-    'created' => 'Permission berhasil dibuat.',
-    'updated' => 'Permission berhasil diperbarui.',
-    'deleted' => 'Permission berhasil dihapus.',
+    'not_found' => 'Maaf ya, permission nggak ditemukan.',
+    'denied' => 'Maaf, permission ditolak.',
+    'granted' => 'Oke, permission sudah diberikan.',
+    'created' => 'Oke, permission sudah dibuat.',
+    'updated' => 'Oke, permission sudah diperbarui.',
+    'deleted' => 'Oke, permission sudah dihapus.',
 ];

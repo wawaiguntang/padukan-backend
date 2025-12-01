@@ -84,10 +84,10 @@ class RoleRepository implements IRoleRepository
     public function userHasRole(string $userId, string $roleSlug): bool
     {
         return UserRole::where('user_id', $userId)
-                      ->whereHas('role', function ($query) use ($roleSlug) {
-                          $query->where('slug', $roleSlug);
-                      })
-                      ->exists();
+            ->whereHas('role', function ($query) use ($roleSlug) {
+                $query->where('slug', $roleSlug);
+            })
+            ->exists();
     }
 
     /**
@@ -110,6 +110,11 @@ class RoleRepository implements IRoleRepository
                 'user_id' => $userId,
                 'role_id' => $role->id
             ]);
+
+            // Invalidate user roles cache
+            $cacheKey = $this->cacheKeyManager::userRoles($userId);
+            $this->cache->forget($cacheKey);
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -126,9 +131,17 @@ class RoleRepository implements IRoleRepository
             return false;
         }
 
-        return UserRole::where('user_id', $userId)
-                      ->where('role_id', $role->id)
-                      ->delete() > 0;
+        $deleted = UserRole::where('user_id', $userId)
+            ->where('role_id', $role->id)
+            ->delete() > 0;
+
+        if ($deleted) {
+            // Invalidate user roles cache
+            $cacheKey = $this->cacheKeyManager::userRoles($userId);
+            $this->cache->forget($cacheKey);
+        }
+
+        return $deleted;
     }
 
     /**
@@ -147,9 +160,9 @@ class RoleRepository implements IRoleRepository
     public function roleHasPermission(string $roleId, string $permissionSlug): bool
     {
         return Permission::where('slug', $permissionSlug)
-                        ->whereHas('rolePermissions', function ($query) use ($roleId) {
-                            $query->where('role_id', $roleId);
-                        })
-                        ->exists();
+            ->whereHas('rolePermissions', function ($query) use ($roleId) {
+                $query->where('role_id', $roleId);
+            })
+            ->exists();
     }
 }

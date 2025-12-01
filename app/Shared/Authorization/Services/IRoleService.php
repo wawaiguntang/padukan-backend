@@ -2,6 +2,8 @@
 
 namespace App\Shared\Authorization\Services;
 
+use Illuminate\Support\Collection;
+
 interface IRoleService
 {
     /**
@@ -22,5 +24,5 @@ interface IRoleService
     /**
      * Get user roles
      */
-    public function getUserRoles(string $userId): array;
+    public function getUserRoles(string $userId): Collection;
 }

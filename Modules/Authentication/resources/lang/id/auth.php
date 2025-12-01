@@ -12,9 +12,9 @@ return [
     |
     */
 
-    'failed' => 'Kredensial ini tidak cocok dengan catatan kami.',
-    'password' => 'Kata sandi yang diberikan salah.',
-    'throttle' => 'Terlalu banyak upaya login. Silakan coba lagi dalam :seconds detik.',
+    'failed' => 'Maaf ya, kredensial ini nggak cocok.',
+    'password' => 'Maaf, kata sandi salah.',
+    'throttle' => 'Login terlalu sering. Tunggu :seconds detik dulu ya.',
 
     /*
     |--------------------------------------------------------------------------
@@ -23,70 +23,70 @@ return [
     */
 
     'registration' => [
-        'success' => 'Pengguna berhasil didaftarkan.',
-        'failed' => 'Pendaftaran pengguna gagal.',
+        'success' => 'Yeay, pendaftaran berhasil!',
+        'failed' => 'Maaf, pendaftaran gagal. Coba lagi ya.',
     ],
 
     'login' => [
-        'success' => 'Login berhasil.',
-        'failed' => 'Login gagal.',
+        'success' => 'Selamat datang!',
+        'failed' => 'Maaf, login gagal. Periksa kredensial ya.',
     ],
 
     'logout' => [
-        'success' => 'Logout berhasil.',
-        'failed' => 'Logout gagal.',
+        'success' => 'Oke, sudah logout.',
+        'failed' => 'Maaf, logout gagal.',
     ],
 
     'user' => [
-        'not_found' => 'Pengguna tidak ditemukan.',
-        'not_authenticated' => 'Pengguna belum terautentikasi.',
-        'phone_already_exists' => 'Nomor telepon sudah digunakan.',
-        'email_already_exists' => 'Alamat email sudah digunakan.',
-        'already_exists' => 'Pengguna sudah ada.',
-        'pending_verification' => 'Pengguna menunggu verifikasi.',
-        'account_suspended' => 'Akun pengguna ditangguhkan.',
-        'inactive' => 'Akun pengguna tidak aktif.',
+        'not_found' => 'Maaf, pengguna nggak ditemukan.',
+        'not_authenticated' => 'Silakan login dulu ya.',
+        'phone_already_exists' => 'Nomor telepon ini sudah digunakan.',
+        'email_already_exists' => 'Email ini sudah digunakan.',
+        'already_exists' => 'Pengguna ini sudah ada.',
+        'pending_verification' => 'Sedang menunggu verifikasi.',
+        'account_suspended' => 'Akun sedang ditangguhkan.',
+        'inactive' => 'Akun ini nggak aktif.',
     ],
 
-    'invalid_credentials' => 'Kredensial yang diberikan tidak valid.',
+    'invalid_credentials' => 'Maaf, kredensial nggak valid.',
     'rate_limit' => [
-        'exceeded' => 'Terlalu banyak permintaan. Silakan coba lagi nanti.',
+        'exceeded' => 'Permintaan terlalu banyak. Tunggu sebentar ya.',
     ],
     'token' => [
-        'invalid_refresh_token' => 'Token refresh tidak valid.',
-        'refresh_failed' => 'Refresh token gagal.',
-        'refreshed' => 'Token berhasil diperbarui.',
-        'refresh_token_required' => 'Token refresh diperlukan.',
-        'invalid' => 'Token tidak valid.',
-        'missing' => 'Token akses diperlukan.',
+        'invalid_refresh_token' => 'Maaf, token refresh nggak valid.',
+        'refresh_failed' => 'Maaf, refresh token gagal.',
+        'refreshed' => 'Oke, token sudah diperbarui.',
+        'refresh_token_required' => 'Perlu token refresh.',
+        'invalid' => 'Maaf, token nggak valid.',
+        'missing' => 'Perlu token akses.',
     ],
 
     'otp' => [
-        'sent' => 'OTP berhasil dikirim.',
-        'send_failed' => 'Gagal mengirim OTP.',
-        'resent' => 'OTP berhasil dikirim ulang.',
-        'resend_failed' => 'Gagal mengirim ulang OTP.',
-        'validated' => 'OTP berhasil divalidasi.',
-        'validation_failed' => 'Validasi OTP gagal.',
-        'invalid' => 'OTP tidak valid.',
-        'invalid_format' => 'OTP harus terdiri dari 6 digit.',
-        'expired' => 'OTP telah kedaluwarsa.',
-        'rate_limit_exceeded' => 'Terlalu banyak permintaan OTP. Silakan coba lagi nanti.',
+        'sent' => 'Oke, OTP sudah dikirim.',
+        'send_failed' => 'Maaf, gagal kirim OTP.',
+        'resent' => 'Oke, OTP dikirim ulang.',
+        'resend_failed' => 'Maaf, gagal kirim ulang OTP.',
+        'validated' => 'Oke, OTP valid.',
+        'validation_failed' => 'Maaf, OTP nggak valid.',
+        'invalid' => 'Maaf, OTP salah.',
+        'invalid_format' => 'OTP harus 6 digit ya.',
+        'expired' => 'Maaf, OTP sudah expired.',
+        'rate_limit_exceeded' => 'OTP terlalu sering. Tunggu sebentar.',
     ],
 
     'password_reset' => [
-        'sent' => 'Tautan reset kata sandi telah dikirim.',
-        'invalid_token' => 'Token reset kata sandi tidak valid.',
-        'failed' => 'Reset kata sandi gagal.',
-        'success' => 'Kata sandi berhasil direset.',
+        'sent' => 'Oke, link reset sudah dikirim.',
+        'invalid_token' => 'Maaf, token reset nggak valid.',
+        'failed' => 'Maaf, reset gagal.',
+        'success' => 'Oke, kata sandi sudah direset.',
     ],
 
     'profile' => [
-        'retrieved' => 'Profil berhasil diambil.',
-        'failed' => 'Gagal mengambil profil.',
+        'retrieved' => 'Oke, profil sudah diambil.',
+        'failed' => 'Maaf, gagal ambil profil.',
     ],
 
     'validation' => [
-        'failed' => 'Validasi data gagal.',
+        'failed' => 'Maaf, validasi gagal.',
     ]
 ];

@@ -10,8 +10,8 @@ return [
     |
     */
 
-    'denied' => 'Akses ditolak.',
-    'granted' => 'Akses diberikan.',
-    'insufficient_permissions' => 'Permission tidak mencukupi.',
-    'unauthorized' => 'Akses tidak sah.',
+    'denied' => 'Maaf ya, akses ditolak.',
+    'granted' => 'Oke, akses sudah diberikan.',
+    'insufficient_permissions' => 'Maaf, permission nggak cukup.',
+    'unauthorized' => 'Maaf, akses nggak sah.',
 ];

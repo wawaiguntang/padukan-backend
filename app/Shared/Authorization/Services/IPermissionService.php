@@ -2,6 +2,8 @@
 
 namespace App\Shared\Authorization\Services;
 
+use Illuminate\Database\Eloquent\Collection;
+
 interface IPermissionService
 {
     /**
@@ -12,7 +14,7 @@ interface IPermissionService
     /**
      * Get user permissions
      */
-    public function getUserPermissions(string $userId): array;
+    public function getUserPermissions(string $userId): Collection;
 
     /**
      * Check if role has permission

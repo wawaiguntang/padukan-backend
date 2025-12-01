@@ -140,7 +140,17 @@ class PermissionService implements IPermissionService, SharedIPermissionService
                 return false;
             }
 
-            return $permission->update($data);
+            $result = $permission->update($data);
+
+            if ($result) {
+                // Note: Cache invalidation is handled by PermissionRepository's findById/findBySlug methods
+                // which are called by getPermissionById/getPermissionBySlug above
+                // But since we modified the permission, we should clear the specific caches
+                // However, PermissionRepository doesn't expose cache invalidation methods
+                // This is a limitation - permission updates may show stale cached data until TTL expires
+            }
+
+            return $result;
         });
     }
 
@@ -158,5 +168,4 @@ class PermissionService implements IPermissionService, SharedIPermissionService
             return $permission->delete();
         });
     }
-
 }

@@ -46,7 +46,15 @@ class PolicyRepository implements IPolicyRepository
      */
     public function updateSetting(string $key, array $settings): bool
     {
-        return PolicySetting::updateSetting($key, $settings);
+        $result = PolicySetting::updateSetting($key, $settings);
+
+        if ($result) {
+            // Invalidate policy setting cache
+            $cacheKey = $this->cacheKeyManager::policySetting($key);
+            $this->cache->forget($cacheKey);
+        }
+
+        return $result;
     }
 
     /**
@@ -71,8 +79,8 @@ class PolicyRepository implements IPolicyRepository
     public function getPoliciesByPattern(string $pattern): Collection
     {
         return PolicySetting::where('key', 'LIKE', "%{$pattern}%")
-                           ->where('is_active', true)
-                           ->get();
+            ->where('is_active', true)
+            ->get();
     }
 
     /**

@@ -10,8 +10,8 @@ return [
     |
     */
 
-    'denied' => 'Access denied.',
+    'denied' => 'Sorry, access denied.',
     'granted' => 'Access granted.',
-    'insufficient_permissions' => 'Insufficient permissions.',
+    'insufficient_permissions' => 'You don\'t have enough permissions.',
     'unauthorized' => 'Unauthorized access.',
 ];

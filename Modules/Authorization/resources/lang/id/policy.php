@@ -10,9 +10,9 @@ return [
     |
     */
 
-    'not_found' => 'Policy tidak ditemukan.',
-    'evaluation_failed' => 'Evaluasi policy gagal.',
-    'created' => 'Policy berhasil dibuat.',
-    'updated' => 'Policy berhasil diperbarui.',
-    'deleted' => 'Policy berhasil dihapus.',
+    'not_found' => 'Maaf ya, policy nggak ditemukan.',
+    'evaluation_failed' => 'Maaf, evaluasi policy gagal.',
+    'created' => 'Oke, policy sudah dibuat.',
+    'updated' => 'Oke, policy sudah diperbarui.',
+    'deleted' => 'Oke, policy sudah dihapus.',
 ];

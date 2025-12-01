@@ -10,8 +10,8 @@ return [
     |
     */
 
-    'initialization_failed' => 'Inisialisasi sistem authorization gagal.',
-    'cache_cleared' => 'Cache authorization berhasil dibersihkan.',
-    'settings_updated' => 'Pengaturan authorization berhasil diperbarui.',
-    'error_occurred' => 'Terjadi kesalahan saat memproses permintaan Anda.',
+    'initialization_failed' => 'Maaf, inisialisasi sistem gagal.',
+    'cache_cleared' => 'Oke, cache sudah dibersihkan.',
+    'settings_updated' => 'Oke, pengaturan sudah diperbarui.',
+    'error_occurred' => 'Maaf, ada kesalahan.',
 ];

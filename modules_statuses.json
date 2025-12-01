@@ -1,5 +1,7 @@
 {
     "Authentication": true,
     "Authorization": true,
-    "Profile": true
+    "Driver": true,
+    "Customer": true,
+    "Merchant": true
 }

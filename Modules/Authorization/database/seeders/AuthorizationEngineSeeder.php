@@ -14,7 +14,7 @@ class AuthorizationEngineSeeder extends Seeder
     public function run(): void
     {
         // Seed roles
-        // $this->seedRoles();
+        $this->seedRoles();
 
         // Seed permissions
         // $this->seedPermissions();
@@ -26,8 +26,16 @@ class AuthorizationEngineSeeder extends Seeder
         // $this->seedPolicySettings();
 
         // Seed Profile module permissions and policies
-        $this->call(ProfilePermissionSeeder::class);
-        $this->call(ProfilePolicySeeder::class);
+        // $this->call(ProfilePermissionSeeder::class);
+        // $this->call(ProfilePolicySeeder::class);
+
+        // Seed Customer module permissions and policies
+        // $this->call(CustomerPermissionSeeder::class);
+        // $this->call(CustomerPolicySeeder::class);
+
+        // Seed Driver module permissions and policies
+        $this->call(DriverPermissionSeeder::class);
+        $this->call(DriverPolicySeeder::class);
     }
 
     private function seedRoles(): void
@@ -127,8 +135,11 @@ class AuthorizationEngineSeeder extends Seeder
         // Admin Area - limited admin permissions
         if (isset($roles['admin-area'])) {
             $adminPerms = [
-                'orders.read', 'orders.update', 'admin.view_metrics',
-                'drivers.update_location', 'merchants.view_analytics'
+                'orders.read',
+                'orders.update',
+                'admin.view_metrics',
+                'drivers.update_location',
+                'merchants.view_analytics'
             ];
             foreach ($adminPerms as $permSlug) {
                 if (isset($permissions[$permSlug])) {
@@ -144,8 +155,11 @@ class AuthorizationEngineSeeder extends Seeder
         // Customer permissions
         if (isset($roles['customer'])) {
             $customerPerms = [
-                'orders.create', 'orders.read', 'orders.cancel',
-                'orders.view_history', 'drivers.rate'
+                'orders.create',
+                'orders.read',
+                'orders.cancel',
+                'orders.view_history',
+                'drivers.rate'
             ];
             foreach ($customerPerms as $permSlug) {
                 if (isset($permissions[$permSlug])) {
@@ -161,7 +175,9 @@ class AuthorizationEngineSeeder extends Seeder
         // Driver permissions
         if (isset($roles['driver'])) {
             $driverPerms = [
-                'orders.read', 'orders.accept', 'orders.complete',
+                'orders.read',
+                'orders.accept',
+                'orders.complete',
                 'drivers.update_location'
             ];
             foreach ($driverPerms as $permSlug) {
@@ -178,7 +194,9 @@ class AuthorizationEngineSeeder extends Seeder
         // Merchant permissions
         if (isset($roles['merchant'])) {
             $merchantPerms = [
-                'orders.read', 'merchants.update_menu', 'merchants.view_analytics'
+                'orders.read',
+                'merchants.update_menu',
+                'merchants.view_analytics'
             ];
             foreach ($merchantPerms as $permSlug) {
                 if (isset($permissions[$permSlug])) {

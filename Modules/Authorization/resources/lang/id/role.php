@@ -10,16 +10,16 @@ return [
     |
     */
 
-    'not_found' => 'Role tidak ditemukan.',
-    'already_assigned' => 'Role sudah ditetapkan untuk pengguna.',
-    'assignment_failed' => 'Gagal menetapkan role.',
-    'assignment_not_allowed' => 'Penugasan peran tidak diizinkan untuk pengguna ini.',
-    'invalid_role_type' => 'Tipe peran tidak valid untuk penugasan.',
-    'user_already_has_role' => 'Pengguna sudah memiliki peran ini.',
-    'role_assigned_successfully' => 'Peran berhasil ditugaskan.',
-    'check_role_success' => 'Pemeriksaan peran berhasil diselesaikan.',
-    'removal_failed' => 'Gagal menghapus role.',
-    'created' => 'Role berhasil dibuat.',
-    'updated' => 'Role berhasil diperbarui.',
-    'deleted' => 'Role berhasil dihapus.',
+    'not_found' => 'Maaf ya, role nggak ditemukan.',
+    'already_assigned' => 'Role ini sudah ditetapkan.',
+    'assignment_failed' => 'Maaf, gagal tetapkan role.',
+    'assignment_not_allowed' => 'Maaf, penugasan role nggak diizinkan.',
+    'invalid_role_type' => 'Maaf, tipe role nggak valid.',
+    'user_already_has_role' => 'Pengguna sudah punya role ini.',
+    'role_assigned_successfully' => 'Oke, role sudah ditetapkan.',
+    'check_role_success' => 'Oke, pemeriksaan role selesai.',
+    'removal_failed' => 'Maaf, gagal hapus role.',
+    'created' => 'Oke, role sudah dibuat.',
+    'updated' => 'Oke, role sudah diperbarui.',
+    'deleted' => 'Oke, role sudah dihapus.',
 ];

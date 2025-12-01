@@ -74,10 +74,9 @@ class PasswordResetServiceTest extends TestCase
         $userId = $this->faker->uuid();
         $resetTokenValue = $this->faker->sha256();
 
-        $user = new User([
-            'id' => $userId,
-            'email' => $identifier,
-        ]);
+        $user = new User();
+        $user->id = $userId;
+        $user->email = $identifier;
 
         $resetToken = new PasswordResetToken([
             'id' => $this->faker->uuid(),
@@ -94,7 +93,7 @@ class PasswordResetServiceTest extends TestCase
 
         $this->passwordResetRepositoryMock
             ->shouldReceive('createResetToken')
-            ->with($user->id, \Mockery::type('string'), 60)
+            ->with($user->id, \Mockery::type('string'))
             ->andReturn($resetToken);
 
         $result = $this->passwordResetService->forgotPassword($identifier);
@@ -131,13 +130,12 @@ class PasswordResetServiceTest extends TestCase
     {
         $userId = $this->faker->uuid();
         $token = $this->faker->sha256();
-        $newPassword = $this->faker->password();
+        $newPassword = 'NewPassword123';
 
-        $user = new User([
-            'id' => $userId,
-            'email' => $this->faker->email(),
-            'password' => bcrypt($this->faker->password()),
-        ]);
+        $user = new User();
+        $user->id = $userId;
+        $user->email = $this->faker->email();
+        $user->password = bcrypt($this->faker->password());
 
         $resetToken = new PasswordResetToken([
             'id' => $this->faker->uuid(),
@@ -178,7 +176,7 @@ class PasswordResetServiceTest extends TestCase
     {
         $userId = $this->faker->uuid();
         $token = $this->faker->sha256();
-        $newPassword = $this->faker->password();
+        $newPassword = 'NewPassword123';
 
         $this->userRepositoryMock
             ->shouldReceive('findById')
@@ -199,12 +197,11 @@ class PasswordResetServiceTest extends TestCase
     {
         $userId = $this->faker->uuid();
         $token = $this->faker->sha256();
-        $newPassword = $this->faker->password();
+        $newPassword = 'NewPassword123';
 
-        $user = new User([
-            'id' => $userId,
-            'email' => $this->faker->email(),
-        ]);
+        $user = new User();
+        $user->id = $userId;
+        $user->email = $this->faker->email();
 
         $this->userRepositoryMock
             ->shouldReceive('findById')
@@ -230,12 +227,11 @@ class PasswordResetServiceTest extends TestCase
     {
         $userId = $this->faker->uuid();
         $token = $this->faker->sha256();
-        $newPassword = $this->faker->password();
+        $newPassword = 'NewPassword123';
 
-        $user = new User([
-            'id' => $userId,
-            'email' => $this->faker->email(),
-        ]);
+        $user = new User();
+        $user->id = $userId;
+        $user->email = $this->faker->email();
 
         $this->userRepositoryMock
             ->shouldReceive('findById')
@@ -261,12 +257,11 @@ class PasswordResetServiceTest extends TestCase
     {
         $userId = $this->faker->uuid();
         $token = $this->faker->sha256();
-        $newPassword = $this->faker->password();
+        $newPassword = 'NewPassword123';
 
-        $user = new User([
-            'id' => $userId,
-            'email' => $this->faker->email(),
-        ]);
+        $user = new User();
+        $user->id = $userId;
+        $user->email = $this->faker->email();
 
         $this->userRepositoryMock
             ->shouldReceive('findById')

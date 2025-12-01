@@ -10,8 +10,8 @@ return [
     |
     */
 
-    'not_found' => 'Permission not found.',
-    'denied' => 'Permission denied.',
+    'not_found' => 'We couldn\'t find that permission.',
+    'denied' => 'Sorry, permission denied.',
     'granted' => 'Permission granted.',
     'created' => 'Permission created successfully.',
     'updated' => 'Permission updated successfully.',

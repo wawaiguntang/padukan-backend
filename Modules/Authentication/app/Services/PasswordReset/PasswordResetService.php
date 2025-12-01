@@ -52,7 +52,8 @@ class PasswordResetService implements IPasswordResetService
         $user = $this->userRepository->findByIdentifier($identifier);
 
         if (!$user) {
-            throw new UserNotFoundException('auth.user.not_found', ['identifier' => $identifier]);
+            // Return success for security reasons (don't reveal if user exists)
+            return 'auth.password_reset.sent';
         }
 
         // Generate secure reset token

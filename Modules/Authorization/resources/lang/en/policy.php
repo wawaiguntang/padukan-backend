@@ -10,7 +10,7 @@ return [
     |
     */
 
-    'not_found' => 'Policy not found.',
+    'not_found' => 'We couldn\'t find that policy.',
     'evaluation_failed' => 'Policy evaluation failed.',
     'created' => 'Policy created successfully.',
     'updated' => 'Policy updated successfully.',

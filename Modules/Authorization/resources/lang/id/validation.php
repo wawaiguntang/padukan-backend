@@ -10,9 +10,9 @@ return [
     |
     */
 
-    'invalid_role' => 'Role yang ditentukan tidak valid.',
-    'invalid_permission' => 'Permission yang ditentukan tidak valid.',
-    'invalid_policy' => 'Policy yang ditentukan tidak valid.',
-    'role_required' => 'Role diperlukan.',
-    'permission_required' => 'Permission diperlukan.',
+    'invalid_role' => 'Maaf, role nggak valid.',
+    'invalid_permission' => 'Maaf, permission nggak valid.',
+    'invalid_policy' => 'Maaf, policy nggak valid.',
+    'role_required' => 'Isi role ya.',
+    'permission_required' => 'Isi permission ya.',
 ];

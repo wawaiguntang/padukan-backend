@@ -12,9 +12,9 @@ return [
     |
     */
 
-    'failed' => 'These credentials do not match our records.',
-    'password' => 'The provided password is incorrect.',
-    'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+    'failed' => 'We couldn\'t find a match for those credentials.',
+    'password' => 'That password doesn\'t seem right.',
+    'throttle' => 'Too many login attempts. Please wait :seconds seconds before trying again.',
 
     /*
     |--------------------------------------------------------------------------
@@ -23,42 +23,42 @@ return [
     */
 
     'registration' => [
-        'success' => 'User registered successfully.',
-        'failed' => 'User registration failed.',
+        'success' => 'Welcome! Your registration is complete.',
+        'failed' => 'Sorry, registration failed. Please try again.',
     ],
 
     'login' => [
-        'success' => 'Login successful.',
-        'failed' => 'Login failed.',
+        'success' => 'You\'re logged in!',
+        'failed' => 'Login failed. Please check your credentials.',
     ],
 
     'logout' => [
-        'success' => 'Logout successful.',
+        'success' => 'You\'ve been logged out.',
         'failed' => 'Logout failed.',
     ],
 
     'user' => [
-        'not_found' => 'User not found.',
-        'not_authenticated' => 'User not authenticated.',
-        'phone_already_exists' => 'Phone number already exists.',
-        'email_already_exists' => 'Email address already exists.',
-        'already_exists' => 'User already exists.',
-        'pending_verification' => 'User pending verification.',
-        'account_suspended' => 'User account is suspended.',
-        'inactive' => 'User account is inactive.',
+        'not_found' => 'We couldn\'t find that user.',
+        'not_authenticated' => 'Please log in first.',
+        'phone_already_exists' => 'That phone number is already in use.',
+        'email_already_exists' => 'That email is already taken.',
+        'already_exists' => 'That user already exists.',
+        'pending_verification' => 'Your account is pending verification.',
+        'account_suspended' => 'Your account has been suspended.',
+        'inactive' => 'Your account is inactive.',
     ],
 
-    'invalid_credentials' => 'Invalid credentials provided.',
+    'invalid_credentials' => 'Those credentials aren\'t valid.',
     'rate_limit' => [
         'exceeded' => 'Too many requests. Please try again later.',
     ],
     'token' => [
-        'invalid_refresh_token' => 'Invalid refresh token.',
+        'invalid_refresh_token' => 'That refresh token isn\'t valid.',
         'refresh_failed' => 'Token refresh failed.',
         'refreshed' => 'Token refreshed successfully.',
-        'refresh_token_required' => 'Refresh token is required.',
-        'invalid' => 'Invalid token.',
-        'missing' => 'Access token is required.',
+        'refresh_token_required' => 'A refresh token is required.',
+        'invalid' => 'That token isn\'t valid.',
+        'missing' => 'An access token is required.',
     ],
 
     'otp' => [

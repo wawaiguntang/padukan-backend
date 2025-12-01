@@ -10,8 +10,8 @@ return [
     |
     */
 
-    'initialization_failed' => 'Authorization system initialization failed.',
-    'cache_cleared' => 'Authorization cache cleared successfully.',
-    'settings_updated' => 'Authorization settings updated successfully.',
+    'initialization_failed' => 'System initialization failed.',
+    'cache_cleared' => 'Cache cleared successfully.',
+    'settings_updated' => 'Settings updated successfully.',
     'error_occurred' => 'An error occurred while processing your request.',
 ];

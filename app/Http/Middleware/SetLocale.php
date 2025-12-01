@@ -58,12 +58,30 @@ class SetLocale
         $acceptLanguage = $request->header('Accept-Language');
 
         if ($acceptLanguage) {
-            // Parse Accept-Language header (e.g., "id,en;q=0.9")
+            // Parse Accept-Language header (e.g., "en;q=0.8,id;q=0.9")
             $locales = explode(',', $acceptLanguage);
 
+            $parsedLocales = [];
             foreach ($locales as $locale) {
-                // Remove quality value (e.g., ";q=0.9")
-                $locale = trim(explode(';', $locale)[0]);
+                $locale = trim($locale);
+                $parts = explode(';', $locale);
+                $lang = trim($parts[0]);
+                $quality = 1.0; // Default quality
+
+                if (isset($parts[1]) && str_starts_with($parts[1], 'q=')) {
+                    $quality = (float) substr($parts[1], 2);
+                }
+
+                $parsedLocales[] = ['lang' => $lang, 'quality' => $quality];
+            }
+
+            // Sort by quality descending
+            usort($parsedLocales, function ($a, $b) {
+                return $b['quality'] <=> $a['quality'];
+            });
+
+            foreach ($parsedLocales as $parsed) {
+                $locale = strtolower($parsed['lang']);
 
                 // Check if locale is supported
                 if (in_array($locale, $this->supportedLocales)) {

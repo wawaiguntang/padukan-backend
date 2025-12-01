@@ -7,8 +7,9 @@ use Modules\Authorization\Repositories\Role\IRoleRepository;
 use Modules\Authorization\Exceptions\RoleNotFoundException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Shared\Authorization\Services\IRoleService as SharedIRoleService;
 
-class RoleService implements IRoleService
+class RoleService implements IRoleService, SharedIRoleService
 {
     private IRoleRepository $roleRepository;
 

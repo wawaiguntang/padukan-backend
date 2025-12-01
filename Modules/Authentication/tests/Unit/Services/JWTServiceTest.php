@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Modules\Authentication\Database\Factories\UserFactory;
 use Modules\Authentication\Models\User;
 use Modules\Authentication\Repositories\User\IUserRepository;
+use Modules\Authentication\Cache\KeyManager\IKeyManager;
 use Modules\Authentication\Services\JWT\JWTService;
 use Tests\TestCase;
 
@@ -38,7 +39,8 @@ class JWTServiceTest extends TestCase
         parent::setUp();
 
         $userRepository = app(IUserRepository::class);
-        $this->jwtService = new JWTService(Cache::store(), $userRepository);
+        $keyManager = app(IKeyManager::class);
+        $this->jwtService = new JWTService(Cache::store(), $keyManager, $userRepository);
     }
 
     /**
