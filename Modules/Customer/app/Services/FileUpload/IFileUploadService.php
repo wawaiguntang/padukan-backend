@@ -8,7 +8,7 @@ use Illuminate\Http\UploadedFile;
  * Interface for File Upload Service
  *
  * This interface defines the contract for file upload operations
- * in the customer module, handling both public and private files.
+ * in the driver module, handling both public and private files.
  */
 interface IFileUploadService
 {
@@ -58,22 +58,6 @@ interface IFileUploadService
     public function getAvatarUrl(string $filePath): string;
 
     /**
-     * Validate file for avatar upload
-     *
-     * @param UploadedFile $file The file to validate
-     * @throws \Exception If validation fails
-     */
-    public function validateAvatarFile(UploadedFile $file): void;
-
-    /**
-     * Validate file for document upload
-     *
-     * @param UploadedFile $file The file to validate
-     * @throws \Exception If validation fails
-     */
-    public function validateDocumentFile(UploadedFile $file): void;
-
-    /**
      * Generate a unique filename
      *
      * @param string $originalName The original filename
@@ -82,10 +66,11 @@ interface IFileUploadService
     public function generateUniqueFilename(string $originalName): string;
 
     /**
-     * Generate a temporary URL for a private document file
+     * Generate temporary URL for private document access
      *
      * @param string $filePath The file path
+     * @param int $minutes Validity period in minutes (default: 60 minutes)
      * @return string The temporary URL
      */
-    public function generateTemporaryUrl(string $filePath): string;
+    public function generateTemporaryUrl(string $filePath, int $minutes = 60): string;
 }

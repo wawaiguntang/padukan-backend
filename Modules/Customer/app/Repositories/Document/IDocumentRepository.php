@@ -76,13 +76,14 @@ interface IDocumentRepository
     public function updateVerificationStatus(string $id, VerificationStatusEnum $status, ?string $verifiedBy = null): bool;
 
     /**
-     * Find documents by type and profile ID
+     * Find documents by type and documentable (polymorphic relationship)
      *
-     * @param string $profileId The profile's UUID
+     * @param string $documentableId The documentable model's ID
+     * @param string $documentableType The documentable model's type
      * @param DocumentTypeEnum $type The document type
      * @return Collection<Document> Collection of document models
      */
-    public function findByTypeAndProfileId(string $profileId, DocumentTypeEnum $type): Collection;
+    public function findByTypeAndDocumentable(string $documentableId, string $documentableType, DocumentTypeEnum $type): Collection;
 
     /**
      * Check if document exists by ID

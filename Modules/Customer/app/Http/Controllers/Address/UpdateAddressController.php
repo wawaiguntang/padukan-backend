@@ -6,8 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Modules\Customer\Http\Requests\AddressUpdateRequest;
 use Modules\Customer\Http\Resources\AddressResource;
-use Modules\Customer\Repositories\Address\IAddressRepository;
-use Modules\Customer\Repositories\Profile\IProfileRepository;
+use Modules\Customer\Services\Address\IAddressService;
 
 /**
  * Update Address Controller
@@ -17,24 +16,16 @@ use Modules\Customer\Repositories\Profile\IProfileRepository;
 class UpdateAddressController
 {
     /**
-     * Address repository instance
+     * Address service instance
      */
-    protected IAddressRepository $addressRepository;
-
-    /**
-     * Profile repository instance
-     */
-    protected IProfileRepository $profileRepository;
+    protected IAddressService $addressService;
 
     /**
      * Constructor
      */
-    public function __construct(
-        IAddressRepository $addressRepository,
-        IProfileRepository $profileRepository
-    ) {
-        $this->addressRepository = $addressRepository;
-        $this->profileRepository = $profileRepository;
+    public function __construct(IAddressService $addressService)
+    {
+        $this->addressService = $addressService;
     }
 
     /**
@@ -42,10 +33,10 @@ class UpdateAddressController
      */
     public function __invoke(AddressUpdateRequest $request, string $id): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->authenticated_user;
         $validated = $request->validated();
 
-        $address = $this->addressRepository->findById($id);
+        $address = $this->addressService->getAddressById($id);
 
         if (!$address) {
             return response()->json([
@@ -54,16 +45,15 @@ class UpdateAddressController
             ], 404);
         }
 
-        // Check ownership
-        $profile = $this->profileRepository->findByUserId($user->id);
-        if (!$profile || $address->profile_id !== $profile->id) {
+        // Check ownership using service
+        if (!$this->addressService->isAddressOwnedByUser($id, $user->id)) {
             return response()->json([
                 'status' => false,
                 'message' => __('customer::address.access_denied'),
             ], 403);
         }
 
-        $updated = $this->addressRepository->update($id, $validated);
+        $updated = $this->addressService->updateAddress($id, $validated);
 
         if (!$updated) {
             return response()->json([
@@ -72,7 +62,7 @@ class UpdateAddressController
             ], 500);
         }
 
-        $updatedAddress = $this->addressRepository->findById($id);
+        $updatedAddress = $this->addressService->getAddressById($id);
 
         return response()->json([
             'status' => true,

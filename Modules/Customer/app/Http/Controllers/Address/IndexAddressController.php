@@ -5,9 +5,7 @@ namespace Modules\Customer\Http\Controllers\Address;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Modules\Customer\Http\Resources\AddressResource;
-use Modules\Customer\Repositories\Address\IAddressRepository;
-use Modules\Customer\Repositories\Profile\IProfileRepository;
-use Modules\Customer\Services\Profile\IProfileService;
+use Modules\Customer\Services\Address\IAddressService;
 
 /**
  * Index Address Controller
@@ -17,31 +15,16 @@ use Modules\Customer\Services\Profile\IProfileService;
 class IndexAddressController
 {
     /**
-     * Address repository instance
+     * Address service instance
      */
-    protected IAddressRepository $addressRepository;
-
-    /**
-     * Profile repository instance
-     */
-    protected IProfileRepository $profileRepository;
-
-    /**
-     * Profile service instance
-     */
-    protected IProfileService $profileService;
+    protected IAddressService $addressService;
 
     /**
      * Constructor
      */
-    public function __construct(
-        IAddressRepository $addressRepository,
-        IProfileRepository $profileRepository,
-        IProfileService $profileService
-    ) {
-        $this->addressRepository = $addressRepository;
-        $this->profileRepository = $profileRepository;
-        $this->profileService = $profileService;
+    public function __construct(IAddressService $addressService)
+    {
+        $this->addressService = $addressService;
     }
 
     /**
@@ -49,15 +32,12 @@ class IndexAddressController
      */
     public function __invoke(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->authenticated_user;
 
-        // Get or create profile
-        $profile = $this->profileRepository->findByUserId($user->id);
-        if (!$profile) {
-            $profile = $this->profileService->createProfile($user->id, []);
-        }
+        // Get or create profile using service
+        $profile = $this->addressService->getOrCreateProfile($user->id, []);
 
-        $addresses = $this->addressRepository->findByProfileId($profile->id);
+        $addresses = $this->addressService->getAddressesByProfileId($profile->id);
 
         return response()->json([
             'status' => true,

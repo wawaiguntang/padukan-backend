@@ -98,35 +98,35 @@ class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
      */
     public function canSubmitVerification(string $userId, string $profileId): bool
     {
-        // First check ownership
-        if (!$this->ownsProfile($userId, $profileId)) {
+        if (!$this->canModifyProfile($userId, $profileId)) {
             return false;
         }
 
-        // Load verification policy settings
-        $verificationPolicy = $this->policyRepository->getSetting('customer.profile.verification');
-
-        if (!$verificationPolicy) {
-            return true; // Allow if no verification policy is set
-        }
-
         $profile = $this->profileRepository->findById($profileId);
+
         if (!$profile) {
             return false;
         }
 
-        // Check if profile is already verified
-        if ($profile->is_verified) {
+        return $profile->verification_status->value === null ||
+            $profile->verification_status->value === 'pending';
+    }
+
+    /**
+     * Check if user can resubmit profile verification
+     */
+    public function canResubmitVerification(string $userId, string $profileId): bool
+    {
+        if (!$this->canModifyProfile($userId, $profileId)) {
             return false;
         }
 
-        // Check if resubmission is allowed only for rejected profiles
-        if (isset($verificationPolicy['allow_resubmit_only_rejected']) && $verificationPolicy['allow_resubmit_only_rejected']) {
-            if ($profile->verification_status !== 'rejected') {
-                return false;
-            }
+        $profile = $this->profileRepository->findById($profileId);
+
+        if (!$profile) {
+            return false;
         }
 
-        return true;
+        return $profile->verification_status->value === 'rejected';
     }
 }

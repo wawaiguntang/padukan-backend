@@ -13,6 +13,11 @@ class Address extends Model
     use HasFactory;
 
     /**
+     * The database connection that should be used by the model.
+     */
+    protected $connection = 'customer';
+
+    /**
      * The data type of the primary key.
      */
     protected $keyType = 'string';

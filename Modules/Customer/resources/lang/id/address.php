@@ -17,6 +17,8 @@ return [
     'primary_updated_successfully' => 'Alamat utama berhasil diperbarui.',
     'not_found' => 'Alamat tidak ditemukan.',
     'access_denied' => 'Anda tidak memiliki izin untuk mengakses alamat ini.',
+    'create_denied' => 'Anda tidak memiliki izin untuk membuat alamat.',
+    'max_limit_reached' => 'Jumlah maksimum alamat untuk profil ini telah tercapai.',
     'create_failed' => 'Gagal membuat alamat.',
     'update_failed' => 'Gagal memperbarui alamat.',
     'delete_failed' => 'Gagal menghapus alamat.',

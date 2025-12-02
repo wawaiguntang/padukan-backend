@@ -4,8 +4,7 @@ namespace Modules\Customer\Http\Controllers\Address;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Modules\Customer\Repositories\Address\IAddressRepository;
-use Modules\Customer\Repositories\Profile\IProfileRepository;
+use Modules\Customer\Services\Address\IAddressService;
 
 /**
  * Destroy Address Controller
@@ -15,24 +14,16 @@ use Modules\Customer\Repositories\Profile\IProfileRepository;
 class DestroyAddressController
 {
     /**
-     * Address repository instance
+     * Address service instance
      */
-    protected IAddressRepository $addressRepository;
-
-    /**
-     * Profile repository instance
-     */
-    protected IProfileRepository $profileRepository;
+    protected IAddressService $addressService;
 
     /**
      * Constructor
      */
-    public function __construct(
-        IAddressRepository $addressRepository,
-        IProfileRepository $profileRepository
-    ) {
-        $this->addressRepository = $addressRepository;
-        $this->profileRepository = $profileRepository;
+    public function __construct(IAddressService $addressService)
+    {
+        $this->addressService = $addressService;
     }
 
     /**
@@ -40,9 +31,9 @@ class DestroyAddressController
      */
     public function __invoke(Request $request, string $id): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->authenticated_user;
 
-        $address = $this->addressRepository->findById($id);
+        $address = $this->addressService->getAddressById($id);
 
         if (!$address) {
             return response()->json([
@@ -51,16 +42,15 @@ class DestroyAddressController
             ], 404);
         }
 
-        // Check ownership
-        $profile = $this->profileRepository->findByUserId($user->id);
-        if (!$profile || $address->profile_id !== $profile->id) {
+        // Check ownership using service
+        if (!$this->addressService->isAddressOwnedByUser($id, $user->id)) {
             return response()->json([
                 'status' => false,
                 'message' => __('customer::address.access_denied'),
             ], 403);
         }
 
-        $deleted = $this->addressRepository->delete($id);
+        $deleted = $this->addressService->deleteAddress($id);
 
         if (!$deleted) {
             return response()->json([

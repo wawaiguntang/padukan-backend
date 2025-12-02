@@ -33,4 +33,9 @@ interface IProfileOwnershipPolicy
      * Check if user can submit profile verification
      */
     public function canSubmitVerification(string $userId, string $profileId): bool;
+
+    /**
+     * Check if user can resubmit profile verification
+     */
+    public function canResubmitVerification(string $userId, string $profileId): bool;
 }

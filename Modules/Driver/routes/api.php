@@ -43,7 +43,7 @@ Route::middleware(['driver.auth'])->prefix('v1/driver')->group(function () {
     Route::prefix('profile')->group(function () {
         Route::get('/', GetProfileController::class)
             ->middleware('driver.permission:driver-profile-view');
-        Route::put('/', UpdateProfileController::class)
+        Route::post('/', UpdateProfileController::class)
             ->middleware('driver.permission:driver-profile-update');
 
         // Profile Verification

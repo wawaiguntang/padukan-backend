@@ -31,6 +31,14 @@ interface IProfileService
     public function getProfileByUserId(string $userId): ?Profile;
 
     /**
+     * Get profile by ID
+     *
+     * @param string $profileId The profile's UUID
+     * @return Profile|null The profile model if found, null otherwise
+     */
+    public function getProfileById(string $profileId): ?Profile;
+
+    /**
      * Update profile information
      *
      * @param string $userId The user's UUID
@@ -87,9 +95,25 @@ interface IProfileService
      *
      * @param string $userId The user's UUID
      * @param bool $isVerified Whether the profile is verified
-     * @param string $status The verification status
-     * @param string|null $verifiedBy The ID of who verified the profile
+     * @param string|null $verificationStatus The verification status enum value
      * @return bool True if update was successful, false otherwise
      */
-    public function updateVerificationStatus(string $userId, bool $isVerified, string $status, ?string $verifiedBy = null): bool;
+    public function updateVerificationStatus(string $userId, bool $isVerified, ?string $verificationStatus = null): bool;
+
+    /**
+     * Get profile verification status with documents
+     *
+     * @param string $userId The user's UUID
+     * @return array|null Verification status data or null if profile not found
+     */
+    public function getVerificationStatus(string $userId): ?array;
+
+    /**
+     * Resubmit profile verification documents
+     *
+     * @param string $userId The user's UUID
+     * @param array $data Verification data including files and metadata
+     * @return array|null Resubmission result or null if not allowed
+     */
+    public function resubmitVerification(string $userId, array $data): ?array;
 }

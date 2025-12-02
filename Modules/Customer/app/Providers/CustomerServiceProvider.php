@@ -226,18 +226,11 @@ class CustomerServiceProvider extends ServiceProvider
             \Modules\Customer\Services\Document\DocumentService::class
         );
 
-        // Add other service bindings here as needed
         // Address Service
-        // $this->app->bind(
-        //     \Modules\Customer\Services\Address\IAddressService::class,
-        //     \Modules\Customer\Services\Address\AddressService::class
-        // );
-
-        // Address Service
-        // $this->app->bind(
-        //     \Modules\Customer\Services\Address\IAddressService::class,
-        //     \Modules\Customer\Services\Address\AddressService::class
-        // );
+        $this->app->bind(
+            \Modules\Customer\Services\Address\IAddressService::class,
+            \Modules\Customer\Services\Address\AddressService::class
+        );
     }
 
     /**

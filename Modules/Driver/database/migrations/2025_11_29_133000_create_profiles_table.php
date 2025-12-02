@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
             $table->string('avatar')->nullable();
-            $table->enum('gender', array_column(\Modules\Driver\Enums\GenderEnum::cases(), 'value'))->nullable();
+            $table->enum('gender', array_column(\Modules\Driver\Enums\GenderEnum::cases(), 'value'))->default('other');
             $table->string('language')->default('id');
             $table->boolean('is_verified')->default(false);
             $table->enum('verification_status', array_column(\Modules\Driver\Enums\VerificationStatusEnum::cases(), 'value'))->default('pending');

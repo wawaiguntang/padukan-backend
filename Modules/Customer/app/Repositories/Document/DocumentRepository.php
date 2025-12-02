@@ -67,7 +67,7 @@ class DocumentRepository implements IDocumentRepository
         $cacheKey = $this->cacheKeyManager::documentsByProfileId($profileId);
 
         return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
-            return $this->model->where('profile_id', $profileId)->get();
+            return $this->model->where('documentable_id', $profileId)->get();
         });
     }
 
@@ -152,7 +152,19 @@ class DocumentRepository implements IDocumentRepository
     public function findByTypeAndProfileId(string $profileId, DocumentTypeEnum $type): Collection
     {
         return $this->model
-            ->where('profile_id', $profileId)
+            ->where('documentable_id', $profileId)
+            ->where('type', $type)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findByTypeAndDocumentable(string $documentableId, string $documentableType, DocumentTypeEnum $type): Collection
+    {
+        return $this->model
+            ->where('documentable_id', $documentableId)
+            ->where('documentable_type', $documentableType)
             ->where('type', $type)
             ->get();
     }

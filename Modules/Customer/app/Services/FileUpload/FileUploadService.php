@@ -11,59 +11,25 @@ use Modules\Customer\Exceptions\FileValidationException;
 /**
  * File Upload Service Implementation
  *
- * This class handles file upload operations for the customer module,
+ * This class handles file upload operations for the driver module,
  * supporting both public (avatar) and private (document) file storage.
  */
 class FileUploadService implements IFileUploadService
 {
-    /**
-     * Allowed MIME types for avatar uploads
-     */
-    private const AVATAR_ALLOWED_MIME_TYPES = [
-        'image/jpeg',
-        'image/jpg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-    ];
-
-    /**
-     * Maximum file size for avatars (5MB)
-     */
-    private const AVATAR_MAX_SIZE = 5242880; // 5MB in bytes
-
-    /**
-     * Allowed MIME types for document uploads
-     */
-    private const DOCUMENT_ALLOWED_MIME_TYPES = [
-        'application/pdf',
-        'image/jpeg',
-        'image/jpg',
-        'image/png',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/plain',
-    ];
-
-    /**
-     * Maximum file size for documents (10MB)
-     */
-    private const DOCUMENT_MAX_SIZE = 10485760; // 10MB in bytes
 
     /**
      * {@inheritDoc}
      */
     public function uploadAvatar(UploadedFile $file, string $userId): array
     {
-        $this->validateAvatarFile($file);
-
         $filename = $this->generateUniqueFilename($file->getClientOriginalName());
         $path = "avatars/{$userId}/{$filename}";
 
-        // Store file in public disk
-        $storedPath = $file->storeAs("avatars/{$userId}", $filename, 'public');
+        // Store file in S3 with public visibility
+        $storedPath = $file->storeAs("avatars/{$userId}", $filename, [
+            'disk' => 's3',
+            'visibility' => 'public'
+        ]);
 
         if (!$storedPath) {
             throw new FileUploadException();
@@ -83,13 +49,14 @@ class FileUploadService implements IFileUploadService
      */
     public function uploadDocument(UploadedFile $file, string $userId, string $documentType): array
     {
-        $this->validateDocumentFile($file);
-
         $filename = $this->generateUniqueFilename($file->getClientOriginalName());
         $path = "documents/{$userId}/{$documentType}/{$filename}";
 
-        // Store file in private disk (local storage, not publicly accessible)
-        $storedPath = $file->storeAs("documents/{$userId}/{$documentType}", $filename, 'local');
+        // Store file in S3 with private visibility
+        $storedPath = $file->storeAs("documents/{$userId}/{$documentType}", $filename, [
+            'disk' => 's3',
+            'visibility' => 'private'
+        ]);
 
         if (!$storedPath) {
             throw new FileUploadException();
@@ -108,7 +75,7 @@ class FileUploadService implements IFileUploadService
      */
     public function deleteAvatar(string $filePath): bool
     {
-        return Storage::disk('public')->delete($filePath);
+        return Storage::disk('s3')->delete($filePath);
     }
 
     /**
@@ -116,7 +83,7 @@ class FileUploadService implements IFileUploadService
      */
     public function deleteDocument(string $filePath): bool
     {
-        return Storage::disk('local')->delete($filePath);
+        return Storage::disk('s3')->delete($filePath);
     }
 
     /**
@@ -124,50 +91,7 @@ class FileUploadService implements IFileUploadService
      */
     public function getAvatarUrl(string $filePath): string
     {
-        return asset('storage/' . $filePath);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function validateAvatarFile(UploadedFile $file): void
-    {
-        // Check file size
-        if ($file->getSize() > self::AVATAR_MAX_SIZE) {
-            throw new FileValidationException('customer.file.too_large');
-        }
-
-        // Check MIME type
-        if (!in_array($file->getMimeType(), self::AVATAR_ALLOWED_MIME_TYPES)) {
-            throw new FileValidationException('customer.file.invalid_type');
-        }
-
-        // Check if file is actually an image
-        $imageInfo = getimagesize($file->getPathname());
-        if (!$imageInfo) {
-            throw new FileValidationException('customer.file.avatar.not_image');
-        }
-
-        // Check image dimensions (optional - prevent extremely large images)
-        if ($imageInfo[0] > 4096 || $imageInfo[1] > 4096) {
-            throw new FileValidationException('customer.file.avatar.invalid_dimensions');
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function validateDocumentFile(UploadedFile $file): void
-    {
-        // Check file size
-        if ($file->getSize() > self::DOCUMENT_MAX_SIZE) {
-            throw new FileValidationException('customer.file.too_large');
-        }
-
-        // Check MIME type
-        if (!in_array($file->getMimeType(), self::DOCUMENT_ALLOWED_MIME_TYPES)) {
-            throw new FileValidationException('customer.file.document.invalid_type');
-        }
+        return Storage::url($filePath);
     }
 
     /**
@@ -188,13 +112,14 @@ class FileUploadService implements IFileUploadService
     /**
      * {@inheritDoc}
      */
-    public function generateTemporaryUrl(string $filePath): string
+    public function generateTemporaryUrl(string $filePath, int $minutes = 60): string
     {
-        // For local storage, we'll use a signed URL approach
-        // In production, you might want to use AWS S3 or similar service
-        return route('customer.temporary.file', [
-            'path' => base64_encode($filePath),
-            'expires' => time() + 3600, // 1 hour expiry
-        ]);
+        // For private S3 files, create a signed URL that allows temporary access
+        $disk = Storage::temporaryUrl($filePath, now()->addMinutes($minutes));
+        if ($disk) {
+            return $disk;
+        }
+
+        throw new FileUploadException('file.generate_temporary_url_failed');
     }
 }

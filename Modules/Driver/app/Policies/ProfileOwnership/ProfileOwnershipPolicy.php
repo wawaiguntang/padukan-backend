@@ -108,8 +108,7 @@ class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
             return false;
         }
 
-        return $profile->verification_status->value === null ||
-            !in_array($profile->verification_status->value, ['pending', 'verified']);
+        return $profile->verification_status->value === 'pending';
     }
 
     /**

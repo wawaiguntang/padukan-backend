@@ -83,16 +83,4 @@ class ProfileUpdateRequest extends FormRequest
 
         throw new \Illuminate\Validation\ValidationException($validator, $response);
     }
-
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        // Trim whitespace from string fields
-        $this->merge([
-            'first_name' => $this->first_name ? trim($this->first_name) : null,
-            'last_name' => $this->last_name ? trim($this->last_name) : null,
-        ]);
-    }
 }

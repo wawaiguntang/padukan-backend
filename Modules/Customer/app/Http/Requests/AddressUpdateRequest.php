@@ -77,25 +77,19 @@ class AddressUpdateRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
+     * Handle a failed validation attempt.
+     *
+     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @return void
      */
-    protected function prepareForValidation(): void
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
     {
-        // Trim whitespace from string fields
-        if ($this->has('label')) {
-            $this->merge(['label' => trim($this->label)]);
-        }
-        if ($this->has('street')) {
-            $this->merge(['street' => trim($this->street)]);
-        }
-        if ($this->has('city')) {
-            $this->merge(['city' => trim($this->city)]);
-        }
-        if ($this->has('province')) {
-            $this->merge(['province' => trim($this->province)]);
-        }
-        if ($this->has('postal_code')) {
-            $this->merge(['postal_code' => trim($this->postal_code)]);
-        }
+        $response = response()->json([
+            'status' => false,
+            'message' => __('customer::validation.failed'),
+            'errors' => $validator->errors(),
+        ], 422);
+
+        throw new \Illuminate\Validation\ValidationException($validator, $response);
     }
 }

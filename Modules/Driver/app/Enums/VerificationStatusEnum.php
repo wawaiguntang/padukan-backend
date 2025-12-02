@@ -7,6 +7,7 @@ enum VerificationStatusEnum: string
     case PENDING = 'pending';
     case APPROVED = 'approved';
     case REJECTED = 'rejected';
+    case ON_REVIEW = 'on_review';
 
     public function label(): string
     {
@@ -14,6 +15,7 @@ enum VerificationStatusEnum: string
             self::PENDING => 'Pending',
             self::APPROVED => 'Approved',
             self::REJECTED => 'Rejected',
+            self::ON_REVIEW => 'On Review',
         };
     }
 
@@ -23,6 +25,7 @@ enum VerificationStatusEnum: string
             self::PENDING => 'yellow',
             self::APPROVED => 'green',
             self::REJECTED => 'red',
+            self::ON_REVIEW => 'blue',
         };
     }
 }

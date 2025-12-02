@@ -155,7 +155,11 @@ class DocumentService implements IDocumentService
             throw new ProfileNotFoundException();
         }
 
-        return $this->documentRepository->findByTypeAndProfileId($profile->id, $documentType);
+        return $this->documentRepository->findByTypeAndDocumentable(
+            $profile->id,
+            \Modules\Customer\Models\Profile::class,
+            $documentType
+        );
     }
 
     /**

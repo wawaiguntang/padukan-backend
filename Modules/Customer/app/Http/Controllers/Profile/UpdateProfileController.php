@@ -3,6 +3,7 @@
 namespace Modules\Customer\Http\Controllers\Profile;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Modules\Customer\Http\Requests\ProfileUpdateRequest;
 use Modules\Customer\Http\Resources\ProfileResource;
 use Modules\Customer\Services\Profile\IProfileService;

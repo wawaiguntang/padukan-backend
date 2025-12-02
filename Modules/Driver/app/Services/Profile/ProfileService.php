@@ -244,8 +244,7 @@ class ProfileService implements IProfileService
                 'temporary_url' => $this->fileUploadService->generateTemporaryUrl($selfieDocument->file_path),
             ] : null,
             'can_resubmit' => $profile->verification_status->value === 'rejected',
-            'can_submit' => $profile->verification_status === null ||
-                !in_array($profile->verification_status->value, ['pending', 'approved']),
+            'can_submit' => $profile->verification_status->value === 'pending',
         ];
     }
 
@@ -294,10 +293,21 @@ class ProfileService implements IProfileService
             $uploadedDocuments[] = $selfieDocument;
 
             $this->profileRepository->update($profile->id, [
-                'verification_status' => 'pending',
+                'verification_status' => 'on_review',
                 'is_verified' => false,
                 'verified_at' => null,
             ]);
+
+
+            $this->documentService->updateVerificationStatus(
+                $idCardDocument->id,
+                \Modules\Driver\Enums\VerificationStatusEnum::ON_REVIEW
+            );
+
+            $this->documentService->updateVerificationStatus(
+                $selfieDocument->id,
+                \Modules\Driver\Enums\VerificationStatusEnum::ON_REVIEW
+            );
 
             return [
                 'verification_id' => $profile->id,

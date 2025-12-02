@@ -27,8 +27,8 @@ class DocumentStatusPolicy implements IDocumentStatusPolicy
         } else {
             // Fallback to default
             $this->policySettings = [
-                'allowed_update_statuses' => ['pending', 'rejected'],
-                'allowed_delete_statuses' => ['rejected'],
+                'allowed_update_statuses' => [],
+                'allowed_delete_statuses' => [],
                 'allowed_resubmit_statuses' => ['rejected'],
                 'auto_reject_expired' => true,
                 'expiry_grace_days' => 30,

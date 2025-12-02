@@ -4,6 +4,7 @@ namespace Modules\Customer\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Customer\Services\FileUpload\IFileUploadService;
 
 /**
  * Profile Resource
@@ -25,10 +26,16 @@ class ProfileResource extends JsonResource
             'full_name' => $this->when($this->first_name || $this->last_name, function () {
                 return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
             }),
-            'avatar' => $this->avatar,
+            'avatar' => $this->when($this->avatar, function () {
+                return app(IFileUploadService::class)->getAvatarUrl($this->avatar);
+            }),
+            'avatar_path' => $this->avatar,
             'gender' => $this->gender?->value,
             'gender_label' => $this->gender?->label(),
             'language' => $this->language,
+            'is_verified' => $this->is_verified,
+            'verification_status' => $this->verification_status?->value,
+            'verification_status_label' => $this->verification_status?->label(),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
 

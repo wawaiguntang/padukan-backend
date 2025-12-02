@@ -59,12 +59,7 @@ class GetProfileVerificationStatusController
             ], 403);
         }
 
-        $verificationData = [
-            'is_verified' => $profile->is_verified,
-            'verification_status' => $profile->verification_status,
-            'verified_services' => $profile->verified_services,
-            'last_updated' => $profile->updated_at,
-        ];
+        $verificationData = $this->profileService->getVerificationStatus($user->id);
 
         return response()->json([
             'status' => true,

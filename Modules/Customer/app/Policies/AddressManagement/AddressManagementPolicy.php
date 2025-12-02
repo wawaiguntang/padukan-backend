@@ -32,7 +32,6 @@ class AddressManagementPolicy implements IAddressManagementPolicy
         } else {
             // Fallback to default
             $this->policySettings = [
-                'enabled' => true,
                 'max_addresses_per_customer' => 5,
                 'require_primary_address' => true,
                 'allowed_address_types' => ['home', 'work', 'business', 'other'],
@@ -50,10 +49,6 @@ class AddressManagementPolicy implements IAddressManagementPolicy
      */
     public function canAddAddress(string $profileId): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         $currentAddressCount = $this->addressRepository->countByProfileId($profileId);
         return $currentAddressCount < $this->policySettings['max_addresses_per_customer'];
     }
@@ -71,10 +66,6 @@ class AddressManagementPolicy implements IAddressManagementPolicy
      */
     public function isAddressTypeAllowed(string $addressType): bool
     {
-        if (!$this->policySettings['enabled']) {
-            return true;
-        }
-
         return in_array($addressType, $this->policySettings['allowed_address_types']);
     }
 

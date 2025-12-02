@@ -17,6 +17,8 @@ return [
     'primary_updated_successfully' => 'Primary address updated successfully.',
     'not_found' => 'Address not found.',
     'access_denied' => 'You do not have permission to access this address.',
+    'create_denied' => 'You do not have permission to create addresses.',
+    'max_limit_reached' => 'Maximum number of addresses reached for this profile.',
     'create_failed' => 'Failed to create address.',
     'update_failed' => 'Failed to update address.',
     'delete_failed' => 'Failed to delete address.',

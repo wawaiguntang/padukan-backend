@@ -40,7 +40,6 @@ class Profile extends Model
         'language',
         'is_verified',
         'verification_status',
-        'verified_services',
     ];
 
     /**
@@ -49,7 +48,9 @@ class Profile extends Model
     protected function casts(): array
     {
         return [
-            'verified_services' => 'array',
+            'is_verified' => 'boolean',
+            'verification_status' => \Modules\Customer\Enums\VerificationStatusEnum::class,
+            'gender' => \Modules\Customer\Enums\GenderEnum::class,
         ];
     }
 

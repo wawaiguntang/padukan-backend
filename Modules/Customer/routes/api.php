@@ -34,7 +34,7 @@ Route::middleware(['customer.auth'])->prefix('v1/customer')->group(function () {
     Route::prefix('profile')->group(function () {
         Route::get('/', GetProfileController::class)
             ->middleware('customer.permission:customer-profile-view');
-        Route::put('/', UpdateProfileController::class)
+        Route::post('/', UpdateProfileController::class)
             ->middleware('customer.permission:customer-profile-update');
 
         // Profile Verification

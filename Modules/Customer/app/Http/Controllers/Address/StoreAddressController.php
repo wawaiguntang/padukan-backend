@@ -6,9 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Modules\Customer\Http\Requests\AddressCreateRequest;
 use Modules\Customer\Http\Resources\AddressResource;
-use Modules\Customer\Repositories\Address\IAddressRepository;
-use Modules\Customer\Repositories\Profile\IProfileRepository;
-use Modules\Customer\Services\Profile\IProfileService;
+use Modules\Customer\Services\Address\IAddressService;
+use Modules\Customer\Policies\AddressManagement\IAddressManagementPolicy;
 
 /**
  * Store Address Controller
@@ -18,31 +17,24 @@ use Modules\Customer\Services\Profile\IProfileService;
 class StoreAddressController
 {
     /**
-     * Address repository instance
+     * Address service instance
      */
-    protected IAddressRepository $addressRepository;
+    protected IAddressService $addressService;
 
     /**
-     * Profile repository instance
+     * Address management policy instance
      */
-    protected IProfileRepository $profileRepository;
-
-    /**
-     * Profile service instance
-     */
-    protected IProfileService $profileService;
+    protected IAddressManagementPolicy $addressManagementPolicy;
 
     /**
      * Constructor
      */
     public function __construct(
-        IAddressRepository $addressRepository,
-        IProfileRepository $profileRepository,
-        IProfileService $profileService
+        IAddressService $addressService,
+        IAddressManagementPolicy $addressManagementPolicy
     ) {
-        $this->addressRepository = $addressRepository;
-        $this->profileRepository = $profileRepository;
-        $this->profileService = $profileService;
+        $this->addressService = $addressService;
+        $this->addressManagementPolicy = $addressManagementPolicy;
     }
 
     /**
@@ -50,19 +42,25 @@ class StoreAddressController
      */
     public function __invoke(AddressCreateRequest $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->authenticated_user;
         $validated = $request->validated();
 
-        // Get or create profile
-        $profile = $this->profileRepository->findByUserId($user->id);
-        if (!$profile) {
-            $profile = $this->profileService->createProfile($user->id, []);
-        }
+        // Get or create profile using service
+        $profile = $this->addressService->getOrCreateProfile($user->id, []);
 
         // Add profile_id to validated data
         $validated['profile_id'] = $profile->id;
 
-        $address = $this->addressRepository->create($validated);
+        // Check if profile can add more addresses
+        if (!$this->addressManagementPolicy->canAddAddress($profile->id)) {
+            return response()->json([
+                'status' => false,
+                'message' => __('customer::address.max_limit_reached'),
+            ], 403);
+        }
+
+        // Create address using service
+        $address = $this->addressService->createAddress($profile->id, $validated);
 
         return response()->json([
             'status' => true,

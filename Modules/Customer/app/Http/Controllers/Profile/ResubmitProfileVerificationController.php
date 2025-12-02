@@ -4,16 +4,13 @@ namespace Modules\Customer\Http\Controllers\Profile;
 
 use Illuminate\Http\JsonResponse;
 use Modules\Customer\Http\Requests\ProfileVerificationRequest;
-use Modules\Customer\Enums\DocumentTypeEnum;
 use Modules\Customer\Services\Profile\IProfileService;
-use Modules\Customer\Services\Document\IDocumentService;
-use Modules\Customer\Services\FileUpload\IFileUploadService;
 use Modules\Customer\Policies\ProfileOwnership\IProfileOwnershipPolicy;
 
 /**
  * Resubmit Profile Verification Controller
  *
- * Handles resubmitting profile verification if previously rejected
+ * Handles resubmitting profile verification (only if rejected)
  */
 class ResubmitProfileVerificationController
 {
@@ -21,16 +18,6 @@ class ResubmitProfileVerificationController
      * Profile service instance
      */
     protected IProfileService $profileService;
-
-    /**
-     * Document service instance
-     */
-    protected IDocumentService $documentService;
-
-    /**
-     * File upload service instance
-     */
-    protected IFileUploadService $fileUploadService;
 
     /**
      * Profile ownership policy instance
@@ -42,83 +29,50 @@ class ResubmitProfileVerificationController
      */
     public function __construct(
         IProfileService $profileService,
-        IDocumentService $documentService,
-        IFileUploadService $fileUploadService,
         IProfileOwnershipPolicy $profileOwnershipPolicy
     ) {
         $this->profileService = $profileService;
-        $this->documentService = $documentService;
-        $this->fileUploadService = $fileUploadService;
         $this->profileOwnershipPolicy = $profileOwnershipPolicy;
     }
 
     /**
-     * Resubmit profile verification with ID card
+     * Resubmit profile verification (only if rejected)
      */
     public function __invoke(ProfileVerificationRequest $request): JsonResponse
     {
         $user = $request->authenticated_user;
         $validated = $request->validated();
 
-        // Get or create profile via service
-        $profile = $this->profileService->getProfileByUserId($user->id);
-        if (!$profile) {
-            $profile = $this->profileService->createProfile($user->id, []);
-        }
-
-        // Check if user can submit verification (resubmission)
-        if (!$this->profileOwnershipPolicy->canSubmitVerification($user->id, $profile->id)) {
-            return response()->json([
-                'status' => false,
-                'message' => __('customer::profile.verification.cannot_resubmit'),
-            ], 400);
-        }
-
         try {
-            // Upload documents directly
-            $idCardDocument = $this->documentService->uploadDocument(
-                $user->id,
-                DocumentTypeEnum::ID_CARD,
-                $request->file('id_card_file'),
-                [
-                    'meta' => $validated['id_card_meta'],
-                    'expiry_date' => $validated['id_card_expiry_date'] ?? null,
-                ]
-            );
+            $profile = $this->profileService->getProfileByUserId($user->id);
 
-            $selfieDocument = $this->documentService->uploadDocument(
-                $user->id,
-                DocumentTypeEnum::SELFIE_WITH_KTP,
-                $request->file('selfie_with_ktp_file'),
-                [
-                    'meta' => $validated['selfie_with_ktp_meta'] ?? null,
-                ]
-            );
+            if (!$profile) {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('customer::profile.not_found'),
+                ], 404);
+            }
 
-            // Update profile verification status to pending via service
-            $this->profileService->updateVerificationStatus($user->id, false, 'pending');
+            if (!$this->profileOwnershipPolicy->canResubmitVerification($user->id, $profile->id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('customer::profile.verification.resubmit_not_allowed'),
+                ], 400);
+            }
 
-            $uploadedDocuments = [$idCardDocument, $selfieDocument];
+            $result = $this->profileService->resubmitVerification($user->id, [
+                'id_card_file' => $request->file('id_card_file'),
+                'id_card_meta' => $validated['id_card_meta'],
+                'id_card_expiry_date' => $validated['id_card_expiry_date'] ?? null,
+                'selfie_with_ktp_file' => $request->file('selfie_with_ktp_file'),
+                'selfie_with_ktp_meta' => $validated['selfie_with_ktp_meta'] ?? null,
+            ]);
 
             return response()->json([
                 'status' => true,
                 'message' => __('customer::profile.verification.resubmitted_successfully'),
-                'data' => [
-                    'verification_id' => $profile->id,
-                    'status' => 'pending',
-                    'documents_uploaded' => count($uploadedDocuments),
-                    'documents' => array_map(function ($document) {
-                        return [
-                            'id' => $document->id,
-                            'type' => $document->type,
-                            'file_name' => $document->file_name,
-                            'uploaded_at' => $document->created_at,
-                            'temporary_url' => $this->fileUploadService->generateTemporaryUrl($document->file_path),
-                        ];
-                    }, $uploadedDocuments),
-                    'resubmitted_at' => now(),
-                ],
-            ], 201);
+                'data' => $result,
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,

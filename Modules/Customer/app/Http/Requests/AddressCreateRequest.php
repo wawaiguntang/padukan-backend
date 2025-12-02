@@ -83,17 +83,19 @@ class AddressCreateRequest extends FormRequest
     }
 
     /**
-     * Prepare the data for validation.
+     * Handle a failed validation attempt.
+     *
+     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @return void
      */
-    protected function prepareForValidation(): void
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
     {
-        // Trim whitespace from string fields
-        $this->merge([
-            'label' => trim($this->label),
-            'street' => trim($this->street),
-            'city' => trim($this->city),
-            'province' => trim($this->province),
-            'postal_code' => trim($this->postal_code),
-        ]);
+        $response = response()->json([
+            'status' => false,
+            'message' => __('customer::validation.failed'),
+            'errors' => $validator->errors(),
+        ], 422);
+
+        throw new \Illuminate\Validation\ValidationException($validator, $response);
     }
 }
