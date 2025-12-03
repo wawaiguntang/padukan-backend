@@ -166,8 +166,8 @@ return [
         'id_card_meta.name' => 'nama kartu identitas',
         'id_card_meta.number' => 'nomor kartu identitas',
         'id_card_expiry_date' => 'tanggal kedaluwarsa kartu identitas',
-        'selfie_with_ktp_file' => 'file selfie dengan KTP',
-        'selfie_with_ktp_meta' => 'metadata selfie',
+        'selfie_with_id_card_file' => 'file selfie dengan kartu identitas',
+        'selfie_with_id_card_meta' => 'metadata selfie',
         'avatar_file' => 'file avatar',
     ],
 
@@ -198,13 +198,13 @@ return [
             'date' => 'Tanggal kedaluwarsa kartu identitas harus berupa tanggal yang valid.',
             'after' => 'Tanggal kedaluwarsa kartu identitas harus setelah hari ini.',
         ],
-        'selfie_with_ktp_file' => [
-            'required' => 'File selfie dengan KTP wajib diisi.',
+        'selfie_with_id_card_file' => [
+            'required' => 'File selfie dengan kartu identitas wajib diisi.',
             'file' => 'Selfie harus berupa file yang valid.',
             'mimes' => 'Selfie harus berupa file dengan tipe: jpeg, jpg, png.',
             'max' => 'File selfie tidak boleh lebih besar dari 5MB.',
         ],
-        'selfie_with_ktp_meta' => [
+        'selfie_with_id_card_meta' => [
             'array' => 'Metadata selfie harus berupa array.',
         ],
     ],

@@ -64,21 +64,6 @@ return new class extends Migration
             $table->index(['role_id']);
             $table->index(['permission_id']);
         });
-
-        // Policy settings table (JSON configuration for complex policies)
-        Schema::create('policy_settings', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('key')->unique(); // Policy identifier (e.g., 'driver_accept_order')
-            $table->string('name'); // Human readable name
-            $table->jsonb('settings'); // JSON configuration parameters
-            $table->boolean('is_active')->default(true);
-            $table->text('description')->nullable();
-            $table->timestamps();
-
-            $table->index(['key']);
-            $table->index(['is_active']);
-            $table->index(['settings'], 'policy_settings_gin')->algorithm('gin');
-        });
     }
 
     /**
@@ -86,7 +71,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('policy_settings');
         Schema::dropIfExists('role_permissions');
         Schema::dropIfExists('permissions');
         Schema::dropIfExists('user_roles');

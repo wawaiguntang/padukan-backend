@@ -3,20 +3,20 @@
 namespace Modules\Customer\Policies\ProfileOwnership;
 
 use Modules\Customer\Repositories\Profile\IProfileRepository;
-use App\Shared\Authorization\Repositories\IPolicyRepository;
+use App\Shared\Setting\Services\ISettingService;
 
 class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
 {
     private IProfileRepository $profileRepository;
-    private IPolicyRepository $policyRepository;
+    private ISettingService $settingService;
     private array $policySettings;
 
     public function __construct(
         IProfileRepository $profileRepository,
-        IPolicyRepository $policyRepository
+        ISettingService $settingService
     ) {
         $this->profileRepository = $profileRepository;
-        $this->policyRepository = $policyRepository;
+        $this->settingService = $settingService;
         $this->loadPolicySettings();
     }
 
@@ -25,17 +25,9 @@ class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
      */
     private function loadPolicySettings(): void
     {
-        $settings = $this->policyRepository->getSetting('customer.profile.ownership');
-
-        if ($settings) {
-            $this->policySettings = $settings;
-        } else {
-            // Fallback to default
-            $this->policySettings = [
-                'strict_ownership' => true,
-                'check_user_active' => true,
-            ];
-        }
+        $this->policySettings = $this->settingService->getSettingByKey('customer.profile.ownership')['value'] ?? [
+            'strict_ownership' => true,
+        ];
     }
 
     /**
@@ -49,84 +41,12 @@ class ProfileOwnershipPolicy implements IProfileOwnershipPolicy
             return false;
         }
 
-        // Check if profile belongs to user
-        if ($profile->user_id !== $userId) {
-            return false;
+        if ($this->policySettings['strict_ownership']) {
+            if ($profile->user_id !== $userId) {
+                return false;
+            }
         }
 
         return true;
-    }
-
-    /**
-     * Check if user can access profile data
-     */
-    public function canAccessProfile(string $userId, string $profileId): bool
-    {
-        // For now, access is same as ownership
-        // In future, could add admin access here
-        return $this->ownsProfile($userId, $profileId);
-    }
-
-    /**
-     * Check if user can modify profile data
-     */
-    public function canModifyProfile(string $userId, string $profileId): bool
-    {
-        // For now, modification is same as ownership
-        // In future, could add role-based modification rules
-        return $this->ownsProfile($userId, $profileId);
-    }
-
-    /**
-     * Check if user can upload avatar
-     */
-    public function canUploadAvatar(string $userId, string $profileId): bool
-    {
-        return $this->canModifyProfile($userId, $profileId);
-    }
-
-    /**
-     * Check if user can delete avatar
-     */
-    public function canDeleteAvatar(string $userId, string $profileId): bool
-    {
-        return $this->canModifyProfile($userId, $profileId);
-    }
-
-    /**
-     * Check if user can submit profile verification
-     */
-    public function canSubmitVerification(string $userId, string $profileId): bool
-    {
-        if (!$this->canModifyProfile($userId, $profileId)) {
-            return false;
-        }
-
-        $profile = $this->profileRepository->findById($profileId);
-
-        if (!$profile) {
-            return false;
-        }
-
-        return $profile->verification_status->value === null ||
-            $profile->verification_status->value === 'pending';
-    }
-
-    /**
-     * Check if user can resubmit profile verification
-     */
-    public function canResubmitVerification(string $userId, string $profileId): bool
-    {
-        if (!$this->canModifyProfile($userId, $profileId)) {
-            return false;
-        }
-
-        $profile = $this->profileRepository->findById($profileId);
-
-        if (!$profile) {
-            return false;
-        }
-
-        return $profile->verification_status->value === 'rejected';
     }
 }

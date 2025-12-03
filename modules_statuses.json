@@ -3,5 +3,6 @@
     "Authorization": true,
     "Driver": true,
     "Customer": true,
-    "Merchant": true
+    "Merchant": true,
+    "Setting": true
 }

@@ -32,9 +32,9 @@ class ProfileVerificationRequest extends FormRequest
             'id_card_meta.number' => 'required|string|max:255',
             'id_card_expiry_date' => 'sometimes|date|after:today',
 
-            // Selfie with KTP file
-            'selfie_with_ktp_file' => 'required|file|mimes:jpeg,jpg,png|max:5120', // 5MB max
-            'selfie_with_ktp_meta' => 'sometimes|array',
+            // Selfie with ID card file
+            'selfie_with_id_card_file' => 'required|file|mimes:jpeg,jpg,png|max:5120', // 5MB max
+            'selfie_with_id_card_meta' => 'sometimes|array',
         ];
     }
 
@@ -57,12 +57,12 @@ class ProfileVerificationRequest extends FormRequest
             'id_card_expiry_date.date' => __('driver::validation.profile_verification.id_card_expiry_date.date'),
             'id_card_expiry_date.after' => __('driver::validation.profile_verification.id_card_expiry_date.after'),
 
-            'selfie_with_ktp_file.required' => __('driver::validation.profile_verification.selfie_with_ktp_file.required'),
-            'selfie_with_ktp_file.file' => __('driver::validation.profile_verification.selfie_with_ktp_file.file'),
-            'selfie_with_ktp_file.mimes' => __('driver::validation.profile_verification.selfie_with_ktp_file.mimes'),
-            'selfie_with_ktp_file.max' => __('driver::validation.profile_verification.selfie_with_ktp_file.max'),
+            'selfie_with_id_card_file.required' => __('driver::validation.profile_verification.selfie_with_id_card_file.required'),
+            'selfie_with_id_card_file.file' => __('driver::validation.profile_verification.selfie_with_id_card_file.file'),
+            'selfie_with_id_card_file.mimes' => __('driver::validation.profile_verification.selfie_with_id_card_file.mimes'),
+            'selfie_with_id_card_file.max' => __('driver::validation.profile_verification.selfie_with_id_card_file.max'),
 
-            'selfie_with_ktp_meta.array' => __('driver::validation.profile_verification.selfie_with_ktp_meta.array'),
+            'selfie_with_id_card_meta.array' => __('driver::validation.profile_verification.selfie_with_id_card_meta.array'),
         ];
     }
 
@@ -77,8 +77,8 @@ class ProfileVerificationRequest extends FormRequest
             'id_card_meta.name' => __('driver::attributes.profile_verification.id_card_meta.name'),
             'id_card_meta.number' => __('driver::attributes.profile_verification.id_card_meta.number'),
             'id_card_expiry_date' => __('driver::attributes.profile_verification.id_card_expiry_date'),
-            'selfie_with_ktp_file' => __('driver::attributes.profile_verification.selfie_with_ktp_file'),
-            'selfie_with_ktp_meta' => __('driver::attributes.profile_verification.selfie_with_ktp_meta'),
+            'selfie_with_id_card_file' => __('driver::attributes.profile_verification.selfie_with_id_card_file'),
+            'selfie_with_id_card_meta' => __('driver::attributes.profile_verification.selfie_with_id_card_meta'),
         ];
     }
 

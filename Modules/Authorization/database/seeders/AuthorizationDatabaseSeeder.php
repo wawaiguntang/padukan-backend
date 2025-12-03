@@ -12,11 +12,10 @@ class AuthorizationDatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            AuthorizationEngineSeeder::class,
-            DriverPermissionSeeder::class,
-            DriverPolicySeeder::class,
-            CustomerPermissionSeeder::class,
-            CustomerPolicySeeder::class,
+            RoleSeeder::class,
+            // DriverPermissionSeeder::class,
+            // CustomerPermissionSeeder::class,
+            // MerchantPermissionSeeder::class,
         ]);
     }
 }

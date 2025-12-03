@@ -223,7 +223,7 @@ class ProfileService implements IProfileService
         $idCardDocument = $this->documentRepository->findByTypeAndProfileId($profile->id, DocumentTypeEnum::ID_CARD)->first();
 
         // Get Selfie document
-        $selfieDocument = $this->documentRepository->findByTypeAndProfileId($profile->id, DocumentTypeEnum::SELFIE_WITH_KTP)->first();
+        $selfieDocument = $this->documentRepository->findByTypeAndProfileId($profile->id, DocumentTypeEnum::SELFIE_WITH_ID_CARD)->first();
         return [
             'profile_verified' => $profile->is_verified,
             'verification_status' => $profile->verification_status,
@@ -277,17 +277,17 @@ class ProfileService implements IProfileService
             );
             $uploadedDocuments[] = $idCardDocument;
 
-            $existingSelfie = $this->documentRepository->findByTypeAndProfileId($profile->id, DocumentTypeEnum::SELFIE_WITH_KTP)->first();
+            $existingSelfie = $this->documentRepository->findByTypeAndProfileId($profile->id, DocumentTypeEnum::SELFIE_WITH_ID_CARD)->first();
             if ($existingSelfie) {
                 $this->documentService->deleteDocument($existingSelfie->id);
             }
 
             $selfieDocument = $this->documentService->uploadDocument(
                 $userId,
-                DocumentTypeEnum::SELFIE_WITH_KTP,
-                $data['selfie_with_ktp_file'],
+                DocumentTypeEnum::SELFIE_WITH_ID_CARD,
+                $data['selfie_with_id_card_file'],
                 [
-                    'meta' => $data['selfie_with_ktp_meta'] ?? ['description' => 'Selfie with ID card'],
+                    'meta' => $data['selfie_with_id_card_meta'] ?? ['description' => 'Selfie with ID card'],
                 ]
             );
             $uploadedDocuments[] = $selfieDocument;

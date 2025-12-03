@@ -8,7 +8,7 @@ enum DocumentTypeEnum: string
     case SIM = 'sim';
     case STNK = 'stnk';
     case VEHICLE_PHOTO = 'vehicle_photo';
-    case SELFIE_WITH_KTP = 'selfie_with_ktp';
+    case SELFIE_WITH_ID_CARD = 'selfie_with_id_card';
 
     public function label(): string
     {
@@ -17,14 +17,14 @@ enum DocumentTypeEnum: string
             self::SIM => 'SIM',
             self::STNK => 'STNK',
             self::VEHICLE_PHOTO => 'Vehicle Photo',
-            self::SELFIE_WITH_KTP => 'Selfie with KTP',
+            self::SELFIE_WITH_ID_CARD => 'Selfie with ID Card',
         };
     }
 
     public function requiresMeta(): bool
     {
         return match ($this) {
-            self::ID_CARD, self::SIM, self::STNK, self::SELFIE_WITH_KTP => true,
+            self::ID_CARD, self::SIM, self::STNK, self::SELFIE_WITH_ID_CARD => true,
             self::VEHICLE_PHOTO => false,
         };
     }

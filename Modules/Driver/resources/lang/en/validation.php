@@ -191,8 +191,8 @@
                 'required' => 'ID card temporary path is required.',
                 'string' => 'ID card temporary path must be a string.',
             ],
-            'selfie_with_ktp_temp_path' => [
-                'required' => 'Selfie with KTP temporary path is required.',
+            'selfie_with_id_card_temp_path' => [
+                'required' => 'Selfie with ID card temporary path is required.',
                 'string' => 'Selfie with KTP temporary path must be a string.',
             ],
             'id_card_file' => [
@@ -201,8 +201,8 @@
                 'mimes' => 'ID card must be a file of type: :values.',
                 'max' => 'ID card may not be greater than :max kilobytes.',
             ],
-            'selfie_with_ktp_file' => [
-                'required' => 'Selfie with KTP file is required.',
+            'selfie_with_id_card_file' => [
+                'required' => 'Selfie with ID card file is required.',
                 'file' => 'Selfie with KTP must be a valid file.',
                 'mimes' => 'Selfie with KTP must be a file of type: :values.',
                 'max' => 'Selfie with KTP may not be greater than :max kilobytes.',
@@ -217,8 +217,8 @@
                     'required' => 'ID card number is required.',
                 ],
             ],
-            'selfie_with_ktp_meta' => [
-                'array' => 'Selfie with KTP metadata must be an array.',
+            'selfie_with_id_card_meta' => [
+                'array' => 'Selfie with ID card metadata must be an array.',
             ],
             'id_card_expiry_date' => [
                 'date' => 'ID card expiry date must be a valid date.',

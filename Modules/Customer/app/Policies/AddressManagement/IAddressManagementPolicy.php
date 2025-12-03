@@ -15,27 +15,7 @@ interface IAddressManagementPolicy
     public function getMaxAddressesPerProfile(): int;
 
     /**
-     * Check if address type is allowed
-     */
-    public function isAddressTypeAllowed(string $addressType): bool;
-
-    /**
-     * Get allowed address types
-     */
-    public function getAllowedAddressTypes(): array;
-
-    /**
-     * Check if coordinates are required
-     */
-    public function areCoordinatesRequired(): bool;
-
-    /**
      * Validate coordinate ranges
      */
     public function validateCoordinates(float $latitude, float $longitude): bool;
-
-    /**
-     * Check if primary address is required
-     */
-    public function isPrimaryRequired(): bool;
 }

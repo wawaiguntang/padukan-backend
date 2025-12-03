@@ -279,28 +279,10 @@ class CustomerServiceProvider extends ServiceProvider
             \Modules\Customer\Policies\ProfileOwnership\ProfileOwnershipPolicy::class
         );
 
-        // Document Ownership Policy
-        $this->app->bind(
-            \Modules\Customer\Policies\DocumentOwnership\IDocumentOwnershipPolicy::class,
-            \Modules\Customer\Policies\DocumentOwnership\DocumentOwnershipPolicy::class
-        );
-
-        // Document Status Policy
-        $this->app->bind(
-            \Modules\Customer\Policies\DocumentStatus\IDocumentStatusPolicy::class,
-            \Modules\Customer\Policies\DocumentStatus\DocumentStatusPolicy::class
-        );
-
         // Address Management Policy
         $this->app->bind(
             \Modules\Customer\Policies\AddressManagement\IAddressManagementPolicy::class,
             \Modules\Customer\Policies\AddressManagement\AddressManagementPolicy::class
-        );
-
-        // Document Upload Policy
-        $this->app->bind(
-            \Modules\Customer\Policies\DocumentUpload\IDocumentUploadPolicy::class,
-            \Modules\Customer\Policies\DocumentUpload\DocumentUploadPolicy::class
         );
     }
 

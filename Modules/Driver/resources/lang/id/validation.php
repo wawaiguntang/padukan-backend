@@ -151,9 +151,9 @@ return [
             'required' => 'Path sementara KTP wajib diisi.',
             'string' => 'Path sementara KTP harus berupa string.',
         ],
-        'selfie_with_ktp_temp_path' => [
-            'required' => 'Path sementara selfie dengan KTP wajib diisi.',
-            'string' => 'Path sementara selfie dengan KTP harus berupa string.',
+        'selfie_with_id_card_temp_path' => [
+            'required' => 'Path sementara selfie dengan ID card wajib diisi.',
+            'string' => 'Path sementara selfie dengan ID card harus berupa string.',
         ],
         'id_card_file' => [
             'required' => 'File KTP wajib diisi.',
@@ -161,11 +161,11 @@ return [
             'mimes' => 'KTP harus berupa file dengan tipe: :values.',
             'max' => 'KTP tidak boleh lebih besar dari :max kilobyte.',
         ],
-        'selfie_with_ktp_file' => [
-            'required' => 'File selfie dengan KTP wajib diisi.',
-            'file' => 'Selfie dengan KTP harus berupa file yang valid.',
-            'mimes' => 'Selfie dengan KTP harus berupa file dengan tipe: :values.',
-            'max' => 'Selfie dengan KTP tidak boleh lebih besar dari :max kilobyte.',
+        'selfie_with_id_card_file' => [
+            'required' => 'File selfie dengan ID card wajib diisi.',
+            'file' => 'Selfie dengan ID card harus berupa file yang valid.',
+            'mimes' => 'Selfie dengan ID card harus berupa file dengan tipe: :values.',
+            'max' => 'Selfie dengan ID card tidak boleh lebih besar dari :max kilobyte.',
         ],
         'id_card_meta' => [
             'required' => 'Metadata KTP wajib diisi.',
@@ -177,8 +177,8 @@ return [
                 'required' => 'Nomor KTP wajib diisi.',
             ],
         ],
-        'selfie_with_ktp_meta' => [
-            'array' => 'Metadata selfie dengan KTP harus berupa array.',
+        'selfie_with_id_card_meta' => [
+            'array' => 'Metadata selfie dengan ID card harus berupa array.',
         ],
         'id_card_expiry_date' => [
             'date' => 'Tanggal kedaluwarsa KTP harus berupa tanggal yang valid.',

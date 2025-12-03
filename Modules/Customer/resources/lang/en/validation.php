@@ -166,8 +166,8 @@ return [
         'id_card_meta.name' => 'ID card name',
         'id_card_meta.number' => 'ID card number',
         'id_card_expiry_date' => 'ID card expiry date',
-        'selfie_with_ktp_file' => 'selfie with KTP file',
-        'selfie_with_ktp_meta' => 'selfie metadata',
+        'selfie_with_id_card_file' => 'selfie with ID card file',
+        'selfie_with_id_card_meta' => 'selfie metadata',
         'avatar_file' => 'avatar file',
     ],
 
@@ -198,13 +198,13 @@ return [
             'date' => 'ID card expiry date must be a valid date.',
             'after' => 'ID card expiry date must be a date after today.',
         ],
-        'selfie_with_ktp_file' => [
-            'required' => 'Selfie with KTP file is required.',
+        'selfie_with_id_card_file' => [
+            'required' => 'Selfie with ID card file is required.',
             'file' => 'Selfie must be a valid file.',
             'mimes' => 'Selfie must be a file of type: jpeg, jpg, png.',
             'max' => 'Selfie file may not be greater than 5MB.',
         ],
-        'selfie_with_ktp_meta' => [
+        'selfie_with_id_card_meta' => [
             'array' => 'Selfie metadata must be an array.',
         ],
     ],

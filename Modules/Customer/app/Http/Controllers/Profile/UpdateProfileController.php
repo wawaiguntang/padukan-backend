@@ -52,7 +52,7 @@ class UpdateProfileController
         }
 
         // Check if user can modify this profile
-        if (!$this->profileOwnershipPolicy->canModifyProfile($user->id, $profile->id)) {
+        if (!$this->profileOwnershipPolicy->ownsProfile($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
                 'message' => __('customer::profile.modify_denied'),

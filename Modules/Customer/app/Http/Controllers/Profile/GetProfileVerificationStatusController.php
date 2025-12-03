@@ -52,7 +52,7 @@ class GetProfileVerificationStatusController
         }
 
         // Check if user can access this profile
-        if (!$this->profileOwnershipPolicy->canAccessProfile($user->id, $profile->id)) {
+        if (!$this->profileOwnershipPolicy->ownsProfile($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
                 'message' => __('customer::profile.access_denied'),

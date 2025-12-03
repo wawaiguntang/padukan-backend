@@ -88,10 +88,10 @@ class SubmitProfileVerificationController
 
             $selfieDocument = $this->documentService->uploadDocument(
                 $user->id,
-                DocumentTypeEnum::SELFIE_WITH_KTP,
-                $request->file('selfie_with_ktp_file'),
+                DocumentTypeEnum::SELFIE_WITH_ID_CARD,
+                $request->file('selfie_with_id_card_file'),
                 [
-                    'meta' => $validated['selfie_with_ktp_meta'] ?? null,
+                    'meta' => $validated['selfie_with_id_card_meta'] ?? null,
                 ]
             );
 

@@ -267,7 +267,7 @@ class ProfileService implements IProfileService
         $selfieDocument = $this->documentRepository->findByTypeAndDocumentable(
             $profile->id,
             get_class($profile),
-            DocumentTypeEnum::SELFIE_WITH_KTP
+            DocumentTypeEnum::SELFIE_WITH_ID_CARD
         )->first();
 
         return [
@@ -331,7 +331,7 @@ class ProfileService implements IProfileService
             $existingSelfie = $this->documentRepository->findByTypeAndDocumentable(
                 $profile->id,
                 get_class($profile),
-                DocumentTypeEnum::SELFIE_WITH_KTP
+                DocumentTypeEnum::SELFIE_WITH_ID_CARD
             )->first();
             if ($existingSelfie) {
                 $this->documentService->deleteDocument($existingSelfie->id);
@@ -339,10 +339,10 @@ class ProfileService implements IProfileService
 
             $selfieDocument = $this->documentService->uploadDocument(
                 $userId,
-                DocumentTypeEnum::SELFIE_WITH_KTP,
-                $data['selfie_with_ktp_file'],
+                DocumentTypeEnum::SELFIE_WITH_ID_CARD,
+                $data['selfie_with_id_card_file'],
                 [
-                    'meta' => $data['selfie_with_ktp_meta'] ?? ['description' => 'Selfie with ID card'],
+                    'meta' => $data['selfie_with_id_card_meta'] ?? ['description' => 'Selfie with ID card'],
                 ]
             );
             $uploadedDocuments[] = $selfieDocument;

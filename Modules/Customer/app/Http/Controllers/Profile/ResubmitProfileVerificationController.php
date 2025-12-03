@@ -53,7 +53,7 @@ class ResubmitProfileVerificationController
                 ], 404);
             }
 
-            if (!$this->profileOwnershipPolicy->canResubmitVerification($user->id, $profile->id)) {
+            if ($profile->verification_status !== \Modules\Customer\Enums\VerificationStatusEnum::REJECTED) {
                 return response()->json([
                     'status' => false,
                     'message' => __('customer::profile.verification.resubmit_not_allowed'),
@@ -64,8 +64,8 @@ class ResubmitProfileVerificationController
                 'id_card_file' => $request->file('id_card_file'),
                 'id_card_meta' => $validated['id_card_meta'],
                 'id_card_expiry_date' => $validated['id_card_expiry_date'] ?? null,
-                'selfie_with_ktp_file' => $request->file('selfie_with_ktp_file'),
-                'selfie_with_ktp_meta' => $validated['selfie_with_ktp_meta'] ?? null,
+                'selfie_with_id_card_file' => $request->file('selfie_with_id_card_file'),
+                'selfie_with_id_card_meta' => $validated['selfie_with_id_card_meta'] ?? null,
             ]);
 
             return response()->json([

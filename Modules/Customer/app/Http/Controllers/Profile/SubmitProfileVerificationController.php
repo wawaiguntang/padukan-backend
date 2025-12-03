@@ -43,14 +43,12 @@ class SubmitProfileVerificationController
         $user = $request->authenticated_user;
         $validated = $request->validated();
 
-        // Get or create profile via service
         $profile = $this->profileService->getProfileByUserId($user->id);
         if (!$profile) {
             $profile = $this->profileService->createProfile($user->id, []);
         }
 
-        // Check if user can submit verification
-        if (!$this->profileOwnershipPolicy->canSubmitVerification($user->id, $profile->id)) {
+        if ($profile->verification_status !== \Modules\Customer\Enums\VerificationStatusEnum::PENDING) {
             return response()->json([
                 'status' => false,
                 'message' => __('customer::profile.verification.cannot_submit'),
@@ -62,8 +60,8 @@ class SubmitProfileVerificationController
                 'id_card_file' => $request->file('id_card_file'),
                 'id_card_meta' => $validated['id_card_meta'],
                 'id_card_expiry_date' => $validated['id_card_expiry_date'] ?? null,
-                'selfie_with_ktp_file' => $request->file('selfie_with_ktp_file'),
-                'selfie_with_ktp_meta' => $validated['selfie_with_ktp_meta'] ?? null,
+                'selfie_with_id_card_file' => $request->file('selfie_with_id_card_file'),
+                'selfie_with_id_card_meta' => $validated['selfie_with_id_card_meta'] ?? null,
             ]);
 
             return response()->json([
