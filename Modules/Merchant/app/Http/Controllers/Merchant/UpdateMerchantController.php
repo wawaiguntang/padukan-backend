@@ -4,6 +4,7 @@ namespace Modules\Merchant\Http\Controllers\Merchant;
 
 use Illuminate\Http\JsonResponse;
 use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Policies\MerchantOwnership\IMerchantOwnershipPolicy;
 use Modules\Merchant\Http\Resources\MerchantResource;
 use Modules\Merchant\Http\Requests\Merchant\UpdateMerchantRequest;
 
@@ -15,10 +16,14 @@ use Modules\Merchant\Http\Requests\Merchant\UpdateMerchantRequest;
 class UpdateMerchantController
 {
     protected IMerchantService $merchantService;
+    protected IMerchantOwnershipPolicy $merchantOwnershipPolicy;
 
-    public function __construct(IMerchantService $merchantService)
-    {
+    public function __construct(
+        IMerchantService $merchantService,
+        IMerchantOwnershipPolicy $merchantOwnershipPolicy
+    ) {
         $this->merchantService = $merchantService;
+        $this->merchantOwnershipPolicy = $merchantOwnershipPolicy;
     }
 
     /**
@@ -28,7 +33,15 @@ class UpdateMerchantController
     {
         $user = $request->authenticated_user;
 
-        // Get merchant
+        // Validate ownership using policy
+        if (!$this->merchantOwnershipPolicy->ownsMerchant($user->id, $merchantId)) {
+            return response()->json([
+                'status' => false,
+                'message' => __('merchant::controller.merchant.access_denied'),
+            ], 403);
+        }
+
+        // Get merchant for update operations
         $merchant = $this->merchantService->getMerchantById($merchantId);
 
         if (!$merchant) {
@@ -36,17 +49,6 @@ class UpdateMerchantController
                 'status' => false,
                 'message' => __('merchant::controller.merchant.not_found'),
             ], 404);
-        }
-
-        // Validate ownership
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
-
-        if (!$profile || $merchant->profile_id !== $profile->id) {
-            return response()->json([
-                'status' => false,
-                'message' => __('merchant::controller.merchant.access_denied'),
-            ], 403);
         }
 
         // Update merchant

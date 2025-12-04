@@ -30,6 +30,14 @@ interface IMerchantService
     public function getMerchantById(string $merchantId): ?Merchant;
 
     /**
+     * Get merchant by ID with settings
+     *
+     * @param string $merchantId The merchant's UUID
+     * @return Merchant|null The merchant model with settings loaded if found, null otherwise
+     */
+    public function getMerchantWithSettings(string $merchantId): ?Merchant;
+
+    /**
      * Get merchants by profile ID
      *
      * @param string $profileId The profile's UUID
@@ -80,4 +88,63 @@ interface IMerchantService
      * @return bool True if update was successful, false otherwise
      */
     public function updateVerificationStatus(string $merchantId, bool $isVerified, ?string $verificationStatus = null): bool;
+
+    /**
+     * Resubmit verification for a merchant with documents and logo
+     *
+     * @param string $merchantId The merchant's UUID
+     * @param array $data Document and logo data
+     * @return array|null Verification result data if successful, null if merchant not found
+     */
+    public function resubmitVerification(string $merchantId, array $data): ?array;
+
+    /**
+     * Get merchant address
+     *
+     * @param string $merchantId The merchant's UUID
+     * @return mixed The address model or null
+     */
+    public function getMerchantAddress(string $merchantId);
+
+    /**
+     * Get merchant documents
+     *
+     * @param string $merchantId The merchant's UUID
+     * @return \Illuminate\Database\Eloquent\Collection Collection of documents
+     */
+    public function getMerchantDocuments(string $merchantId);
+
+    /**
+     * Get merchant schedule
+     *
+     * @param string $merchantId The merchant's UUID
+     * @return array|null Schedule data or null if merchant not found
+     */
+    public function getMerchantSchedule(string $merchantId);
+
+    /**
+     * Update merchant address
+     *
+     * @param string $merchantId The merchant's UUID
+     * @param array $data Address data
+     * @return mixed The address model
+     */
+    public function updateMerchantAddress(string $merchantId, array $data);
+
+    /**
+     * Update merchant schedule
+     *
+     * @param string $merchantId The merchant's UUID
+     * @param array $data Schedule data
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateSchedule(string $merchantId, array $data): bool;
+
+    /**
+     * Delete merchant logo
+     *
+     * @param string $merchantId The merchant's UUID
+     * @return bool True if deletion was successful, false otherwise
+     */
+    public function deleteLogo(string $merchantId): bool;
 }

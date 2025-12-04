@@ -55,6 +55,7 @@ class MerchantRepository implements IMerchantRepository
 
     /**
      * Update merchant by ID
+     * Note: Cache clearing is handled automatically by MerchantObserver
      */
     public function updateById(string $merchantId, array $data): bool
     {
@@ -64,22 +65,12 @@ class MerchantRepository implements IMerchantRepository
             return false;
         }
 
-        $updated = $merchant->update($data);
-
-        if ($updated) {
-            // Clear cache
-            $cacheKey = $this->keyManager::getMerchantByIdKey($merchantId);
-            Cache::forget($cacheKey);
-
-            $cacheKeyByProfile = $this->keyManager::getMerchantsByProfileIdKey($merchant->profile_id);
-            Cache::forget($cacheKeyByProfile);
-        }
-
-        return $updated;
+        return $merchant->update($data);
     }
 
     /**
      * Delete merchant by ID
+     * Note: Cache clearing is handled automatically by MerchantObserver
      */
     public function deleteById(string $merchantId): bool
     {
@@ -89,27 +80,16 @@ class MerchantRepository implements IMerchantRepository
             return false;
         }
 
-        $profileId = $merchant->profile_id;
-        $deleted = $merchant->delete();
-
-        if ($deleted) {
-            // Clear cache
-            $cacheKey = $this->keyManager::getMerchantByIdKey($merchantId);
-            Cache::forget($cacheKey);
-
-            $cacheKeyByProfile = $this->keyManager::getMerchantsByProfileIdKey($profileId);
-            Cache::forget($cacheKeyByProfile);
-        }
-
-        return $deleted;
+        return $merchant->delete();
     }
 
     /**
      * Count merchants by profile ID
+     * Note: This method bypasses cache to ensure accurate counts for business logic
      */
     public function countByProfileId(string $profileId): int
     {
-        return $this->findByProfileId($profileId)->count();
+        return Merchant::where('profile_id', $profileId)->count();
     }
 
     /**

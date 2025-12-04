@@ -42,4 +42,10 @@ return [
         'approved' => 'Approved',
         'rejected' => 'Rejected',
     ],
+
+    'merchant_status' => [
+        'open' => 'Open',
+        'closed' => 'Closed',
+        'temporarily_closed' => 'Temporarily Closed',
+    ],
 ];

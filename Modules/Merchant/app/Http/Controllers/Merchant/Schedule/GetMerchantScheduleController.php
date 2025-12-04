@@ -4,6 +4,8 @@ namespace Modules\Merchant\Http\Controllers\Merchant\Schedule;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Services\Profile\IProfileService;
 
 /**
  * Get Merchant Schedule Controller
@@ -12,6 +14,17 @@ use Illuminate\Http\JsonResponse;
  */
 class GetMerchantScheduleController
 {
+    protected IMerchantService $merchantService;
+    protected IProfileService $profileService;
+
+    public function __construct(
+        IMerchantService $merchantService,
+        IProfileService $profileService
+    ) {
+        $this->merchantService = $merchantService;
+        $this->profileService = $profileService;
+    }
+
     /**
      * Get schedule for a specific merchant
      */
@@ -20,8 +33,7 @@ class GetMerchantScheduleController
         $user = $request->authenticated_user;
 
         // Validate merchant ownership
-        $merchant = app(\Modules\Merchant\Services\Merchant\IMerchantService::class)
-            ->getMerchantById($merchantId);
+        $merchant = $this->merchantService->getMerchantById($merchantId);
 
         if (!$merchant) {
             return response()->json([
@@ -30,8 +42,7 @@ class GetMerchantScheduleController
             ], 404);
         }
 
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
+        $profile = $this->profileService->getProfileByUserId($user->id);
 
         if (!$profile || $merchant->profile_id !== $profile->id) {
             return response()->json([
@@ -40,7 +51,7 @@ class GetMerchantScheduleController
             ], 403);
         }
 
-        $schedule = $merchant->schedules()->first();
+        $schedule = $this->merchantService->getMerchantSchedule($merchantId);
 
         if (!$schedule) {
             return response()->json([

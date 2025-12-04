@@ -64,12 +64,6 @@ class SettingServiceProvider extends ServiceProvider
             \App\Shared\Setting\Services\ISettingService::class,
             \Modules\Setting\Services\ForShare\SettingService::class
         );
-
-        // Register policies
-        $this->app->bind(
-            \Modules\Setting\Policies\MerchantManagement\IMerchantManagementPolicy::class,
-            \Modules\Setting\Policies\MerchantManagement\MerchantManagementPolicy::class
-        );
     }
 
     /**

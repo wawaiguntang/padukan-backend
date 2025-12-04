@@ -2,9 +2,10 @@
 
 namespace Modules\Merchant\Http\Controllers\Merchant;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Modules\Merchant\Http\Requests\Merchant\MerchantVerificationRequest;
 use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Services\Profile\IProfileService;
 
 /**
  * Resubmit Merchant Verification Controller
@@ -15,17 +16,21 @@ class ResubmitMerchantVerificationController
 {
     protected IMerchantService $merchantService;
 
-    public function __construct(IMerchantService $merchantService)
+    protected IProfileService $profileService;
+
+    public function __construct(IMerchantService $merchantService, IProfileService $profileService)
     {
         $this->merchantService = $merchantService;
+        $this->profileService = $profileService;
     }
 
     /**
      * Resubmit verification for a specific merchant
      */
-    public function __invoke(Request $request, string $merchantId): JsonResponse
+    public function __invoke(MerchantVerificationRequest $request, string $merchantId): JsonResponse
     {
         $user = $request->authenticated_user;
+        $validated = $request->validated();
 
         // Validate merchant ownership
         $merchant = $this->merchantService->getMerchantById($merchantId);
@@ -36,8 +41,7 @@ class ResubmitMerchantVerificationController
             ], 404);
         }
 
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
+        $profile = $this->profileService->getProfileByUserId($user->id);
 
         if (!$profile || $merchant->profile_id !== $profile->id) {
             return response()->json([
@@ -46,31 +50,33 @@ class ResubmitMerchantVerificationController
             ], 403);
         }
 
-        // Check if merchant can be resubmitted (only if rejected)
-        if ($merchant->verification_status !== \Modules\Merchant\Enums\VerificationStatusEnum::REJECTED) {
-            return response()->json([
-                'status' => false,
-                'message' => __('merchant::controller.merchant.verification.cannot_resubmit'),
-            ], 400);
-        }
+        try {
+            // Check if merchant can be resubmitted (only if rejected)
+            if ($merchant->verification_status === \Modules\Merchant\Enums\VerificationStatusEnum::REJECTED) {
+                $result = $this->merchantService->resubmitVerification($merchantId, [
+                    'merchant_document_file' => $request->file('merchant_document_file'),
+                    'merchant_document_meta' => $validated['merchant_document_meta'] ?? null,
+                    'banner_file' => $request->file('banner_file'),
+                    'banner_meta' => $validated['banner_meta'] ?? null,
+                ]);
 
-        // Resubmit verification
-        $updated = $this->merchantService->updateVerificationStatus(
-            $merchantId,
-            false,
-            \Modules\Merchant\Enums\VerificationStatusEnum::ON_REVIEW->value
-        );
-
-        if (!$updated) {
+                return response()->json([
+                    'status' => true,
+                    'message' => __('merchant::controller.merchant.verification.resubmitted_successfully'),
+                    'data' => $result,
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('merchant::controller.merchant.verification.cannot_resubmit'),
+                ], 400);
+            }
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => __('merchant::controller.merchant.verification.resubmission_failed'),
+                'error' => $e->getMessage(),
             ], 500);
         }
-
-        return response()->json([
-            'status' => true,
-            'message' => __('merchant::controller.merchant.verification.resubmitted_successfully'),
-        ], 200);
     }
 }

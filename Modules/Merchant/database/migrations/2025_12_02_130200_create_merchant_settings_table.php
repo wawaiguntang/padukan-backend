@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('merchant_settings', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('merchant_id');
+            $table->uuid('merchant_id');
 
             // Delivery Settings
             $table->boolean('delivery_enabled')->default(true);
@@ -21,8 +21,9 @@ return new class extends Migration
             $table->decimal('minimum_order_amount', 10, 2)->default(0);
 
             // Basic Settings (for future expansion)
+            $table->boolean('auto_open_close_merchant')->default(false);
             $table->boolean('auto_accept_orders')->default(true);
-            $table->integer('preparation_time_minutes')->default(15);
+            $table->integer('preparation_time_minutes')->default(10);
             $table->boolean('notifications_enabled')->default(true);
 
             $table->timestamps();

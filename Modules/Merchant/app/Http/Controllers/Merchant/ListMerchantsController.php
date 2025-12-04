@@ -5,6 +5,7 @@ namespace Modules\Merchant\Http\Controllers\Merchant;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Services\Profile\IProfileService;
 use Modules\Merchant\Http\Resources\MerchantResource;
 
 /**
@@ -15,10 +16,14 @@ use Modules\Merchant\Http\Resources\MerchantResource;
 class ListMerchantsController
 {
     protected IMerchantService $merchantService;
+    protected IProfileService $profileService;
 
-    public function __construct(IMerchantService $merchantService)
-    {
+    public function __construct(
+        IMerchantService $merchantService,
+        IProfileService $profileService
+    ) {
         $this->merchantService = $merchantService;
+        $this->profileService = $profileService;
     }
 
     /**
@@ -29,8 +34,7 @@ class ListMerchantsController
         $user = $request->authenticated_user;
 
         // Get user's profile
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
+        $profile = $this->profileService->getProfileByUserId($user->id);
 
         if (!$profile) {
             return response()->json([

@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('merchants', function (Blueprint $table) {
-            $table->enum('status', array_column(\Modules\Merchant\Enums\MerchantStatusEnum::cases(), 'value'))->default('open')->after('is_active');
+        Schema::connection('merchant')->table('merchants', function (Blueprint $table) {
+            $table->string('logo')->nullable()->after('website');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('merchants', function (Blueprint $table) {
-            $table->dropColumn(['status']);
+        Schema::connection('merchant')->table('merchants', function (Blueprint $table) {
+            $table->dropColumn('logo');
         });
     }
 };

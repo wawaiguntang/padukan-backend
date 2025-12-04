@@ -59,6 +59,11 @@ class KeyManager implements IKeyManager
         return "merchant:document:*:{$documentableId}";
     }
 
+    public static function getMerchantSettingsByMerchantIdKey(string $merchantId): string
+    {
+        return "merchant:settings:merchant:{$merchantId}";
+    }
+
     public static function getAllMerchantPattern(): string
     {
         return "merchant:*";

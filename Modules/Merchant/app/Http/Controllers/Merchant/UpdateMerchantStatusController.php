@@ -4,6 +4,7 @@ namespace Modules\Merchant\Http\Controllers\Merchant;
 
 use Illuminate\Http\JsonResponse;
 use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Policies\MerchantOwnership\IMerchantOwnershipPolicy;
 use Modules\Merchant\Http\Requests\Merchant\UpdateMerchantStatusRequest;
 
 /**
@@ -14,10 +15,14 @@ use Modules\Merchant\Http\Requests\Merchant\UpdateMerchantStatusRequest;
 class UpdateMerchantStatusController
 {
     protected IMerchantService $merchantService;
+    protected IMerchantOwnershipPolicy $merchantOwnershipPolicy;
 
-    public function __construct(IMerchantService $merchantService)
-    {
+    public function __construct(
+        IMerchantService $merchantService,
+        IMerchantOwnershipPolicy $merchantOwnershipPolicy
+    ) {
         $this->merchantService = $merchantService;
+        $this->merchantOwnershipPolicy = $merchantOwnershipPolicy;
     }
 
     /**
@@ -28,22 +33,20 @@ class UpdateMerchantStatusController
         $user = $request->authenticated_user;
 
         // Validate merchant ownership
+        if (!$this->merchantOwnershipPolicy->ownsMerchant($user->id, $merchantId)) {
+            return response()->json([
+                'status' => false,
+                'message' => __('merchant::controller.merchant.access_denied'),
+            ], 403);
+        }
+
+        // Get merchant for status operations
         $merchant = $this->merchantService->getMerchantById($merchantId);
         if (!$merchant) {
             return response()->json([
                 'status' => false,
                 'message' => __('merchant::controller.merchant.not_found'),
             ], 404);
-        }
-
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
-
-        if (!$profile || $merchant->profile_id !== $profile->id) {
-            return response()->json([
-                'status' => false,
-                'message' => __('merchant::controller.merchant.access_denied'),
-            ], 403);
         }
 
         // Validate status
@@ -59,6 +62,14 @@ class UpdateMerchantStatusController
                 'status' => false,
                 'message' => __('merchant::controller.merchant.status.invalid'),
             ], 422);
+        }
+
+        if($merchant->verification_status !== \Modules\Merchant\Enums\VerificationStatusEnum::APPROVED) {
+            return response()->json([
+                'status' => false,
+                'message' => __('merchant::controller.merchant.status.update_denied_unverified'),
+            ], 403);
+
         }
 
         // Update status

@@ -2,8 +2,10 @@
 
 namespace Modules\Merchant\Http\Controllers\Merchant\Schedule;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Policies\MerchantOwnership\IMerchantOwnershipPolicy;
+use Modules\Merchant\Http\Requests\Merchant\Schedule\UpdateMerchantScheduleRequest;
 
 /**
  * Update Merchant Schedule Controller
@@ -12,16 +14,34 @@ use Illuminate\Http\JsonResponse;
  */
 class UpdateMerchantScheduleController
 {
+    protected IMerchantService $merchantService;
+    protected IMerchantOwnershipPolicy $merchantOwnershipPolicy;
+
+    public function __construct(
+        IMerchantService $merchantService,
+        IMerchantOwnershipPolicy $merchantOwnershipPolicy
+    ) {
+        $this->merchantService = $merchantService;
+        $this->merchantOwnershipPolicy = $merchantOwnershipPolicy;
+    }
+
     /**
      * Update schedule for a specific merchant
      */
-    public function __invoke(Request $request, string $merchantId): JsonResponse
+    public function __invoke(UpdateMerchantScheduleRequest $request, string $merchantId): JsonResponse
     {
         $user = $request->authenticated_user;
 
         // Validate merchant ownership
-        $merchant = app(\Modules\Merchant\Services\Merchant\IMerchantService::class)
-            ->getMerchantById($merchantId);
+        if (!$this->merchantOwnershipPolicy->ownsMerchant($user->id, $merchantId)) {
+            return response()->json([
+                'status' => false,
+                'message' => __('merchant::controller.merchant.access_denied'),
+            ], 403);
+        }
+
+        // Get merchant for schedule operations
+        $merchant = $this->merchantService->getMerchantById($merchantId);
 
         if (!$merchant) {
             return response()->json([
@@ -30,35 +50,28 @@ class UpdateMerchantScheduleController
             ], 404);
         }
 
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
+        // Get validated data from form request
+        $validated = $request->validated();
 
-        if (!$profile || $merchant->profile_id !== $profile->id) {
+        // Update schedule
+        $updated = $this->merchantService->updateSchedule($merchantId, $validated);
+
+        if (!$updated) {
             return response()->json([
                 'status' => false,
-                'message' => __('merchant::controller.merchant.access_denied'),
-            ], 403);
+                'message' => __('merchant::controller.schedule.update_failed'),
+            ], 500);
         }
 
-        // Validate input
-        $validated = $request->validate([
-            'regular_hours' => 'required|array',
-            'special_schedules' => 'nullable|array',
-            'temporary_closures' => 'nullable|array',
-        ]);
+        // Get updated merchant with schedule
+        $updatedMerchant = $this->merchantService->getMerchantById($merchantId);
 
-        // Update or create schedule
-        $schedule = $merchant->schedules()->updateOrCreate(
-            ['merchant_id' => $merchantId],
-            $validated
-        );
-
-        $message = isset($merchant->schedules()->first()->id) ? 'updated_successfully' : 'created_successfully';
+        $message = $merchant->schedules ? 'updated_successfully' : 'created_successfully';
 
         return response()->json([
             'status' => true,
             'message' => __('merchant::controller.schedule.' . $message),
-            'data' => $schedule,
-        ], isset($merchant->schedules()->first()->id) ? 200 : 201);
+            'data' => $updatedMerchant,
+        ], $merchant->schedules ? 200 : 201);
     }
 }

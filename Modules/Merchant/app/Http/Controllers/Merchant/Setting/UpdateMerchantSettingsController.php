@@ -2,8 +2,11 @@
 
 namespace Modules\Merchant\Http\Controllers\Merchant\Setting;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Services\Setting\IMerchantSettingService;
+use Modules\Merchant\Policies\MerchantOwnership\IMerchantOwnershipPolicy;
+use Modules\Merchant\Http\Requests\Merchant\Setting\UpdateMerchantSettingsRequest;
 
 /**
  * Update Merchant Settings Controller
@@ -12,16 +15,37 @@ use Illuminate\Http\JsonResponse;
  */
 class UpdateMerchantSettingsController
 {
+    protected IMerchantService $merchantService;
+    protected IMerchantSettingService $merchantSettingService;
+    protected IMerchantOwnershipPolicy $merchantOwnershipPolicy;
+
+    public function __construct(
+        IMerchantService $merchantService,
+        IMerchantSettingService $merchantSettingService,
+        IMerchantOwnershipPolicy $merchantOwnershipPolicy
+    ) {
+        $this->merchantService = $merchantService;
+        $this->merchantSettingService = $merchantSettingService;
+        $this->merchantOwnershipPolicy = $merchantOwnershipPolicy;
+    }
+
     /**
      * Update settings for a specific merchant
      */
-    public function __invoke(Request $request, string $merchantId): JsonResponse
+    public function __invoke(UpdateMerchantSettingsRequest $request, string $merchantId): JsonResponse
     {
         $user = $request->authenticated_user;
 
         // Validate merchant ownership
-        $merchant = app(\Modules\Merchant\Services\Merchant\IMerchantService::class)
-            ->getMerchantById($merchantId);
+        if (!$this->merchantOwnershipPolicy->ownsMerchant($user->id, $merchantId)) {
+            return response()->json([
+                'status' => false,
+                'message' => __('merchant::controller.merchant.access_denied'),
+            ], 403);
+        }
+
+        // Get merchant for settings operations
+        $merchant = $this->merchantService->getMerchantById($merchantId);
 
         if (!$merchant) {
             return response()->json([
@@ -30,33 +54,23 @@ class UpdateMerchantSettingsController
             ], 404);
         }
 
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
+        // Get validated data from form request
+        $validated = $request->validated();
 
-        if (!$profile || $merchant->profile_id !== $profile->id) {
+        // Update settings
+        $updated = $this->merchantSettingService->updateSettings($merchantId, $validated);
+
+        if (!$updated) {
             return response()->json([
                 'status' => false,
-                'message' => __('merchant::controller.merchant.access_denied'),
-            ], 403);
+                'message' => __('merchant::controller.settings.update_failed'),
+            ], 500);
         }
 
-        // Validate input
-        $validated = $request->validate([
-            'delivery_enabled' => 'boolean',
-            'delivery_radius_km' => 'integer|min:1|max:50',
-            'minimum_order_amount' => 'numeric|min:0',
-            'auto_accept_orders' => 'boolean',
-            'preparation_time_minutes' => 'integer|min:1|max:120',
-            'notifications_enabled' => 'boolean',
-        ]);
+        // Get updated settings
+        $settings = $this->merchantSettingService->getSettingsByMerchantId($merchantId);
 
-        // Update or create settings
-        $settings = $merchant->settings()->updateOrCreate(
-            ['merchant_id' => $merchantId],
-            $validated
-        );
-
-        $message = isset($merchant->settings()->first()->id) ? 'updated_successfully' : 'created_successfully';
+        $message = $merchant->settings ? 'updated_successfully' : 'created_successfully';
 
         return response()->json([
             'status' => true,

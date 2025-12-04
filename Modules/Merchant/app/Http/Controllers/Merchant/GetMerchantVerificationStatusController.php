@@ -5,6 +5,7 @@ namespace Modules\Merchant\Http\Controllers\Merchant;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Services\Profile\IProfileService;
 
 /**
  * Get Merchant Verification Status Controller
@@ -15,9 +16,12 @@ class GetMerchantVerificationStatusController
 {
     protected IMerchantService $merchantService;
 
-    public function __construct(IMerchantService $merchantService)
+    protected IProfileService $profileService;
+
+    public function __construct(IMerchantService $merchantService, IProfileService $profileService)
     {
         $this->merchantService = $merchantService;
+        $this->profileService = $profileService;
     }
 
     /**
@@ -36,8 +40,7 @@ class GetMerchantVerificationStatusController
             ], 404);
         }
 
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
+        $profile = $this->profileService->getProfileByUserId($user->id);
 
         if (!$profile || $merchant->profile_id !== $profile->id) {
             return response()->json([
@@ -53,7 +56,9 @@ class GetMerchantVerificationStatusController
                 'merchant_id' => $merchant->id,
                 'is_verified' => $merchant->is_verified,
                 'verification_status' => $merchant->verification_status,
-                'documents' => $merchant->documents, // Polymorphic relationship
+                'documents' => $this->merchantService->getMerchantDocuments($merchantId),
+                'can_submit' => $merchant->verification_status === \Modules\Merchant\Enums\VerificationStatusEnum::PENDING,
+                'can_resubmit' => $merchant->verification_status === \Modules\Merchant\Enums\VerificationStatusEnum::REJECTED,
             ],
         ], 200);
     }

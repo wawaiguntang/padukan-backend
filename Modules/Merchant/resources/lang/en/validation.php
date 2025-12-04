@@ -154,7 +154,8 @@ return [
         'label' => 'label',
         'street' => 'street',
         'city' => 'city',
-        'province' => 'province',
+        'state' => 'state',
+        'country' => 'country',
         'postal_code' => 'postal code',
         'latitude' => 'latitude',
         'longitude' => 'longitude',
@@ -169,6 +170,13 @@ return [
         'selfie_with_id_card_file' => 'selfie with ID card file',
         'selfie_with_id_card_meta' => 'selfie metadata',
         'avatar_file' => 'avatar file',
+        'business_name' => 'business name',
+        'business_description' => 'business description',
+        'business_category' => 'business category',
+        'phone' => 'phone',
+        'email' => 'email',
+        'website' => 'website',
+        'address' => 'address',
     ],
 
     /*
@@ -209,6 +217,39 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Validation for Merchant Verification
+    |--------------------------------------------------------------------------
+    */
+
+    'merchant_verification' => [
+        'merchant_document_file' => [
+            'required' => 'Merchant document file is required.',
+            'file' => 'Merchant document must be a valid file.',
+            'mimes' => 'Merchant document must be a file of type: jpeg, jpg, png, pdf.',
+            'max' => 'Merchant document file may not be greater than 5MB.',
+        ],
+        'merchant_document_meta' => [
+            'array' => 'Merchant document metadata must be an array.',
+        ],
+        'banner_file' => [
+            'required' => 'Banner file is required.',
+            'file' => 'Banner must be a valid file.',
+            'mimes' => 'Banner must be a file of type: jpeg, jpg, png.',
+            'max' => 'Banner file may not be greater than 5MB.',
+        ],
+        'banner_meta' => [
+            'array' => 'Banner metadata must be an array.',
+        ],
+        'logo_file' => [
+            'required' => 'Logo file is required.',
+            'file' => 'Logo must be a valid file.',
+            'mimes' => 'Logo must be a file of type: jpeg, jpg, png.',
+            'max' => 'Logo file may not be greater than 2MB.',
+        ],
+    ],
+
     'first_name' => [
         'string' => 'First name must be a string.',
         'max' => 'First name may not be greater than 255 characters.',
@@ -246,6 +287,7 @@ return [
     ],
     'street' => [
         'required' => 'Street address is required.',
+        'string' => 'Street address must be a string.',
         'max' => 'Street address may not be greater than :max characters.',
     ],
     'city' => [
@@ -254,6 +296,7 @@ return [
     ],
     'province' => [
         'required' => 'Province is required.',
+        'string' => 'Province must be a string.',
         'max' => 'Province may not be greater than :max characters.',
     ],
     'postal_code' => [
@@ -268,6 +311,150 @@ return [
     'longitude' => [
         'numeric' => 'Longitude must be a number.',
         'between' => 'Longitude must be between -180 and 180 degrees.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Merchant Validation
+    |--------------------------------------------------------------------------
+    */
+
+    'business_name' => [
+        'required' => 'Business name is required.',
+        'string' => 'Business name must be a string.',
+        'max' => 'Business name may not be greater than :max characters.',
+    ],
+    'business_description' => [
+        'string' => 'Business description must be a string.',
+        'max' => 'Business description may not be greater than :max characters.',
+    ],
+    'business_category' => [
+        'required' => 'Business category is required.',
+        'in' => 'Selected business category is invalid.',
+    ],
+    'phone' => [
+        'required' => 'Phone number is required.',
+        'string' => 'Phone number must be a string.',
+        'max' => 'Phone number may not be greater than :max characters.',
+    ],
+    'email' => [
+        'email' => 'Email must be a valid email address.',
+        'max' => 'Email may not be greater than :max characters.',
+    ],
+    'website' => [
+        'url' => 'Website must be a valid URL.',
+        'max' => 'Website may not be greater than :max characters.',
+    ],
+    'street' => [
+        'required' => 'Street address is required.',
+        'string' => 'Street address must be a string.',
+        'max' => 'Street address may not be greater than :max characters.',
+    ],
+    'city' => [
+        'required' => 'City is required.',
+        'string' => 'City must be a string.',
+        'max' => 'City may not be greater than :max characters.',
+    ],
+    'state' => [
+        'required' => 'State is required.',
+        'string' => 'State must be a string.',
+        'max' => 'State may not be greater than :max characters.',
+    ],
+    'country' => [
+        'required' => 'Country is required.',
+        'string' => 'Country must be a string.',
+        'max' => 'Country may not be greater than :max characters.',
+    ],
+    'postal_code' => [
+        'required' => 'Postal code is required.',
+        'string' => 'Postal code must be a string.',
+        'max' => 'Postal code may not be greater than :max characters.',
+        'regex' => 'Postal code format is invalid.',
+    ],
+    'latitude' => [
+        'required' => 'Latitude is required.',
+        'numeric' => 'Latitude must be a number.',
+        'between' => 'Latitude must be between -90 and 90 degrees.',
+    ],
+    'longitude' => [
+        'required' => 'Longitude is required.',
+        'numeric' => 'Longitude must be a number.',
+        'between' => 'Longitude must be between -180 and 180 degrees.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Schedule Validation
+    |--------------------------------------------------------------------------
+    */
+
+    'regular_hours' => [
+        'required' => 'Regular hours are required.',
+        'array' => 'Regular hours must be an array.',
+        'json' => 'Regular hours must be a valid JSON string.',
+    ],
+    'regular_hours.*.open' => [
+        'required' => 'Opening time is required for each day.',
+    ],
+    'regular_hours.*.close' => [
+        'required' => 'Closing time is required for each day.',
+    ],
+    'regular_hours.*.is_open' => [
+        'required' => 'Open status is required for each day.',
+    ],
+    'special_schedules' => [
+        'array' => 'Special schedules must be an array.',
+        'json' => 'Special schedules must be a valid JSON string.',
+    ],
+    'special_schedules.*.date' => [
+        'required' => 'Date is required for special schedules.',
+    ],
+    'special_schedules.*.name' => [
+        'required' => 'Name is required for special schedules.',
+    ],
+    'special_schedules.*.is_open' => [
+        'required' => 'Open status is required for special schedules.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Settings Validation
+    |--------------------------------------------------------------------------
+    */
+
+    'delivery_enabled' => [
+        'boolean' => 'Delivery enabled must be true or false.',
+    ],
+    'delivery_radius_km' => [
+        'integer' => 'Delivery radius must be an integer.',
+        'min' => 'Delivery radius must be at least :min km.',
+        'max' => 'Delivery radius may not be greater than :max km.',
+    ],
+    'minimum_order_amount' => [
+        'numeric' => 'Minimum order amount must be a number.',
+        'min' => 'Minimum order amount must be at least :min.',
+    ],
+    'auto_accept_orders' => [
+        'boolean' => 'Auto accept orders must be true or false.',
+    ],
+    'preparation_time_minutes' => [
+        'integer' => 'Preparation time must be an integer.',
+        'min' => 'Preparation time must be at least :min minutes.',
+        'max' => 'Preparation time may not be greater than :max minutes.',
+    ],
+    'notifications_enabled' => [
+        'boolean' => 'Notifications enabled must be true or false.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status Validation
+    |--------------------------------------------------------------------------
+    */
+
+    'status' => [
+        'required' => 'Status is required.',
+        'invalid' => 'Selected status is invalid.',
     ],
 
     'failed' => 'Validation failed.',

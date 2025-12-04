@@ -40,9 +40,16 @@ class Merchant extends Model
         'phone',
         'email',
         'website',
-        'address',
+        'logo',
+        'street',
+        'city',
+        'province',
+        'country',
+        'postal_code',
         'latitude',
         'longitude',
+        'regular_hours',
+        'special_schedules',
         'is_verified',
         'verification_status',
         'is_active',
@@ -88,26 +95,18 @@ class Merchant extends Model
     }
 
     /**
-     * Get the schedules for the merchant.
-     */
-    public function schedules(): HasMany
-    {
-        return $this->hasMany(MerchantSchedule::class);
-    }
-
-    /**
-     * Get the address for the merchant.
-     */
-    public function address(): HasOne
-    {
-        return $this->hasOne(MerchantAddress::class);
-    }
-
-    /**
      * Get the settings for the merchant.
      */
     public function settings(): HasOne
     {
         return $this->hasOne(MerchantSetting::class);
+    }
+
+    /**
+     * Get the logo URL attribute.
+     */
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo ? \Illuminate\Support\Facades\Storage::url($this->logo) : null;
     }
 }

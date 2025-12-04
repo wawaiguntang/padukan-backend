@@ -5,6 +5,7 @@ namespace Modules\Merchant\Http\Controllers\Merchant;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Policies\MerchantOwnership\IMerchantOwnershipPolicy;
 use Modules\Merchant\Http\Resources\MerchantResource;
 
 /**
@@ -15,10 +16,14 @@ use Modules\Merchant\Http\Resources\MerchantResource;
 class GetMerchantController
 {
     protected IMerchantService $merchantService;
+    protected IMerchantOwnershipPolicy $merchantOwnershipPolicy;
 
-    public function __construct(IMerchantService $merchantService)
-    {
+    public function __construct(
+        IMerchantService $merchantService,
+        IMerchantOwnershipPolicy $merchantOwnershipPolicy
+    ) {
         $this->merchantService = $merchantService;
+        $this->merchantOwnershipPolicy = $merchantOwnershipPolicy;
     }
 
     /**
@@ -28,8 +33,16 @@ class GetMerchantController
     {
         $user = $request->authenticated_user;
 
-        // Get merchant
-        $merchant = $this->merchantService->getMerchantById($merchantId);
+        // Validate ownership using policy
+        if (!$this->merchantOwnershipPolicy->ownsMerchant($user->id, $merchantId)) {
+            return response()->json([
+                'status' => false,
+                'message' => __('merchant::controller.merchant.access_denied'),
+            ], 403);
+        }
+
+        // Get merchant with settings
+        $merchant = $this->merchantService->getMerchantWithSettings($merchantId);
 
         if (!$merchant) {
             return response()->json([
@@ -38,21 +51,10 @@ class GetMerchantController
             ], 404);
         }
 
-        // Validate ownership - check if merchant belongs to user's profile
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
-
-        if (!$profile || $merchant->profile_id !== $profile->id) {
-            return response()->json([
-                'status' => false,
-                'message' => __('merchant::controller.merchant.access_denied'),
-            ], 403);
-        }
-
         return response()->json([
             'status' => true,
             'message' => __('merchant::controller.merchant.retrieved_successfully'),
-            'data' => new MerchantResource($merchant->load(['address', 'settings', 'schedules'])),
+            'data' => new MerchantResource($merchant),
         ]);
     }
 }

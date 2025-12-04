@@ -2,8 +2,12 @@
 
 namespace Modules\Merchant\Http\Controllers\Merchant\Address;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Modules\Merchant\Services\Merchant\IMerchantService;
+use Modules\Merchant\Policies\MerchantOwnership\IMerchantOwnershipPolicy;
+use Modules\Setting\Policies\AddressManagement\IAddressManagementPolicy;
+use Modules\Merchant\Http\Requests\Merchant\Address\UpdateMerchantAddressRequest;
+use Modules\Merchant\Enums\VerificationStatusEnum;
 
 /**
  * Update Merchant Address Controller
@@ -12,16 +16,37 @@ use Illuminate\Http\JsonResponse;
  */
 class UpdateMerchantAddressController
 {
+    protected IMerchantService $merchantService;
+    protected IMerchantOwnershipPolicy $merchantOwnershipPolicy;
+    protected IAddressManagementPolicy $addressManagementPolicy;
+
+    public function __construct(
+        IMerchantService $merchantService,
+        IMerchantOwnershipPolicy $merchantOwnershipPolicy,
+        IAddressManagementPolicy $addressManagementPolicy
+    ) {
+        $this->merchantService = $merchantService;
+        $this->merchantOwnershipPolicy = $merchantOwnershipPolicy;
+        $this->addressManagementPolicy = $addressManagementPolicy;
+    }
+
     /**
      * Update address for a specific merchant
      */
-    public function __invoke(Request $request, string $merchantId): JsonResponse
+    public function __invoke(UpdateMerchantAddressRequest $request, string $merchantId): JsonResponse
     {
         $user = $request->authenticated_user;
 
         // Validate merchant ownership
-        $merchant = app(\Modules\Merchant\Services\Merchant\IMerchantService::class)
-            ->getMerchantById($merchantId);
+        if (!$this->merchantOwnershipPolicy->ownsMerchant($user->id, $merchantId)) {
+            return response()->json([
+                'status' => false,
+                'message' => __('merchant::controller.merchant.access_denied'),
+            ], 403);
+        }
+
+        // Get merchant for address operations
+        $merchant = $this->merchantService->getMerchantById($merchantId);
 
         if (!$merchant) {
             return response()->json([
@@ -30,47 +55,37 @@ class UpdateMerchantAddressController
             ], 404);
         }
 
-        $profile = app(\Modules\Merchant\Services\Profile\IProfileService::class)
-            ->getProfileByUserId($user->id);
+        // Check if merchant already has an address (1:1 relationship)
+        $existingAddress = $this->merchantService->getMerchantAddress($merchantId);
 
-        if (!$profile || $merchant->profile_id !== $profile->id) {
+        // Get validated data from form request
+        $validated = $request->validated();
+
+        // Additional validation using address management policy
+        $addressValidationErrors = $this->addressManagementPolicy->validateAddressData($validated);
+        if (!empty($addressValidationErrors)) {
             return response()->json([
                 'status' => false,
-                'message' => __('merchant::controller.merchant.access_denied'),
-            ], 403);
+                'message' => __('merchant::controller.address.validation_failed'),
+                'errors' => $addressValidationErrors,
+            ], 422);
         }
-
-        // Validate that merchant doesn't already have an address (1:1 relationship)
-        if ($merchant->address && $request->isMethod('post')) {
-            return response()->json([
-                'status' => false,
-                'message' => __('merchant::controller.address.already_exists'),
-            ], 409);
-        }
-
-        // Validate input
-        $validated = $request->validate([
-            'street' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
-            'province' => 'required|string|max:100',
-            'country' => 'required|string|max:100',
-            'postal_code' => 'required|string|max:10',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-        ]);
 
         // Update or create address
-        $address = $merchant->address()->updateOrCreate(
-            ['merchant_id' => $merchantId],
-            $validated
-        );
+        $address = $this->merchantService->updateMerchantAddress($merchantId, $validated);
 
-        $message = $merchant->address ? 'updated_successfully' : 'created_successfully';
+        // Set verification status to PENDING when address is updated
+        $this->merchantService->updateMerchant($merchantId, [
+            'verification_status' => VerificationStatusEnum::PENDING
+        ]);
+
+        $isUpdate = $existingAddress !== null;
+        $message = $isUpdate ? 'updated_successfully' : 'created_successfully';
 
         return response()->json([
             'status' => true,
             'message' => __('merchant::controller.address.' . $message),
             'data' => $address,
-        ], $merchant->address ? 200 : 201);
+        ], $isUpdate ? 200 : 201);
     }
 }

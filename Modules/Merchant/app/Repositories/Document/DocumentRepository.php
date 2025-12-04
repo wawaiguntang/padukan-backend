@@ -161,6 +161,17 @@ class DocumentRepository implements IDocumentRepository
     /**
      * {@inheritDoc}
      */
+    public function findByDocumentable(string $documentableId, string $documentableType): Collection
+    {
+        return $this->model
+            ->where('documentable_id', $documentableId)
+            ->where('documentable_type', $documentableType)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function existsById(string $id): bool
     {
         return $this->model->where('id', $id)->exists();

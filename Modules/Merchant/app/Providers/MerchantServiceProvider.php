@@ -96,10 +96,27 @@ class MerchantServiceProvider extends ServiceProvider
             \Modules\Merchant\Services\FileUpload\FileUploadService::class
         );
 
+        // Merchant Setting Services
+        $this->app->bind(
+            \Modules\Merchant\Repositories\Setting\IMerchantSettingRepository::class,
+            \Modules\Merchant\Repositories\Setting\MerchantSettingRepository::class
+        );
+
+        $this->app->bind(
+            \Modules\Merchant\Services\Setting\IMerchantSettingService::class,
+            \Modules\Merchant\Services\Setting\MerchantSettingService::class
+        );
+
         // Profile Ownership Policy
         $this->app->bind(
             \Modules\Merchant\Policies\ProfileOwnership\IProfileOwnershipPolicy::class,
             \Modules\Merchant\Policies\ProfileOwnership\ProfileOwnershipPolicy::class
+        );
+
+        // Merchant Ownership Policy
+        $this->app->bind(
+            \Modules\Merchant\Policies\MerchantOwnership\IMerchantOwnershipPolicy::class,
+            \Modules\Merchant\Policies\MerchantOwnership\MerchantOwnershipPolicy::class
         );
     }
 
@@ -110,6 +127,7 @@ class MerchantServiceProvider extends ServiceProvider
     {
         \Modules\Merchant\Models\Profile::observe(\Modules\Merchant\Observers\ProfileObserver::class);
         \Modules\Merchant\Models\Document::observe(\Modules\Merchant\Observers\DocumentObserver::class);
+        \Modules\Merchant\Models\Merchant::observe(\Modules\Merchant\Observers\MerchantObserver::class);
     }
 
     /**

@@ -184,4 +184,44 @@ class DocumentService implements IDocumentService
 
         return $this->documentRepository->create($documentData);
     }
+
+    /**
+     * Upload document for a specific merchant
+     */
+    public function uploadMerchantDocument(string $merchantId, DocumentTypeEnum $documentType, UploadedFile $documentFile, array $additionalData = []): Document
+    {
+        try {
+            $uploadResult = $this->fileUploadService->uploadDocument($documentFile, $merchantId, $documentType->value);
+
+            $documentData = array_merge($additionalData, [
+                'documentable_id' => $merchantId,
+                'documentable_type' => \Modules\Merchant\Models\Merchant::class,
+                'type' => $documentType,
+                'file_path' => $uploadResult['path'],
+                'file_name' => $uploadResult['filename'],
+                'mime_type' => $uploadResult['mime_type'],
+                'file_size' => $uploadResult['size'],
+            ]);
+
+            return $this->documentRepository->create($documentData);
+        } catch (\Exception $e) {
+            throw new FileUploadException('exception.file.upload_failed', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get documents by merchant ID
+     */
+    public function getDocumentsByMerchantId(string $merchantId): Collection
+    {
+        return $this->documentRepository->findByDocumentable($merchantId, \Modules\Merchant\Models\Merchant::class);
+    }
+
+    /**
+     * Get documents by merchant ID and type
+     */
+    public function getDocumentsByMerchantIdAndType(string $merchantId, DocumentTypeEnum $documentType): Collection
+    {
+        return $this->documentRepository->findByTypeAndDocumentable($merchantId, \Modules\Merchant\Models\Merchant::class, $documentType);
+    }
 }

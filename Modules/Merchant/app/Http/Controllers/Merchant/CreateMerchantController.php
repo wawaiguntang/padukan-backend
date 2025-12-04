@@ -7,7 +7,6 @@ use Modules\Merchant\Services\Merchant\IMerchantService;
 use Modules\Merchant\Services\Profile\IProfileService;
 use Modules\Merchant\Http\Resources\MerchantResource;
 use Modules\Merchant\Http\Requests\Merchant\CreateMerchantRequest;
-use Modules\Setting\Policies\MerchantManagement\IMerchantManagementPolicy;
 
 /**
  * Create Merchant Controller
@@ -18,16 +17,13 @@ class CreateMerchantController
 {
     protected IMerchantService $merchantService;
     protected IProfileService $profileService;
-    protected IMerchantManagementPolicy $merchantManagementPolicy;
 
     public function __construct(
         IMerchantService $merchantService,
-        IProfileService $profileService,
-        IMerchantManagementPolicy $merchantManagementPolicy
+        IProfileService $profileService
     ) {
         $this->merchantService = $merchantService;
         $this->profileService = $profileService;
-        $this->merchantManagementPolicy = $merchantManagementPolicy;
     }
 
     /**
@@ -53,20 +49,6 @@ class CreateMerchantController
                 'status' => false,
                 'message' => __('merchant::controller.merchant.creation_limit_reached'),
             ], 403);
-        }
-
-        // Validate merchant creation requirements
-        $validationErrors = $this->merchantManagementPolicy->validateMerchantCreation(
-            $profile->id,
-            $request->all()
-        );
-
-        if (!empty($validationErrors)) {
-            return response()->json([
-                'status' => false,
-                'message' => __('merchant::controller.merchant.validation_failed'),
-                'errors' => $validationErrors,
-            ], 422);
         }
 
         // Create merchant

@@ -33,5 +33,7 @@ interface IKeyManager
 
     public static function getDocumentPattern(string $documentableId): string;
 
+    public static function getMerchantSettingsByMerchantIdKey(string $merchantId): string;
+
     public static function getAllMerchantPattern(): string;
 }

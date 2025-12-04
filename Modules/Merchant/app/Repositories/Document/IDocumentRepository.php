@@ -86,6 +86,15 @@ interface IDocumentRepository
     public function findByTypeAndDocumentable(string $documentableId, string $documentableType, DocumentTypeEnum $type): Collection;
 
     /**
+     * Find documents by documentable (polymorphic relationship)
+     *
+     * @param string $documentableId The documentable model's ID
+     * @param string $documentableType The documentable model's type
+     * @return Collection<Document> Collection of document models
+     */
+    public function findByDocumentable(string $documentableId, string $documentableType): Collection;
+
+    /**
      * Check if document exists by ID
      *
      * @param string $id The document's UUID

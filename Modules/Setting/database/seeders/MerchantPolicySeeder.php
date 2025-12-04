@@ -28,29 +28,9 @@ class MerchantPolicySeeder extends Seeder
                 'value' => json_encode([
                     'validate_business_category' => true,
                     'require_address_coordinates' => true,
-                ]),
-                'type' => 'object',
-                'group' => 'policy.merchant',
-                'is_active' => true,
-            ],
-            [
-                'key' => 'merchant.address.management',
-                'value' => json_encode([
                     'one_address_per_merchant' => true,
                     'validate_coordinates' => true,
                     'require_complete_address' => true,
-                ]),
-                'type' => 'object',
-                'group' => 'policy.merchant',
-                'is_active' => true,
-            ],
-            [
-                'key' => 'merchant.document.management',
-                'value' => json_encode([
-                    'max_documents_per_merchant' => 10,
-                    'allowed_file_types' => ['pdf', 'jpg', 'jpeg', 'png'],
-                    'max_file_size_mb' => 5,
-                    'require_expiry_date' => false,
                 ]),
                 'type' => 'object',
                 'group' => 'policy.merchant',

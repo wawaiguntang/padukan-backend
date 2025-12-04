@@ -154,7 +154,7 @@ return [
         'label' => 'label',
         'street' => 'jalan',
         'city' => 'kota',
-        'province' => 'provinsi',
+        'state' => 'negara bagian',
         'postal_code' => 'kode pos',
         'latitude' => 'latitude',
         'longitude' => 'longitude',
@@ -169,6 +169,13 @@ return [
         'selfie_with_id_card_file' => 'file selfie dengan KTP',
         'selfie_with_id_card_meta' => 'metadata selfie',
         'avatar_file' => 'file avatar',
+        'business_name' => 'nama bisnis',
+        'business_description' => 'deskripsi bisnis',
+        'business_category' => 'kategori bisnis',
+        'phone' => 'telepon',
+        'email' => 'email',
+        'website' => 'website',
+        'address' => 'alamat',
     ],
 
     /*
@@ -209,6 +216,39 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Validation for Merchant Verification
+    |--------------------------------------------------------------------------
+    */
+
+    'merchant_verification' => [
+        'merchant_document_file' => [
+            'required' => 'File dokumen merchant wajib diisi.',
+            'file' => 'Dokumen merchant harus berupa file yang valid.',
+            'mimes' => 'Dokumen merchant harus berupa file dengan tipe: jpeg, jpg, png, pdf.',
+            'max' => 'File dokumen merchant nggak boleh lebih dari 5MB.',
+        ],
+        'merchant_document_meta' => [
+            'array' => 'Metadata dokumen merchant harus berupa array.',
+        ],
+        'banner_file' => [
+            'required' => 'File banner wajib diisi.',
+            'file' => 'Banner harus berupa file yang valid.',
+            'mimes' => 'Banner harus berupa file dengan tipe: jpeg, jpg, png.',
+            'max' => 'File banner nggak boleh lebih dari 5MB.',
+        ],
+        'banner_meta' => [
+            'array' => 'Metadata banner harus berupa array.',
+        ],
+        'logo_file' => [
+            'required' => 'File logo wajib diisi.',
+            'file' => 'Logo harus berupa file yang valid.',
+            'mimes' => 'Logo harus berupa file dengan tipe: jpeg, jpg, png.',
+            'max' => 'File logo nggak boleh lebih dari 2MB.',
+        ],
+    ],
+
     'first_name' => [
         'string' => 'Nama depan harus berupa string.',
         'max' => 'Nama depan nggak boleh lebih dari 255 karakter.',
@@ -246,6 +286,7 @@ return [
     ],
     'street' => [
         'required' => 'Alamat jalan wajib diisi.',
+        'string' => 'Alamat jalan harus berupa string.',
         'max' => 'Alamat jalan nggak boleh lebih dari :max karakter.',
     ],
     'city' => [
@@ -254,6 +295,7 @@ return [
     ],
     'province' => [
         'required' => 'Provinsi wajib diisi.',
+        'string' => 'Provinsi harus berupa string.',
         'max' => 'Provinsi nggak boleh lebih dari :max karakter.',
     ],
     'postal_code' => [
@@ -270,5 +312,155 @@ return [
         'between' => 'Longitude harus antara -180 dan 180 derajat.',
     ],
 
-    'failed' => 'Waduh, validasi gagal nih.',
+    /*
+    |--------------------------------------------------------------------------
+    | Merchant Validation
+    |--------------------------------------------------------------------------
+    */
+
+    'business_name' => [
+        'required' => 'Nama bisnis wajib diisi.',
+        'string' => 'Nama bisnis harus berupa string.',
+        'max' => 'Nama bisnis nggak boleh lebih dari :max karakter.',
+    ],
+    'business_description' => [
+        'string' => 'Deskripsi bisnis harus berupa string.',
+        'max' => 'Deskripsi bisnis nggak boleh lebih dari :max karakter.',
+    ],
+    'business_category' => [
+        'required' => 'Kategori bisnis wajib diisi.',
+        'in' => 'Kategori bisnis yang dipilih nggak valid.',
+    ],
+    'phone' => [
+        'required' => 'Nomor telepon wajib diisi.',
+        'string' => 'Nomor telepon harus berupa string.',
+        'max' => 'Nomor telepon nggak boleh lebih dari :max karakter.',
+    ],
+    'email' => [
+        'email' => 'Email harus alamat email yang valid.',
+        'max' => 'Email nggak boleh lebih dari :max karakter.',
+    ],
+    'website' => [
+        'url' => 'Website harus URL yang valid.',
+        'max' => 'Website nggak boleh lebih dari :max karakter.',
+    ],
+    'street' => [
+        'required' => 'Alamat jalan wajib diisi.',
+        'string' => 'Alamat jalan harus berupa string.',
+        'max' => 'Alamat jalan nggak boleh lebih dari :max karakter.',
+    ],
+    'city' => [
+        'required' => 'Kota wajib diisi.',
+        'string' => 'Kota harus berupa string.',
+        'max' => 'Kota nggak boleh lebih dari :max karakter.',
+    ],
+    'state' => [
+        'required' => 'Negara bagian wajib diisi.',
+        'string' => 'Negara bagian harus berupa string.',
+        'max' => 'Negara bagian nggak boleh lebih dari :max karakter.',
+    ],
+    'country' => [
+        'required' => 'Negara wajib diisi.',
+        'string' => 'Negara harus berupa string.',
+        'max' => 'Negara nggak boleh lebih dari :max karakter.',
+    ],
+    'postal_code' => [
+        'required' => 'Kode pos wajib diisi.',
+        'string' => 'Kode pos harus berupa string.',
+        'max' => 'Kode pos nggak boleh lebih dari :max karakter.',
+        'regex' => 'Format kode pos nggak valid.',
+    ],
+    'latitude' => [
+        'required' => 'Latitude wajib diisi.',
+        'numeric' => 'Latitude harus berupa angka.',
+        'between' => 'Latitude harus antara -90 dan 90 derajat.',
+    ],
+    'longitude' => [
+        'required' => 'Longitude wajib diisi.',
+        'numeric' => 'Longitude harus berupa angka.',
+        'between' => 'Longitude harus antara -180 dan 180 derajat.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Form Request Validation Messages
+    |--------------------------------------------------------------------------
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Schedule Validation
+    |--------------------------------------------------------------------------
+    */
+
+    'regular_hours' => [
+        'required' => 'Jam operasional wajib diisi ya!',
+        'array' => 'Jam operasional harus berupa array.',
+        'json' => 'Jam operasional harus berupa string JSON yang valid.',
+    ],
+    'regular_hours.*.open' => [
+        'required' => 'Waktu buka wajib diisi untuk setiap hari.',
+    ],
+    'regular_hours.*.close' => [
+        'required' => 'Waktu tutup wajib diisi untuk setiap hari.',
+    ],
+    'regular_hours.*.is_open' => [
+        'required' => 'Status buka wajib diisi untuk setiap hari.',
+    ],
+    'special_schedules' => [
+        'array' => 'Jadwal khusus harus berupa array.',
+        'json' => 'Jadwal khusus harus berupa string JSON yang valid.',
+    ],
+    'special_schedules.*.date' => [
+        'required' => 'Tanggal wajib diisi untuk jadwal khusus.',
+    ],
+    'special_schedules.*.name' => [
+        'required' => 'Nama wajib diisi untuk jadwal khusus.',
+    ],
+    'special_schedules.*.is_open' => [
+        'required' => 'Status buka wajib diisi untuk jadwal khusus.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Settings Validation
+    |--------------------------------------------------------------------------
+    */
+
+    'delivery_enabled' => [
+        'boolean' => 'Pengiriman diaktifkan harus ya atau tidak.',
+    ],
+    'delivery_radius_km' => [
+        'integer' => 'Radius pengiriman harus bilangan bulat.',
+        'min' => 'Radius pengiriman minimal :min km ya.',
+        'max' => 'Radius pengiriman maksimal :max km aja.',
+    ],
+    'minimum_order_amount' => [
+        'numeric' => 'Minimal pesanan harus berupa angka.',
+        'min' => 'Minimal pesanan minimal :min ya.',
+    ],
+    'auto_accept_orders' => [
+        'boolean' => 'Otomatis terima pesanan harus ya atau tidak.',
+    ],
+    'preparation_time_minutes' => [
+        'integer' => 'Waktu persiapan harus bilangan bulat.',
+        'min' => 'Waktu persiapan minimal :min menit.',
+        'max' => 'Waktu persiapan maksimal :max menit aja.',
+    ],
+    'notifications_enabled' => [
+        'boolean' => 'Notifikasi diaktifkan harus ya atau tidak.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status Validation
+    |--------------------------------------------------------------------------
+    */
+
+    'status' => [
+        'required' => 'Status wajib diisi.',
+        'invalid' => 'Status yang dipilih nggak valid.',
+    ],
+
+    'failed' => 'Waduh, ada yang salah nih. Coba cek lagi ya!',
 ];

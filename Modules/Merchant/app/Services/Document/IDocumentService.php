@@ -81,4 +81,33 @@ interface IDocumentService
      * @throws \Exception If profile not found
      */
     public function createDocument(string $userId, DocumentTypeEnum $documentType, string $filePath, array $additionalData = []): Document;
+
+    /**
+     * Upload document for a specific merchant
+     *
+     * @param string $merchantId The merchant's UUID
+     * @param DocumentTypeEnum $documentType The type of document
+     * @param \Illuminate\Http\UploadedFile $documentFile The document file to upload
+     * @param array $additionalData Additional document data (optional)
+     * @return Document The created document model
+     * @throws \Exception If upload fails
+     */
+    public function uploadMerchantDocument(string $merchantId, DocumentTypeEnum $documentType, \Illuminate\Http\UploadedFile $documentFile, array $additionalData = []): Document;
+
+    /**
+     * Get documents by merchant ID
+     *
+     * @param string $merchantId The merchant's UUID
+     * @return Collection<Document> Collection of document models
+     */
+    public function getDocumentsByMerchantId(string $merchantId): Collection;
+
+    /**
+     * Get documents by merchant ID and type
+     *
+     * @param string $merchantId The merchant's UUID
+     * @param DocumentTypeEnum $documentType The document type
+     * @return Collection<Document> Collection of document models
+     */
+    public function getDocumentsByMerchantIdAndType(string $merchantId, DocumentTypeEnum $documentType): Collection;
 }

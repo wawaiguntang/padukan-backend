@@ -3,6 +3,7 @@
 namespace Modules\Merchant\Http\Requests\Merchant;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Merchant\Enums\BusinessCategoryEnum;
 
 /**
  * Update Merchant Request
@@ -16,7 +17,7 @@ class UpdateMerchantRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return true; // Authorization is handled by middleware
     }
 
     /**
@@ -25,15 +26,12 @@ class UpdateMerchantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'business_name' => 'sometimes|string|max:255',
-            'business_description' => 'sometimes|nullable|string|max:1000',
-            'business_category' => 'sometimes|string|in:food,mart,service',
-            'phone' => 'sometimes|string|max:20',
-            'email' => 'sometimes|nullable|email|max:255',
-            'website' => 'sometimes|nullable|url|max:255',
-            'address' => 'sometimes|string|max:500',
-            'latitude' => 'sometimes|nullable|numeric|between:-90,90',
-            'longitude' => 'sometimes|nullable|numeric|between:-180,180',
+            'business_name' => ['sometimes', 'string', 'max:255'],
+            'business_description' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'phone' => ['sometimes', 'string', 'max:20'],
+            'email' => ['sometimes', 'nullable', 'email', 'max:255'],
+            'website' => ['sometimes', 'nullable', 'url', 'max:255'],
+            'logo_file' => ['sometimes', 'file', 'mimes:jpeg,jpg,png', 'max:2048'],
         ];
     }
 
@@ -43,30 +41,36 @@ class UpdateMerchantRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'business_name.string' => __('merchant::validation.business_name_string'),
-            'business_category.in' => __('merchant::validation.business_category_invalid'),
-            'email.email' => __('merchant::validation.email_invalid'),
-            'website.url' => __('merchant::validation.website_invalid'),
-            'latitude.between' => __('merchant::validation.latitude_invalid'),
-            'longitude.between' => __('merchant::validation.longitude_invalid'),
+            'business_name.string' => __('merchant::validation.business_name.string'),
+            'business_name.max' => __('merchant::validation.business_name.max'),
+            'business_description.string' => __('merchant::validation.business_description.string'),
+            'business_description.max' => __('merchant::validation.business_description.max'),
+            'phone.string' => __('merchant::validation.phone.string'),
+            'phone.max' => __('merchant::validation.phone.max'),
+            'email.email' => __('merchant::validation.email.email'),
+            'email.max' => __('merchant::validation.email.max'),
+            'website.url' => __('merchant::validation.website.url'),
+            'website.max' => __('merchant::validation.website.max'),
+            'logo_file.file' => __('merchant::validation.merchant_verification.logo_file.file'),
+            'logo_file.mimes' => __('merchant::validation.merchant_verification.logo_file.mimes'),
+            'logo_file.max' => __('merchant::validation.merchant_verification.logo_file.max'),
         ];
     }
 
     /**
-     * Get custom attributes for validator errors.
+     * Handle a failed validation attempt.
+     *
+     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @return void
      */
-    public function attributes(): array
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
     {
-        return [
-            'business_name' => __('merchant::validation.attributes.business_name'),
-            'business_description' => __('merchant::validation.attributes.business_description'),
-            'business_category' => __('merchant::validation.attributes.business_category'),
-            'phone' => __('merchant::validation.attributes.phone'),
-            'email' => __('merchant::validation.attributes.email'),
-            'website' => __('merchant::validation.attributes.website'),
-            'address' => __('merchant::validation.attributes.address'),
-            'latitude' => __('merchant::validation.attributes.latitude'),
-            'longitude' => __('merchant::validation.attributes.longitude'),
-        ];
+        $response = response()->json([
+            'status' => false,
+            'message' => __('merchant::validation.failed'),
+            'errors' => $validator->errors(),
+        ], 422);
+
+        throw new \Illuminate\Validation\ValidationException($validator, $response);
     }
 }

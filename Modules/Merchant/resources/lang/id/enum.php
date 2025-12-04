@@ -42,4 +42,10 @@ return [
         'approved' => 'Disetujui',
         'rejected' => 'Ditolak',
     ],
+
+    'merchant_status' => [
+        'open' => 'Buka',
+        'closed' => 'Tutup',
+        'temporarily_closed' => 'Tutup Sementara',
+    ],
 ];
