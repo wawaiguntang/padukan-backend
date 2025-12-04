@@ -10,8 +10,8 @@ enum OnlineStatusEnum: string
     public function label(): string
     {
         return match ($this) {
-            self::ONLINE => 'Online',
-            self::OFFLINE => 'Offline',
+            self::ONLINE => __('driver::enum.online_status.online'),
+            self::OFFLINE => __('driver::enum.online_status.offline'),
         };
     }
 }

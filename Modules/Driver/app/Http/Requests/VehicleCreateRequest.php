@@ -23,7 +23,7 @@ class VehicleCreateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => 'required|string|in:motorcycle,car,truck',
+            'type' => 'required|string|in:motorcycle,car',
             'brand' => 'required|string|max:100',
             'model' => 'required|string|max:100',
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
@@ -53,21 +53,6 @@ class VehicleCreateRequest extends FormRequest
             'license_plate.required' => __('driver::validation.vehicle.license_plate.required'),
             'license_plate.max' => __('driver::validation.vehicle.license_plate.max'),
             'license_plate.unique' => __('driver::validation.vehicle.license_plate.unique'),
-        ];
-    }
-
-    /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'type' => __('driver::validation.attributes.type'),
-            'brand' => __('driver::validation.attributes.brand'),
-            'model' => __('driver::validation.attributes.model'),
-            'year' => __('driver::validation.attributes.year'),
-            'color' => __('driver::validation.attributes.color'),
-            'license_plate' => __('driver::validation.attributes.license_plate'),
         ];
     }
 

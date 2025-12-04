@@ -38,7 +38,7 @@ class SetPrimaryAddressController
         if (!$address) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.not_found'),
+                'message' => __('customer::controller.address.not_found'),
             ], 404);
         }
 
@@ -46,7 +46,7 @@ class SetPrimaryAddressController
         if (!$this->addressService->isAddressOwnedByUser($id, $user->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.access_denied'),
+                'message' => __('customer::controller.address.access_denied'),
             ], 403);
         }
 
@@ -55,13 +55,13 @@ class SetPrimaryAddressController
         if (!$updated) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.primary_update_failed'),
+                'message' => __('customer::controller.address.primary_update_failed'),
             ], 500);
         }
 
         return response()->json([
             'status' => true,
-            'message' => __('customer::address.primary_updated_successfully'),
+            'message' => __('customer::controller.address.primary_updated_successfully'),
         ]);
     }
 }

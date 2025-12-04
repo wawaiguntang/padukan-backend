@@ -55,7 +55,7 @@ class StoreAddressController
         if (!$this->addressManagementPolicy->canAddAddress($profile->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.max_limit_reached'),
+                'message' => __('customer::controller.address.max_limit_reached'),
             ], 403);
         }
 
@@ -64,7 +64,7 @@ class StoreAddressController
 
         return response()->json([
             'status' => true,
-            'message' => __('customer::address.created_successfully'),
+            'message' => __('customer::controller.address.created_successfully'),
             'data' => new AddressResource($address),
         ], 201);
     }

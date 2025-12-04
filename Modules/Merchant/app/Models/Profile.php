@@ -40,6 +40,7 @@ class Profile extends Model
         'language',
         'is_verified',
         'verification_status',
+        'max_merchant',
     ];
 
     /**
@@ -65,6 +66,15 @@ class Profile extends Model
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();
             }
+            // Set max_merchant based on verification status
+            $model->max_merchant = $model->is_verified ? 10 : 1;
+        });
+
+        static::updating(function ($model) {
+            // Update max_merchant when verification status changes
+            if ($model->isDirty('is_verified')) {
+                $model->max_merchant = $model->is_verified ? 10 : 1;
+            }
         });
     }
 
@@ -77,12 +87,13 @@ class Profile extends Model
     }
 
     /**
-     * Get the addresses for the merchant profile.
+     * Get the merchants for the profile.
      */
-    public function addresses(): HasMany
+    public function merchants(): HasMany
     {
-        return $this->hasMany(Address::class);
+        return $this->hasMany(Merchant::class);
     }
+
 
     // protected static function newFactory(): MerchantProfileFactory
     // {

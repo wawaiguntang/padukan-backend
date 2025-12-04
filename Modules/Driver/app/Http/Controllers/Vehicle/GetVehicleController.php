@@ -5,7 +5,7 @@ namespace Modules\Driver\Http\Controllers\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Modules\Driver\Services\Vehicle\IVehicleService;
-use Modules\Driver\Policies\VehicleOwnership\IVehicleOwnershipPolicy;
+use Modules\Driver\Policies\VehicleManagement\IVehicleManagementPolicy;
 
 /**
  * Get Vehicle Controller
@@ -22,17 +22,17 @@ class GetVehicleController
     /**
      * Vehicle ownership policy instance
      */
-    protected IVehicleOwnershipPolicy $vehicleOwnershipPolicy;
+    protected IVehicleManagementPolicy $vehicleManagementPolicy;
 
     /**
      * Constructor
      */
     public function __construct(
         IVehicleService $vehicleService,
-        IVehicleOwnershipPolicy $vehicleOwnershipPolicy
+        IVehicleManagementPolicy $vehicleManagementPolicy
     ) {
         $this->vehicleService = $vehicleService;
-        $this->vehicleOwnershipPolicy = $vehicleOwnershipPolicy;
+        $this->vehicleManagementPolicy = $vehicleManagementPolicy;
     }
 
     /**
@@ -47,21 +47,21 @@ class GetVehicleController
         if (!$vehicle) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.not_found'),
+                'message' => __('driver::controller.vehicle.not_found'),
             ], 404);
         }
 
         // Check if user can access this vehicle
-        if (!$this->vehicleOwnershipPolicy->canAccessVehicle($user->id, $vehicle->id)) {
+        if (!$this->vehicleManagementPolicy->ownsVehicle($user->id, $vehicle->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.access_denied'),
+                'message' => __('driver::controller.vehicle.access_denied'),
             ], 403);
         }
 
         return response()->json([
             'status' => true,
-            'message' => __('driver::vehicle.retrieved_successfully'),
+            'message' => __('driver::controller.vehicle.retrieved_successfully'),
             'data' => [
                 'id' => $vehicle->id,
                 'driver_profile_id' => $vehicle->driver_profile_id,

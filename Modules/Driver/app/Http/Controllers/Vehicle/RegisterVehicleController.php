@@ -5,7 +5,7 @@ namespace Modules\Driver\Http\Controllers\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Modules\Driver\Http\Requests\VehicleCreateRequest;
 use Modules\Driver\Services\Vehicle\IVehicleService;
-use Modules\Driver\Policies\VehicleOwnership\IVehicleOwnershipPolicy;
+use Modules\Driver\Policies\VehicleManagement\IVehicleManagementPolicy;
 
 /**
  * Register Vehicle Controller
@@ -22,17 +22,17 @@ class RegisterVehicleController
     /**
      * Vehicle ownership policy instance
      */
-    protected IVehicleOwnershipPolicy $vehicleOwnershipPolicy;
+    protected IVehicleManagementPolicy $vehicleManagementPolicy;
 
     /**
      * Constructor
      */
     public function __construct(
         IVehicleService $vehicleService,
-        IVehicleOwnershipPolicy $vehicleOwnershipPolicy
+        IVehicleManagementPolicy $vehicleManagementPolicy
     ) {
         $this->vehicleService = $vehicleService;
-        $this->vehicleOwnershipPolicy = $vehicleOwnershipPolicy;
+        $this->vehicleManagementPolicy = $vehicleManagementPolicy;
     }
 
     /**
@@ -44,12 +44,12 @@ class RegisterVehicleController
         $validated = $request->validated();
 
         try {
-            if (!$this->vehicleOwnershipPolicy->canRegisterVehicle($user->id)) {
+            if (!$this->vehicleManagementPolicy->canRegisterVehicleType($user->id, $request->type)) {
                 return response()->json([
                     'status' => false,
-                    'message' => __('driver::vehicle.limit_exceeded'),
+                    'message' => __('driver::controller.vehicle.limit_exceeded'),
                     'data' => [
-                        'max_vehicles' => $this->vehicleOwnershipPolicy->getMaxVehiclesPerDriver(),
+                        'max_vehicles' => $this->vehicleManagementPolicy->getMaxVehiclesPerDriver(),
                         'current_count' => $this->vehicleService->getVehiclesByUserId($user->id)->count(),
                     ],
                 ], 400);
@@ -60,7 +60,7 @@ class RegisterVehicleController
 
             return response()->json([
                 'status' => true,
-                'message' => __('driver::vehicle.registered_successfully'),
+                'message' => __('driver::controller.vehicle.registered_successfully'),
                 'data' => [
                     'id' => $vehicle->id,
                     'type' => $vehicle->type,
@@ -77,7 +77,7 @@ class RegisterVehicleController
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.registration_failed'),
+                'message' => __('driver::controller.vehicle.registration_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

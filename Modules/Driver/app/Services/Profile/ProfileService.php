@@ -243,8 +243,8 @@ class ProfileService implements IProfileService
                 'verified_at' => $selfieDocument->verified_at,
                 'temporary_url' => $this->fileUploadService->generateTemporaryUrl($selfieDocument->file_path),
             ] : null,
-            'can_resubmit' => $profile->verification_status->value === 'rejected',
-            'can_submit' => $profile->verification_status->value === 'pending',
+            'can_resubmit' => $profile->verification_status === \Modules\Driver\Enums\VerificationStatusEnum::REJECTED,
+            'can_submit' => $profile->verification_status === \Modules\Driver\Enums\VerificationStatusEnum::PENDING,
         ];
     }
 
@@ -298,6 +298,7 @@ class ProfileService implements IProfileService
                 'verified_at' => null,
             ]);
 
+            $profile = $this->profileRepository->findByUserId($userId);
 
             $this->documentService->updateVerificationStatus(
                 $idCardDocument->id,
@@ -320,7 +321,7 @@ class ProfileService implements IProfileService
                         'temporary_url' => $this->fileUploadService->generateTemporaryUrl($doc->file_path),
                     ];
                 }, $uploadedDocuments),
-                'status' => 'pending',
+                'status' => $profile->verification_status->value,
                 'resubmitted_at' => now(),
             ];
         } catch (\Exception $e) {

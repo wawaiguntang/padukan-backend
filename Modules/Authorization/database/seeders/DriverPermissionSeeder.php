@@ -131,7 +131,7 @@ class DriverPermissionSeeder extends Seeder
             [
                 'name' => 'driver.status.update',
                 'slug' => 'driver-status-update',
-                'description' => 'Update driver online/offline and operational status',
+                'description' => 'Update driver online/offline',
                 'resource' => 'status',
                 'action' => 'update',
             ],
@@ -143,49 +143,12 @@ class DriverPermissionSeeder extends Seeder
                 'action' => 'update_location',
             ],
             [
-                'name' => 'driver.status.set_active_service',
-                'slug' => 'driver-status-set-active-service',
+                'name' => 'driver.status.set_active_services',
+                'slug' => 'driver-status-set-active-services',
                 'description' => 'Set current active service (RIDE, FOOD, CAR, SEND, MART)',
                 'resource' => 'status',
-                'action' => 'set_active_service',
-            ],
-
-            // Service-Specific Permissions
-            [
-                'name' => 'driver.service.ride',
-                'slug' => 'driver-service-ride',
-                'description' => 'Permission to provide ride hailing service',
-                'resource' => 'service',
-                'action' => 'ride',
-            ],
-            [
-                'name' => 'driver.service.food',
-                'slug' => 'driver-service-food',
-                'description' => 'Permission to provide food delivery service',
-                'resource' => 'service',
-                'action' => 'food',
-            ],
-            [
-                'name' => 'driver.service.car',
-                'slug' => 'driver-service-car',
-                'description' => 'Permission to provide car rental service',
-                'resource' => 'service',
-                'action' => 'car',
-            ],
-            [
-                'name' => 'driver.service.send',
-                'slug' => 'driver-service-send',
-                'description' => 'Permission to provide courier service',
-                'resource' => 'service',
-                'action' => 'send',
-            ],
-            [
-                'name' => 'driver.service.mart',
-                'slug' => 'driver-service-mart',
-                'description' => 'Permission to provide mart delivery service',
-                'resource' => 'service',
-                'action' => 'mart',
-            ],
+                'action' => 'set_active_services',
+            ]
         ];
 
         foreach ($permissions as $permissionData) {
@@ -225,14 +188,7 @@ class DriverPermissionSeeder extends Seeder
                 'driver.status.view',
                 'driver.status.update',
                 'driver.status.update_location',
-                'driver.status.set_active_service',
-
-                // Service-specific permissions (will be granted based on verified vehicles)
-                'driver.service.ride',
-                'driver.service.food',
-                'driver.service.car',
-                'driver.service.send',
-                'driver.service.mart',
+                'driver.status.set_active_services',
             ],
         ];
 

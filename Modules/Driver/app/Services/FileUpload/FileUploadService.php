@@ -120,6 +120,6 @@ class FileUploadService implements IFileUploadService
             return $disk;
         }
 
-        throw new FileUploadException('file.generate_temporary_url_failed');
+        throw new FileUploadException('exception.file.generate_temporary_url_failed');
     }
 }

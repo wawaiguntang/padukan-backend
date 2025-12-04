@@ -54,14 +54,14 @@ class GetDriverStatusController
         if (!$profile) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::profile.not_found'),
+                'message' => __('driver::controller.profile.not_found'),
             ], 404);
         }
 
         if (!$this->driverStatusPolicy->canViewStatus($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::status.access_denied'),
+                'message' => __('driver::controller.status.access_denied'),
             ], 403);
         }
 
@@ -91,7 +91,7 @@ class GetDriverStatusController
 
         return response()->json([
             'status' => true,
-            'message' => __('driver::status.retrieved_successfully'),
+            'message' => __('driver::controller.status.retrieved_successfully'),
             'data' => $responseData,
         ]);
     }

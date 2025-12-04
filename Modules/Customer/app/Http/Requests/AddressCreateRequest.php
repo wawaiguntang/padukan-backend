@@ -65,24 +65,6 @@ class AddressCreateRequest extends FormRequest
     }
 
     /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'type' => __('customer::attributes.type'),
-            'label' => __('customer::attributes.label'),
-            'street' => __('customer::attributes.street'),
-            'city' => __('customer::attributes.city'),
-            'province' => __('customer::attributes.province'),
-            'postal_code' => __('customer::attributes.postal_code'),
-            'latitude' => __('customer::attributes.latitude'),
-            'longitude' => __('customer::attributes.longitude'),
-            'is_primary' => __('customer::attributes.is_primary'),
-        ];
-    }
-
-    /**
      * Handle a failed validation attempt.
      *
      * @param \Illuminate\Contracts\Validation\Validator $validator

@@ -25,6 +25,11 @@ class MerchantServiceProvider extends ServiceProvider
         $this->registerCommandSchedules();
         $this->registerTranslations();
         $this->registerConfig();
+
+        // Register module database connection
+        $dbConfig = config('merchant.database');
+        $this->app['config']['database.connections.merchant'] = $dbConfig;
+
         $this->registerViews();
         $this->registerObservers();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
@@ -57,10 +62,38 @@ class MerchantServiceProvider extends ServiceProvider
             \Modules\Merchant\Services\Profile\ProfileService::class
         );
 
+        // Merchant Services
+        $this->app->bind(
+            \Modules\Merchant\Repositories\Merchant\IMerchantRepository::class,
+            \Modules\Merchant\Repositories\Merchant\MerchantRepository::class
+        );
+
+        $this->app->bind(
+            \Modules\Merchant\Services\Merchant\IMerchantService::class,
+            \Modules\Merchant\Services\Merchant\MerchantService::class
+        );
+
         // Cache Key Manager
         $this->app->bind(
             \Modules\Merchant\Cache\KeyManager\IKeyManager::class,
             \Modules\Merchant\Cache\KeyManager\KeyManager::class
+        );
+
+        // Document Services
+        $this->app->bind(
+            \Modules\Merchant\Repositories\Document\IDocumentRepository::class,
+            \Modules\Merchant\Repositories\Document\DocumentRepository::class
+        );
+
+        $this->app->bind(
+            \Modules\Merchant\Services\Document\IDocumentService::class,
+            \Modules\Merchant\Services\Document\DocumentService::class
+        );
+
+        // File Upload Service
+        $this->app->bind(
+            \Modules\Merchant\Services\FileUpload\IFileUploadService::class,
+            \Modules\Merchant\Services\FileUpload\FileUploadService::class
         );
 
         // Profile Ownership Policy
@@ -76,6 +109,7 @@ class MerchantServiceProvider extends ServiceProvider
     protected function registerObservers(): void
     {
         \Modules\Merchant\Models\Profile::observe(\Modules\Merchant\Observers\ProfileObserver::class);
+        \Modules\Merchant\Models\Document::observe(\Modules\Merchant\Observers\DocumentObserver::class);
     }
 
     /**
@@ -108,8 +142,12 @@ class MerchantServiceProvider extends ServiceProvider
             $this->loadTranslationsFrom($langPath, $this->nameLower);
             $this->loadJsonTranslationsFrom($langPath);
         } else {
-            $this->loadTranslationsFrom(module_path($this->name, 'lang'), $this->nameLower);
-            $this->loadJsonTranslationsFrom(module_path($this->name, 'lang'));
+            // Load translations from module's resources/lang directory
+            $moduleLangPath = module_path($this->name, 'resources/lang');
+            if (is_dir($moduleLangPath)) {
+                $this->loadTranslationsFrom($moduleLangPath, $this->nameLower);
+                $this->loadJsonTranslationsFrom($moduleLangPath);
+            }
         }
     }
 

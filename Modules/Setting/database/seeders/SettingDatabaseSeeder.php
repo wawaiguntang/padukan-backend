@@ -15,6 +15,7 @@ class SettingDatabaseSeeder extends Seeder
             AuthorizationPolicySeeder::class,
             CustomerPolicySeeder::class,
             DriverPolicySeeder::class,
+            MerchantPolicySeeder::class,
         ]);
     }
 }

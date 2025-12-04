@@ -12,10 +12,10 @@ enum VerificationStatusEnum: string
     public function label(): string
     {
         return match ($this) {
-            self::PENDING => 'Pending',
-            self::ON_REVIEW => 'On Review',
-            self::APPROVED => 'Approved',
-            self::REJECTED => 'Rejected',
+            self::PENDING => __('merchant::enum.verification_status.pending'),
+            self::ON_REVIEW => __('merchant::enum.verification_status.on_review'),
+            self::APPROVED => __('merchant::enum.verification_status.approved'),
+            self::REJECTED => __('merchant::enum.verification_status.rejected'),
         };
     }
 

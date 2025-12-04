@@ -69,14 +69,14 @@ class ProfileObserver
     {
         // Cache by user ID (most commonly accessed)
         $this->cache->put(
-            $this->keyManager::profileByUserId($profile->user_id),
+            $this->keyManager::getProfileKey($profile->user_id),
             $profile,
             $this->cacheTtl
         );
 
         // Cache by profile ID
         $this->cache->put(
-            $this->keyManager::profileById($profile->id),
+            $this->keyManager::getProfileByIdKey($profile->id),
             $profile,
             $this->cacheTtl
         );
@@ -88,9 +88,9 @@ class ProfileObserver
     protected function invalidateProfileCaches(Profile $profile): void
     {
         // Invalidate by user ID
-        $this->cache->forget($this->keyManager::profileByUserId($profile->user_id));
+        $this->cache->forget($this->keyManager::getProfileKey($profile->user_id));
 
         // Invalidate by profile ID
-        $this->cache->forget($this->keyManager::profileById($profile->id));
+        $this->cache->forget($this->keyManager::getProfileByIdKey($profile->id));
     }
 }

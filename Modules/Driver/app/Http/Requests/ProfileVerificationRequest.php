@@ -65,23 +65,7 @@ class ProfileVerificationRequest extends FormRequest
             'selfie_with_id_card_meta.array' => __('driver::validation.profile_verification.selfie_with_id_card_meta.array'),
         ];
     }
-
-    /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'id_card_file' => __('driver::attributes.profile_verification.id_card_file'),
-            'id_card_meta' => __('driver::attributes.profile_verification.id_card_meta'),
-            'id_card_meta.name' => __('driver::attributes.profile_verification.id_card_meta.name'),
-            'id_card_meta.number' => __('driver::attributes.profile_verification.id_card_meta.number'),
-            'id_card_expiry_date' => __('driver::attributes.profile_verification.id_card_expiry_date'),
-            'selfie_with_id_card_file' => __('driver::attributes.profile_verification.selfie_with_id_card_file'),
-            'selfie_with_id_card_meta' => __('driver::attributes.profile_verification.selfie_with_id_card_meta'),
-        ];
-    }
-
+    
     /**
      * Handle a failed validation attempt.
      *

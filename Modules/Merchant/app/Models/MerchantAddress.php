@@ -25,21 +25,22 @@ class MerchantAddress extends Model
      * The attributes that are mass assignable.
      */
     protected $fillable = [
-        'merchant_profile_id',
+        'merchant_id',
         'street',
         'city',
         'province',
+        'country',
         'postal_code',
         'latitude',
         'longitude',
     ];
 
     /**
-     * Get the merchant profile that owns the merchant address.
+     * Get the merchant that owns the address.
      */
-    public function merchantProfile(): BelongsTo
+    public function merchant(): BelongsTo
     {
-        return $this->belongsTo(MerchantProfile::class);
+        return $this->belongsTo(Merchant::class);
     }
 
     // protected static function newFactory(): MerchantAddressFactory

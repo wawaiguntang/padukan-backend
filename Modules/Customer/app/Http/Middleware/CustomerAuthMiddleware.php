@@ -46,7 +46,7 @@ class CustomerAuthMiddleware
         if (!$token) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::auth.token.missing'),
+                'message' => __('customer::middleware.token.missing'),
             ], 401);
         }
 
@@ -56,7 +56,7 @@ class CustomerAuthMiddleware
         if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::auth.token.invalid'),
+                'message' => __('customer::middleware.token.invalid'),
             ], 401);
         }
 

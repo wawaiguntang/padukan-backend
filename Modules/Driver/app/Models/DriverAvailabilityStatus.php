@@ -43,7 +43,7 @@ class DriverAvailabilityStatus extends Model
         'profile_id',
         'online_status',
         'operational_status',
-        'active_service',
+        'active_services',
         'vehicle_id',
         'latitude',
         'longitude',
@@ -58,7 +58,7 @@ class DriverAvailabilityStatus extends Model
         return [
             'online_status' => \Modules\Driver\Enums\OnlineStatusEnum::class,
             'operational_status' => \Modules\Driver\Enums\OperationalStatusEnum::class,
-            'active_service' => \App\Enums\ServiceTypeEnum::class,
+            'active_services' => 'array',
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
             'last_updated_at' => 'datetime',

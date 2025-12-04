@@ -5,7 +5,7 @@ namespace Modules\Driver\Http\Controllers\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Modules\Driver\Http\Requests\VehicleUpdateRequest;
 use Modules\Driver\Services\Vehicle\IVehicleService;
-use Modules\Driver\Policies\VehicleOwnership\IVehicleOwnershipPolicy;
+use Modules\Driver\Policies\VehicleManagement\IVehicleManagementPolicy;
 
 /**
  * Update Vehicle Controller
@@ -22,17 +22,17 @@ class UpdateVehicleController
     /**
      * Vehicle ownership policy instance
      */
-    protected IVehicleOwnershipPolicy $vehicleOwnershipPolicy;
+    protected IVehicleManagementPolicy $vehicleManagementPolicy;
 
     /**
      * Constructor
      */
     public function __construct(
         IVehicleService $vehicleService,
-        IVehicleOwnershipPolicy $vehicleOwnershipPolicy
+        IVehicleManagementPolicy $vehicleManagementPolicy
     ) {
         $this->vehicleService = $vehicleService;
-        $this->vehicleOwnershipPolicy = $vehicleOwnershipPolicy;
+        $this->vehicleManagementPolicy = $vehicleManagementPolicy;
     }
 
     /**
@@ -48,15 +48,21 @@ class UpdateVehicleController
         if (!$vehicle) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.not_found'),
+                'message' => __('driver::controller.vehicle.not_found'),
             ], 404);
         }
 
-        // Check if user can modify this vehicle
-        if (!$this->vehicleOwnershipPolicy->canModifyVehicle($user->id, $vehicle->id)) {
+        if($vehicle->verification_status === \Modules\Driver\Enums\VerificationStatusEnum::APPROVED) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.access_denied'),
+                'message' => __('driver::controller.vehicle.update_not_allowed'),
+            ], 400);
+        }
+
+        if (!$this->vehicleManagementPolicy->ownsVehicle($user->id, $vehicle->id)) {
+            return response()->json([
+                'status' => false,
+                'message' => __('driver::controller.vehicle.access_denied'),
             ], 403);
         }
 
@@ -66,7 +72,7 @@ class UpdateVehicleController
             if (!$updated) {
                 return response()->json([
                     'status' => false,
-                    'message' => __('driver::vehicle.update_failed'),
+                    'message' => __('driver::controller.vehicle.update_failed'),
                 ], 500);
             }
 
@@ -77,7 +83,7 @@ class UpdateVehicleController
 
             return response()->json([
                 'status' => true,
-                'message' => __('driver::vehicle.updated_successfully'),
+                'message' => __('driver::controller.vehicle.updated_successfully'),
                 'data' => [
                     'id' => $updatedVehicle->id,
                     'driver_profile_id' => $updatedVehicle->driver_profile_id,
@@ -96,7 +102,7 @@ class UpdateVehicleController
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.update_failed'),
+                'message' => __('driver::controller.vehicle.update_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

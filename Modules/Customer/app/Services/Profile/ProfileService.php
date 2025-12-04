@@ -193,7 +193,7 @@ class ProfileService implements IProfileService
             if ($e instanceof FileValidationException) {
                 throw $e;
             }
-            throw new FileUploadException('customer.file.upload_failed', ['error' => $e->getMessage()]);
+            throw new FileUploadException('exception.file.upload_failed', ['error' => $e->getMessage()]);
         }
     }
 
@@ -289,8 +289,8 @@ class ProfileService implements IProfileService
                 'verified_at' => $selfieDocument->verified_at,
                 'temporary_url' => $this->fileUploadService->generateTemporaryUrl($selfieDocument->file_path),
             ] : null,
-            'can_resubmit' => $profile->verification_status === 'rejected',
-            'can_submit' => $profile->verification_status === 'pending',
+            'can_resubmit' => $profile->verification_status === \Modules\Customer\Enums\VerificationStatusEnum::REJECTED,
+            'can_submit' => $profile->verification_status === \Modules\Customer\Enums\VerificationStatusEnum::PENDING,
         ];
     }
 

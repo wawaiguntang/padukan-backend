@@ -3,20 +3,20 @@
 namespace Modules\Driver\Policies\ServiceValidation;
 
 use Modules\Driver\Repositories\Profile\IProfileRepository;
-use App\Shared\Authorization\Repositories\IPolicyRepository;
+use App\Shared\Setting\Services\ISettingService;
 
 class ServiceValidationPolicy implements IServiceValidationPolicy
 {
     private IProfileRepository $profileRepository;
-    private IPolicyRepository $policyRepository;
+    private ISettingService $settingService;
     private array $policySettings;
 
     public function __construct(
         IProfileRepository $profileRepository,
-        IPolicyRepository $policyRepository
+        ISettingService $settingService
     ) {
         $this->profileRepository = $profileRepository;
-        $this->policyRepository = $policyRepository;
+        $this->settingService = $settingService;
         $this->loadPolicySettings();
     }
 
@@ -25,10 +25,10 @@ class ServiceValidationPolicy implements IServiceValidationPolicy
      */
     private function loadPolicySettings(): void
     {
-        $settings = $this->policyRepository->getSetting('driver.service.validation');
+        $settings = $this->settingService->getSettingByKey('driver.status.management');
 
-        if ($settings) {
-            $this->policySettings = $settings;
+        if (!empty($settings)) {
+            $this->policySettings = $settings['value'] ?? [];
         } else {
             // Fallback to default
             $this->policySettings = [
@@ -37,6 +37,10 @@ class ServiceValidationPolicy implements IServiceValidationPolicy
                 'motorcycle_services' => ['ride', 'food', 'send', 'mart'],
                 'car_services' => ['car', 'send'],
                 'allow_service_switching' => true,
+                'service_switch_cooldown' => 300,
+                'max_motorcycle_services' => 4,
+                'max_car_services' => 2,
+                'allow_multiple_active_vehicles' => false,
             ];
         }
     }

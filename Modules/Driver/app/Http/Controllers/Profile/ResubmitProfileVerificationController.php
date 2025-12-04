@@ -57,34 +57,34 @@ class ResubmitProfileVerificationController
             if (!$profile) {
                 return response()->json([
                     'status' => false,
-                    'message' => __('driver::profile.not_found'),
+                    'message' => __('driver::controller.profile.not_found'),
                 ], 404);
             }
 
-            if (!$this->profileOwnershipPolicy->canResubmitVerification($user->id, $profile->id)) {
+            if ($profile->verification_status === \Modules\Driver\Enums\VerificationStatusEnum::REJECTED) {
+                $result = $this->profileService->resubmitVerification($user->id, [
+                    'id_card_file' => $request->file('id_card_file'),
+                    'id_card_meta' => $validated['id_card_meta'],
+                    'id_card_expiry_date' => $validated['id_card_expiry_date'] ?? null,
+                    'selfie_with_id_card_file' => $request->file('selfie_with_id_card_file'),
+                    'selfie_with_id_card_meta' => $validated['selfie_with_id_card_meta'] ?? null,
+                ]);
+
+                return response()->json([
+                    'status' => true,
+                    'message' => __('driver::controller.profile.verification.resubmitted_successfully'),
+                    'data' => $result,
+                ]);
+            } else {
                 return response()->json([
                     'status' => false,
-                    'message' => __('driver::profile.verification.resubmit_not_allowed'),
+                    'message' => __('driver::controller.profile.verification.resubmit_not_allowed'),
                 ], 400);
             }
-
-            $result = $this->profileService->resubmitVerification($user->id, [
-                'id_card_file' => $request->file('id_card_file'),
-                'id_card_meta' => $validated['id_card_meta'],
-                'id_card_expiry_date' => $validated['id_card_expiry_date'] ?? null,
-                'selfie_with_id_card_file' => $request->file('selfie_with_id_card_file'),
-                'selfie_with_id_card_meta' => $validated['selfie_with_id_card_meta'] ?? null,
-            ]);
-
-            return response()->json([
-                'status' => true,
-                'message' => __('driver::profile.verification.resubmitted_successfully'),
-                'data' => $result,
-            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::profile.verification.resubmission_failed'),
+                'message' => __('driver::controller.profile.verification.resubmission_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

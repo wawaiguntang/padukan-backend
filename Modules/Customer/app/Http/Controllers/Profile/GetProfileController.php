@@ -53,13 +53,13 @@ class GetProfileController
         if (!$this->profileOwnershipPolicy->ownsProfile($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::profile.access_denied'),
+                'message' => __('customer::controller.profile.access_denied'),
             ], 403);
         }
 
         return response()->json([
             'status' => true,
-            'message' => __('customer::profile.retrieved_successfully'),
+            'message' => __('customer::controller.profile.retrieved_successfully'),
             'data' => new ProfileResource($profile),
         ]);
     }

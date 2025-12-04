@@ -3,20 +3,20 @@
 namespace Modules\Driver\Policies\DriverStatus;
 
 use Modules\Driver\Repositories\Profile\IProfileRepository;
-use App\Shared\Authorization\Repositories\IPolicyRepository;
+use App\Shared\Setting\Services\ISettingService;
 
 class DriverStatusPolicy implements IDriverStatusPolicy
 {
     private IProfileRepository $profileRepository;
-    private IPolicyRepository $policyRepository;
+    private ISettingService $settingService;
     private array $policySettings;
 
     public function __construct(
         IProfileRepository $profileRepository,
-        IPolicyRepository $policyRepository
+        ISettingService $settingService
     ) {
         $this->profileRepository = $profileRepository;
-        $this->policyRepository = $policyRepository;
+        $this->settingService = $settingService;
         $this->loadPolicySettings();
     }
 
@@ -25,28 +25,16 @@ class DriverStatusPolicy implements IDriverStatusPolicy
      */
     private function loadPolicySettings(): void
     {
-        $settings = $this->policyRepository->getSetting('driver.status.management');
-        if ($settings) {
-            $this->policySettings = $settings;
+        $settings = $this->settingService->getSettingByKey('driver.status.management');
+
+        if (!empty($settings)) {
+            $this->policySettings = $settings['value'] ?? [];
         } else {
             // Fallback to default consolidated settings
             $this->policySettings = [
                 // Status Management
-                'driver_controlled' => [
-                    'online_status' => true,
-                    'operational_status' => false,
-                    'active_service' => true,
-                    'location' => true,
-                ],
-                'system_controlled' => [
-                    'operational_status' => true,
-                    'auto_offline_after_inactivity' => 30,
-                    'auto_operational_status_change' => true,
-                ],
                 'require_location_for_online' => true,
                 'validate_service_availability' => true,
-                'max_location_update_frequency' => 60,
-                'status_change_log_retention' => 90,
 
                 // Service Validation
                 'require_verified_vehicle' => true,
@@ -55,7 +43,9 @@ class DriverStatusPolicy implements IDriverStatusPolicy
                 'car_services' => ['car', 'send'],
                 'allow_service_switching' => true,
                 'service_switch_cooldown' => 300,
-                'max_concurrent_services' => 1,
+                'max_motorcycle_services' => 4,
+                'max_car_services' => 2,
+                'allow_multiple_active_vehicles' => false,
 
                 // Location Tracking
                 'require_gps_accuracy' => 100,
@@ -92,10 +82,6 @@ class DriverStatusPolicy implements IDriverStatusPolicy
      */
     public function canUpdateOnlineStatus(string $userId, string $profileId): bool
     {
-        if (!($this->policySettings['driver_controlled']['online_status'] ?? false)) {
-            return false;
-        }
-
         if (!$this->canViewStatus($userId, $profileId)) {
             return false;
         }
@@ -108,10 +94,6 @@ class DriverStatusPolicy implements IDriverStatusPolicy
      */
     public function canUpdateOperationalStatus(string $userId, string $profileId, string $newStatus): bool
     {
-        if (!($this->policySettings['driver_controlled']['operational_status'] ?? false)) {
-            return false;
-        }
-
         if (!$this->canViewStatus($userId, $profileId)) {
             return false;
         }
@@ -125,10 +107,6 @@ class DriverStatusPolicy implements IDriverStatusPolicy
      */
     public function canSetActiveService(string $userId, string $profileId, string $service): bool
     {
-        if (!($this->policySettings['driver_controlled']['active_service'] ?? false)) {
-            return false;
-        }
-
         if (!$this->canViewStatus($userId, $profileId)) {
             return false;
         }
@@ -140,7 +118,7 @@ class DriverStatusPolicy implements IDriverStatusPolicy
         }
 
         // Use consolidated policy settings
-        if ($this->policySettings['validate_vehicle_service_mapping'] ?? false) {
+        if ($this->policySettings['validate_vehicle_service_mapping'] ?? true) {
             if (!$this->canUseServiceWithVehicles($userId, $profileId, $service)) {
                 return false;
             }
@@ -154,11 +132,6 @@ class DriverStatusPolicy implements IDriverStatusPolicy
      */
     public function canUpdateLocation(string $userId, string $profileId): bool
     {
-        // Check if location is driver-controlled
-        if (!($this->policySettings['driver_controlled']['location'] ?? false)) {
-            return false; // Location is not driver-controlled
-        }
-
         if (!$this->canViewStatus($userId, $profileId)) {
             return false;
         }

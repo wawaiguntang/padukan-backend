@@ -10,8 +10,8 @@ enum VehicleTypeEnum: string
     public function label(): string
     {
         return match($this) {
-            self::MOTORCYCLE => 'Motorcycle',
-            self::CAR => 'Car',
+            self::MOTORCYCLE => __('driver::enum.vehicle_type.motorcycle'),
+            self::CAR => __('driver::enum.vehicle_type.car'),
         };
     }
 }

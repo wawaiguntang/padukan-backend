@@ -55,7 +55,7 @@ class UpdateProfileController
         if (!$this->profileOwnershipPolicy->ownsProfile($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::profile.modify_denied'),
+                'message' => __('customer::controller.profile.modify_denied'),
             ], 403);
         }
 
@@ -65,7 +65,7 @@ class UpdateProfileController
         if (!$updated) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::profile.update_failed'),
+                'message' => __('customer::controller.profile.update_failed'),
             ], 500);
         }
 
@@ -74,7 +74,7 @@ class UpdateProfileController
 
         return response()->json([
             'status' => true,
-            'message' => __('customer::profile.updated_successfully'),
+            'message' => __('customer::controller.profile.updated_successfully'),
             'data' => new ProfileResource($updatedProfile),
         ]);
     }

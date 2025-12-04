@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'profile' => [
+        'access_denied' => 'Waduh, kamu nggak punya akses ke profil ini.',
+        'retrieved_successfully' => 'Yeay! Profil berhasil diambil.',
+        'not_found' => 'Hmm, profil nggak ditemukan nih.',
+        'verification' => [
+            'status_retrieved' => 'Status verifikasi profil berhasil diambil.',
+            'resubmitted_successfully' => 'Keren! Verifikasi profil berhasil dikirim ulang.',
+            'resubmit_not_allowed' => 'Pengiriman ulang verifikasi profil cuma bisa dilakukan kalau ditolak sebelumnya.',
+            'resubmission_failed' => 'Yah, gagal mengirim ulang verifikasi profil. Coba lagi ya!',
+            'cannot_submit' => 'Belum bisa kirim verifikasi profil saat ini.',
+            'submitted_successfully' => 'Mantap! Verifikasi profil berhasil dikirim.',
+            'submission_failed' => 'Yah, gagal mengirim verifikasi profil. Coba lagi ya!',
+        ],
+        'updated_successfully' => 'Sip! Profil berhasil diperbarui.',
+        'update_failed' => 'Yah, gagal memperbarui profil. Coba lagi ya!',
+        'modify_denied' => 'Kamu nggak punya izin untuk mengubah profil ini.',
+    ],
+    'address' => [
+        'retrieved_successfully' => 'Yeay! Alamat berhasil diambil.',
+        'created_successfully' => 'Mantap! Alamat berhasil ditambahkan.',
+        'updated_successfully' => 'Sip! Alamat berhasil diperbarui.',
+        'deleted_successfully' => 'Oke! Alamat berhasil dihapus.',
+        'primary_updated_successfully' => 'Sip! Alamat utama berhasil diperbarui.',
+        'not_found' => 'Hmm, alamat nggak ditemukan nih.',
+        'access_denied' => 'Waduh, kamu nggak punya izin untuk mengakses alamat ini.',
+        'create_denied' => 'Waduh, kamu nggak punya izin untuk membuat alamat.',
+        'max_limit_reached' => 'Waduh, jumlah alamat udah maksimal nih.',
+        'create_failed' => 'Yah, gagal membuat alamat. Coba lagi ya!',
+        'update_failed' => 'Yah, gagal memperbarui alamat. Coba lagi ya!',
+        'delete_failed' => 'Yah, gagal menghapus alamat. Coba lagi ya!',
+        'primary_update_failed' => 'Yah, gagal memperbarui alamat utama. Coba lagi ya!',
+    ],
+    'document' => [
+        'retrieved_successfully' => 'Yeay! Dokumen berhasil diambil.',
+        'uploaded_successfully' => 'Mantap! Dokumen berhasil diupload.',
+        'deleted_successfully' => 'Oke! Dokumen berhasil dihapus.',
+        'not_found' => 'Hmm, dokumen nggak ditemukan nih.',
+        'access_denied' => 'Waduh, kamu nggak punya izin untuk mengakses dokumen ini.',
+        'upload_failed' => 'Yah, gagal upload dokumen. Coba lagi ya!',
+        'delete_failed' => 'Yah, gagal menghapus dokumen. Coba lagi ya!',
+    ],
+];

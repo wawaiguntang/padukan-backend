@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'profile' => [
+        'access_denied' => 'You do not have permission to access this profile.',
+        'retrieved_successfully' => 'Profile retrieved successfully.',
+        'not_found' => 'Profile not found.',
+        'verification' => [
+            'status_retrieved' => 'Profile verification status retrieved successfully.',
+            'resubmitted_successfully' => 'Profile verification resubmitted successfully.',
+            'resubmit_not_allowed' => 'Resubmission of profile verification is not allowed unless it has been rejected.',
+            'resubmission_failed' => 'Failed to resubmit profile verification.',
+            'cannot_submit' => 'You cannot submit profile verification at this time.',
+            'submitted_successfully' => 'Profile verification submitted successfully.',
+            'submission_failed' => 'Failed to submit profile verification.',
+        ],
+        'updated_successfully' => 'Profile updated successfully.',
+        'update_failed' => 'Failed to update profile.',
+        'modify_denied' => 'You do not have permission to modify this profile.',
+    ],
+    'address' => [
+        'retrieved_successfully' => 'Addresses retrieved successfully.',
+        'created_successfully' => 'Address created successfully.',
+        'updated_successfully' => 'Address updated successfully.',
+        'deleted_successfully' => 'Address deleted successfully.',
+        'primary_updated_successfully' => 'Primary address updated successfully.',
+        'not_found' => 'Address not found.',
+        'access_denied' => 'You do not have permission to access this address.',
+        'create_denied' => 'You do not have permission to create addresses.',
+        'max_limit_reached' => 'Maximum number of addresses reached for this profile.',
+        'create_failed' => 'Failed to create address.',
+        'update_failed' => 'Failed to update address.',
+        'delete_failed' => 'Failed to delete address.',
+        'primary_update_failed' => 'Failed to update primary address.',
+    ],
+    'document' => [
+        'retrieved_successfully' => 'Documents retrieved successfully.',
+        'uploaded_successfully' => 'Document uploaded successfully.',
+        'deleted_successfully' => 'Document deleted successfully.',
+        'not_found' => 'Document not found.',
+        'access_denied' => 'You do not have permission to access this document.',
+        'upload_failed' => 'Failed to upload document.',
+        'delete_failed' => 'Failed to delete document.',
+    ],
+];

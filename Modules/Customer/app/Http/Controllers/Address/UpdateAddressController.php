@@ -41,7 +41,7 @@ class UpdateAddressController
         if (!$address) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.not_found'),
+                'message' => __('customer::controller.address.not_found'),
             ], 404);
         }
 
@@ -49,7 +49,7 @@ class UpdateAddressController
         if (!$this->addressService->isAddressOwnedByUser($id, $user->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.access_denied'),
+                'message' => __('customer::controller.address.access_denied'),
             ], 403);
         }
 
@@ -58,7 +58,7 @@ class UpdateAddressController
         if (!$updated) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.update_failed'),
+                'message' => __('customer::controller.address.update_failed'),
             ], 500);
         }
 
@@ -66,7 +66,7 @@ class UpdateAddressController
 
         return response()->json([
             'status' => true,
-            'message' => __('customer::address.updated_successfully'),
+            'message' => __('customer::controller.address.updated_successfully'),
             'data' => new AddressResource($updatedAddress),
         ]);
     }

@@ -116,4 +116,12 @@ interface IProfileService
      * @return array|null Resubmission result or null if not allowed
      */
     public function resubmitVerification(string $userId, array $data): ?array;
+
+    /**
+     * Get avatar URL for a profile
+     *
+     * @param string $avatarPath The avatar file path
+     * @return string|null The full avatar URL or null if no avatar
+     */
+    public function getAvatarUrl(?string $avatarPath): ?string;
 }

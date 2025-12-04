@@ -5,7 +5,7 @@ namespace Modules\Driver\Http\Controllers\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Modules\Driver\Services\Vehicle\IVehicleService;
-use Modules\Driver\Policies\VehicleOwnership\IVehicleOwnershipPolicy;
+use Modules\Driver\Policies\VehicleManagement\IVehicleManagementPolicy;
 
 /**
  * Delete Vehicle Controller
@@ -22,17 +22,17 @@ class DeleteVehicleController
     /**
      * Vehicle ownership policy instance
      */
-    protected IVehicleOwnershipPolicy $vehicleOwnershipPolicy;
+    protected IVehicleManagementPolicy $vehicleManagementPolicy;
 
     /**
      * Constructor
      */
     public function __construct(
         IVehicleService $vehicleService,
-        IVehicleOwnershipPolicy $vehicleOwnershipPolicy
+        IVehicleManagementPolicy $vehicleManagementPolicy
     ) {
         $this->vehicleService = $vehicleService;
-        $this->vehicleOwnershipPolicy = $vehicleOwnershipPolicy;
+        $this->vehicleManagementPolicy = $vehicleManagementPolicy;
     }
 
     /**
@@ -47,15 +47,15 @@ class DeleteVehicleController
         if (!$vehicle) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.not_found'),
+                'message' => __('driver::controller.vehicle.not_found'),
             ], 404);
         }
 
         // Check if user can delete this vehicle
-        if (!$this->vehicleOwnershipPolicy->canDeleteVehicle($user->id, $vehicle->id)) {
+        if (!$this->vehicleManagementPolicy->ownsVehicle($user->id, $vehicle->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.access_denied'),
+                'message' => __('driver::controller.vehicle.access_denied'),
             ], 403);
         }
 
@@ -65,18 +65,18 @@ class DeleteVehicleController
             if (!$deleted) {
                 return response()->json([
                     'status' => false,
-                    'message' => __('driver::vehicle.delete_failed'),
+                    'message' => __('driver::controller.vehicle.delete_failed'),
                 ], 500);
             }
 
             return response()->json([
                 'status' => true,
-                'message' => __('driver::vehicle.deleted_successfully'),
+                'message' => __('driver::controller.vehicle.deleted_successfully'),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.delete_failed'),
+                'message' => __('driver::controller.vehicle.delete_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

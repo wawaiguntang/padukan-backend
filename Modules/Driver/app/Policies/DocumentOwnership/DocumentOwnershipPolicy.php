@@ -4,23 +4,23 @@ namespace Modules\Driver\Policies\DocumentOwnership;
 
 use Modules\Driver\Repositories\Document\IDocumentRepository;
 use Modules\Driver\Repositories\Profile\IProfileRepository;
-use App\Shared\Authorization\Repositories\IPolicyRepository;
+use App\Shared\Setting\Services\ISettingService;
 
 class DocumentOwnershipPolicy implements IDocumentOwnershipPolicy
 {
     private IDocumentRepository $documentRepository;
     private IProfileRepository $profileRepository;
-    private IPolicyRepository $policyRepository;
+    private ISettingService $settingService;
     private array $policySettings;
 
     public function __construct(
         IDocumentRepository $documentRepository,
         IProfileRepository $profileRepository,
-        IPolicyRepository $policyRepository
+        ISettingService $settingService
     ) {
         $this->documentRepository = $documentRepository;
         $this->profileRepository = $profileRepository;
-        $this->policyRepository = $policyRepository;
+        $this->settingService = $settingService;
         $this->loadPolicySettings();
     }
 
@@ -29,10 +29,10 @@ class DocumentOwnershipPolicy implements IDocumentOwnershipPolicy
      */
     private function loadPolicySettings(): void
     {
-        $settings = $this->policyRepository->getSetting('driver.document.verification_upload');
+        $settings = $this->settingService->getSettingByKey('driver.document.verification_upload');
 
-        if ($settings) {
-            $this->policySettings = $settings;
+        if (!empty($settings)) {
+            $this->policySettings = $settings['value'] ?? [];
         } else {
             // Fallback to default
             $this->policySettings = [

@@ -13,11 +13,11 @@ enum DocumentTypeEnum: string
     public function label(): string
     {
         return match ($this) {
-            self::ID_CARD => 'ID Card',
-            self::SIM => 'SIM',
-            self::STNK => 'STNK',
-            self::VEHICLE_PHOTO => 'Vehicle Photo',
-            self::SELFIE_WITH_ID_CARD => 'Selfie with ID Card',
+            self::ID_CARD => __('driver::enum.document_type.id_card'),
+            self::SIM => __('driver::enum.document_type.sim'),
+            self::STNK => __('driver::enum.document_type.stnk'),
+            self::VEHICLE_PHOTO => __('driver::enum.document_type.vehicle_photo'),
+            self::SELFIE_WITH_ID_CARD => __('driver::enum.document_type.selfie_with_id_card'),
         };
     }
 

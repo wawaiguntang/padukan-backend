@@ -2,146 +2,186 @@
 
 namespace Modules\Merchant\Repositories\Profile;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
-use Modules\Merchant\Enums\GenderEnum;
+use Illuminate\Support\Facades\Cache;
 use Modules\Merchant\Models\Profile;
 use Modules\Merchant\Cache\KeyManager\IKeyManager;
 
 /**
  * Profile Repository Implementation
  *
- * This class handles all profile-related database operations
- * for the merchant module with caching support.
+ * Handles profile data operations with caching
  */
 class ProfileRepository implements IProfileRepository
 {
-    /**
-     * The Profile model instance
-     *
-     * @var Profile
-     */
-    protected Profile $model;
+    private IKeyManager $keyManager;
+    private int $cacheTtl = 900; // 15 minutes
 
-    /**
-     * The cache repository instance
-     *
-     * @var Cache
-     */
-    protected Cache $cache;
-
-    /**
-     * The cache key manager instance
-     *
-     * @var IKeyManager
-     */
-    protected IKeyManager $cacheKeyManager;
-
-    /**
-     * Cache TTL in seconds (15 minutes - reasonable for profile data)
-     *
-     * @var int
-     */
-    protected int $cacheTtl = 900;
-
-    /**
-     * Constructor
-     *
-     * @param Profile $model The Profile model instance
-     * @param Cache $cache The cache repository instance
-     * @param IKeyManager $cacheKeyManager The cache key manager instance
-     */
-    public function __construct(Profile $model, Cache $cache, IKeyManager $cacheKeyManager)
+    public function __construct(IKeyManager $keyManager)
     {
-        $this->model = $model;
-        $this->cache = $cache;
-        $this->cacheKeyManager = $cacheKeyManager;
+        $this->keyManager = $keyManager;
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public function findByUserId(string $userId): ?Profile
-    {
-        $cacheKey = $this->cacheKeyManager::profileByUserId($userId);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($userId) {
-            return $this->model->where('user_id', $userId)->first();
-        });
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function findById(string $id): ?Profile
-    {
-        $cacheKey = $this->cacheKeyManager::profileById($id);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($id) {
-            return $this->model->find($id);
-        });
-    }
-
-    /**
-     * {@inheritDoc}
+     * Create a new profile
      */
     public function create(array $data): Profile
     {
-        $profile = $this->model->create($data);
-
-        // Cache invalidation is handled by ProfileObserver
-
-        return $profile;
+        return Profile::create($data);
     }
 
     /**
-     * {@inheritDoc}
+     * Find profile by user ID
      */
-    public function update(string $id, array $data): bool
+    public function findByUserId(string $userId): ?Profile
     {
-        $profile = $this->model->find($id);
+        $cacheKey = $this->keyManager->getProfileKey($userId);
+
+        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($userId) {
+            return Profile::where('user_id', $userId)->first();
+        });
+    }
+
+    /**
+     * Find profile by ID
+     */
+    public function findById(string $profileId): ?Profile
+    {
+        $cacheKey = $this->keyManager->getProfileByIdKey($profileId);
+
+        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
+            return Profile::find($profileId);
+        });
+    }
+
+    /**
+     * Update profile by user ID
+     */
+    public function updateByUserId(string $userId, array $data): bool
+    {
+        $profile = Profile::where('user_id', $userId)->first();
 
         if (!$profile) {
             return false;
         }
 
-        $result = $profile->update($data);
+        $updated = $profile->update($data);
 
-        // Cache invalidation is handled by ProfileObserver
+        if ($updated) {
+            // Clear cache
+            $cacheKey = $this->keyManager->getProfileKey($userId);
+            Cache::forget($cacheKey);
 
-        return $result;
+            $cacheKeyById = $this->keyManager->getProfileByIdKey($profile->id);
+            Cache::forget($cacheKeyById);
+        }
+
+        return $updated;
     }
 
     /**
-     * {@inheritDoc}
+     * Update profile by ID
      */
-    public function delete(string $id): bool
+    public function update(string $profileId, array $data): bool
     {
-        $profile = $this->model->find($id);
+        $profile = Profile::find($profileId);
 
         if (!$profile) {
             return false;
         }
 
-        $result = $profile->delete();
+        $updated = $profile->update($data);
 
-        // Cache invalidation is handled by ProfileObserver
+        if ($updated) {
+            // Clear cache
+            $cacheKey = $this->keyManager->getProfileKey($profile->user_id);
+            Cache::forget($cacheKey);
 
-        return $result;
+            $cacheKeyById = $this->keyManager->getProfileByIdKey($profileId);
+            Cache::forget($cacheKeyById);
+        }
+
+        return $updated;
     }
 
     /**
-     * {@inheritDoc}
+     * Delete profile by user ID
+     */
+    public function deleteByUserId(string $userId): bool
+    {
+        $profile = Profile::where('user_id', $userId)->first();
+
+        if (!$profile) {
+            return false;
+        }
+
+        $deleted = $profile->delete();
+
+        if ($deleted) {
+            // Clear cache
+            $cacheKey = $this->keyManager->getProfileKey($userId);
+            Cache::forget($cacheKey);
+
+            $cacheKeyById = $this->keyManager->getProfileByIdKey($profile->id);
+            Cache::forget($cacheKeyById);
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * Delete profile by ID
+     */
+    public function delete(string $profileId): bool
+    {
+        $profile = Profile::find($profileId);
+
+        if (!$profile) {
+            return false;
+        }
+
+        $deleted = $profile->delete();
+
+        if ($deleted) {
+            // Clear cache
+            $cacheKey = $this->keyManager->getProfileKey($profile->user_id);
+            Cache::forget($cacheKey);
+
+            $cacheKeyById = $this->keyManager->getProfileByIdKey($profileId);
+            Cache::forget($cacheKeyById);
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * Update profile gender
+     */
+    public function updateGender(string $profileId, \Modules\Merchant\Enums\GenderEnum $gender): bool
+    {
+        return $this->update($profileId, ['gender' => $gender]);
+    }
+
+    /**
+     * Check if user has a profile
      */
     public function existsByUserId(string $userId): bool
     {
-        return $this->model->where('user_id', $userId)->exists();
+        $cacheKey = $this->keyManager->getProfileExistsKey($userId);
+
+        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($userId) {
+            return Profile::where('user_id', $userId)->exists();
+        });
     }
 
     /**
-     * {@inheritDoc}
+     * Get merchants count for a profile
      */
-    public function updateGender(string $id, GenderEnum $gender): bool
+    public function countMerchantsByProfileId(string $profileId): int
     {
-        return $this->update($id, ['gender' => $gender]);
+        $cacheKey = $this->keyManager->getProfileMerchantsCountKey($profileId);
+
+        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
+            return Profile::find($profileId)?->merchants()->count() ?? 0;
+        });
     }
 }

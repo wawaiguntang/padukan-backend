@@ -39,7 +39,7 @@ class ShowAddressController
         if (!$address) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.not_found'),
+                'message' => __('customer::controller.address.not_found'),
             ], 404);
         }
 
@@ -47,13 +47,13 @@ class ShowAddressController
         if (!$this->addressService->isAddressOwnedByUser($id, $user->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.access_denied'),
+                'message' => __('customer::controller.address.access_denied'),
             ], 403);
         }
 
         return response()->json([
             'status' => true,
-            'message' => __('customer::address.retrieved_successfully'),
+            'message' => __('customer::controller.address.retrieved_successfully'),
             'data' => new AddressResource($address),
         ]);
     }

@@ -86,24 +86,6 @@ class VehicleVerificationRequest extends FormRequest
     }
 
     /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'vehicle_id' => __('driver::attributes.vehicle_verification.vehicle_id'),
-            'sim_file' => __('driver::attributes.vehicle_verification.sim_file'),
-            'sim_meta' => __('driver::attributes.vehicle_verification.sim_meta'),
-            'sim_meta.number' => __('driver::attributes.vehicle_verification.sim_meta.number'),
-            'sim_expiry_date' => __('driver::attributes.vehicle_verification.sim_expiry_date'),
-            'stnk_file' => __('driver::attributes.vehicle_verification.stnk_file'),
-            'stnk_expiry_date' => __('driver::attributes.vehicle_verification.stnk_expiry_date'),
-            'vehicle_photos' => __('driver::attributes.vehicle_verification.vehicle_photos'),
-            'vehicle_photos.*' => __('driver::attributes.vehicle_verification.vehicle_photo'),
-        ];
-    }
-
-    /**
      * Handle a failed validation attempt.
      *
      * @param \Illuminate\Contracts\Validation\Validator $validator

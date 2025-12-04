@@ -37,7 +37,7 @@ class GetVehiclesController
 
         return response()->json([
             'status' => true,
-            'message' => __('driver::vehicle.retrieved_successfully'),
+            'message' => __('driver::controller.vehicle.retrieved_successfully'),
             'data' => $vehicles->map(function ($vehicle) {
                 return [
                     'id' => $vehicle->id,

@@ -48,31 +48,31 @@ class SubmitProfileVerificationController
             $profile = $this->profileService->createProfile($user->id, []);
         }
 
-        if ($profile->verification_status !== \Modules\Customer\Enums\VerificationStatusEnum::PENDING) {
-            return response()->json([
-                'status' => false,
-                'message' => __('customer::profile.verification.cannot_submit'),
-            ], 400);
-        }
-
         try {
-            $result = $this->profileService->resubmitVerification($user->id, [
-                'id_card_file' => $request->file('id_card_file'),
-                'id_card_meta' => $validated['id_card_meta'],
-                'id_card_expiry_date' => $validated['id_card_expiry_date'] ?? null,
-                'selfie_with_id_card_file' => $request->file('selfie_with_id_card_file'),
-                'selfie_with_id_card_meta' => $validated['selfie_with_id_card_meta'] ?? null,
-            ]);
+            if ($profile->verification_status === \Modules\Customer\Enums\VerificationStatusEnum::PENDING) {
+                $result = $this->profileService->resubmitVerification($user->id, [
+                    'id_card_file' => $request->file('id_card_file'),
+                    'id_card_meta' => $validated['id_card_meta'],
+                    'id_card_expiry_date' => $validated['id_card_expiry_date'] ?? null,
+                    'selfie_with_id_card_file' => $request->file('selfie_with_id_card_file'),
+                    'selfie_with_id_card_meta' => $validated['selfie_with_id_card_meta'] ?? null,
+                ]);
 
-            return response()->json([
-                'status' => true,
-                'message' => __('customer::profile.verification.submitted_successfully'),
-                'data' => $result,
-            ], 201);
+                return response()->json([
+                    'status' => true,
+                    'message' => __('customer::controller.profile.verification.submitted_successfully'),
+                    'data' => $result,
+                ], 201);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('customer::controller.profile.verification.cannot_submit'),
+                ], 400);
+            }
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::profile.verification.submission_failed'),
+                'message' => __('customer::controller.profile.verification.submission_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

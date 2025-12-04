@@ -54,7 +54,7 @@ class DriverAuthenticationMiddleware
         if (!$token) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::auth.token.missing'),
+                'message' => __('driver::middleware.token.missing'),
             ], 401);
         }
 
@@ -63,7 +63,7 @@ class DriverAuthenticationMiddleware
         if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::auth.token.invalid'),
+                'message' => __('driver::middleware.token.invalid'),
             ], 401);
         }
 

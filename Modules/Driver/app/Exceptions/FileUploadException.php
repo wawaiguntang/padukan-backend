@@ -15,7 +15,7 @@ class FileUploadException extends BaseException
      * @param string $messageKey The message key for frontend localization
      * @param array $context Additional context data
      */
-    public function __construct(string $messageKey = 'driver.file.upload_failed', array $context = [])
+    public function __construct(string $messageKey = 'exception.file.upload_failed', array $context = [])
     {
         parent::__construct($messageKey, $context, 'driver', 500);
     }

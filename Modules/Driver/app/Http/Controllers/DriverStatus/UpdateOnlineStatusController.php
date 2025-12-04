@@ -57,14 +57,14 @@ class UpdateOnlineStatusController
         if (!$profile) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::profile.not_found'),
+                'message' => __('driver::controller.profile.not_found'),
             ], 404);
         }
 
         if (!$this->driverStatusPolicy->canUpdateOnlineStatus($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::status.cannot_update_online_status'),
+                'message' => __('driver::controller.status.cannot_update_online_status'),
             ], 403);
         }
 
@@ -75,7 +75,7 @@ class UpdateOnlineStatusController
             if (!$vehicle) {
                 return response()->json([
                     'status' => false,
-                    'message' => __('driver::status.vehicle_not_found_or_not_verified'),
+                    'message' => __('driver::controller.status.vehicle_not_found_or_not_verified'),
                 ], 404);
             }
 
@@ -83,7 +83,7 @@ class UpdateOnlineStatusController
             if (!$this->driverStatusPolicy->canUseServiceWithVehicles($user->id, $profile->id, $activeService)) {
                 return response()->json([
                     'status' => false,
-                    'message' => __('driver::status.service_not_available_for_vehicles'),
+                    'message' => __('driver::controller.status.service_not_available_for_vehicles'),
                 ], 403);
             }
 
@@ -91,7 +91,7 @@ class UpdateOnlineStatusController
             if (!$this->driverStatusPolicy->canSetActiveService($user->id, $profile->id, $activeService)) {
                 return response()->json([
                     'status' => false,
-                    'message' => __('driver::status.cannot_set_active_service'),
+                    'message' => __('driver::controller.status.cannot_set_active_service'),
                 ], 403);
             }
         }
@@ -129,13 +129,13 @@ class UpdateOnlineStatusController
 
             return response()->json([
                 'status' => true,
-                'message' => __('driver::status.online_status_updated'),
+                'message' => __('driver::controller.status.online_status_updated'),
                 'data' => $responseData,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::status.update_failed'),
+                'message' => __('driver::controller.status.online_status_update_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

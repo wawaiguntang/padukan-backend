@@ -12,10 +12,10 @@ enum OperationalStatusEnum: string
     public function label(): string
     {
         return match ($this) {
-            self::AVAILABLE => 'Available',
-            self::ON_ORDER => 'On Order',
-            self::REST => 'Rest',
-            self::SUSPENDED => 'Suspended',
+            self::AVAILABLE => __('driver::enum.operational_status.available'),
+            self::ON_ORDER => __('driver::enum.operational_status.on_order'),
+            self::REST => __('driver::enum.operational_status.rest'),
+            self::SUSPENDED => __('driver::enum.operational_status.suspended'),
         };
     }
 }

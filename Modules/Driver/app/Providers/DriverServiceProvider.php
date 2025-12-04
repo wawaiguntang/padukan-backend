@@ -234,7 +234,8 @@ class DriverServiceProvider extends ServiceProvider
                     $app->make(\Modules\Driver\Repositories\Document\IDocumentRepository::class),
                     $app->make(\Modules\Driver\Services\Document\IDocumentService::class),
                     $app->make(\Modules\Driver\Services\FileUpload\IFileUploadService::class),
-                    $app->make(\Modules\Driver\Policies\ProfileOwnership\IProfileOwnershipPolicy::class)
+                    $app->make(\Modules\Driver\Policies\ProfileOwnership\IProfileOwnershipPolicy::class),
+                    $app->make(\App\Shared\Setting\Services\ISettingService::class)
                 );
             }
         );
@@ -308,16 +309,22 @@ class DriverServiceProvider extends ServiceProvider
             \Modules\Driver\Policies\DocumentOwnership\DocumentOwnershipPolicy::class
         );
 
-        // Vehicle Ownership Policy
+        // Vehicle Management Policy
         $this->app->bind(
-            \Modules\Driver\Policies\VehicleOwnership\IVehicleOwnershipPolicy::class,
-            \Modules\Driver\Policies\VehicleOwnership\VehicleOwnershipPolicy::class
+            \Modules\Driver\Policies\VehicleManagement\IVehicleManagementPolicy::class,
+            \Modules\Driver\Policies\VehicleManagement\VehicleManagementPolicy::class
         );
 
         // Driver Status Policy
         $this->app->bind(
             \Modules\Driver\Policies\DriverStatus\IDriverStatusPolicy::class,
             \Modules\Driver\Policies\DriverStatus\DriverStatusPolicy::class
+        );
+
+        // Service Validation Policy
+        $this->app->bind(
+            \Modules\Driver\Policies\ServiceValidation\IServiceValidationPolicy::class,
+            \Modules\Driver\Policies\ServiceValidation\ServiceValidationPolicy::class
         );
     }
 

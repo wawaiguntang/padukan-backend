@@ -56,14 +56,14 @@ class UpdateLocationController
         if (!$profile) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::profile.not_found'),
+                'message' => __('driver::controller.profile.not_found'),
             ], 404);
         }
 
         if (!$this->driverStatusPolicy->canUpdateLocation($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::status.cannot_update_location'),
+                'message' => __('driver::controller.status.cannot_update_location'),
             ], 403);
         }
 
@@ -72,7 +72,7 @@ class UpdateLocationController
 
             return response()->json([
                 'status' => true,
-                'message' => __('driver::status.location_updated'),
+                'message' => __('driver::controller.status.location_updated_successfully'),
                 'data' => [
                     'location' => [
                         'latitude' => $driverStatus->latitude,
@@ -84,7 +84,7 @@ class UpdateLocationController
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::status.update_failed'),
+                'message' => __('driver::controller.status.location_update_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

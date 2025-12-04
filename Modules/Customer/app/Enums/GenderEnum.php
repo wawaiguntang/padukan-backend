@@ -10,10 +10,10 @@ enum GenderEnum: string
 
     public function label(): string
     {
-        return match($this) {
-            self::MALE => 'Male',
-            self::FEMALE => 'Female',
-            self::OTHER => 'Other',
+        return match ($this) {
+            self::MALE => __('customer::enum.gender.male'),
+            self::FEMALE => __('customer::enum.gender.female'),
+            self::OTHER => __('customer::enum.gender.other'),
         };
     }
 }

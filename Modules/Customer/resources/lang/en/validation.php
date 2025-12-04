@@ -230,5 +230,45 @@ return [
         'max' => 'Language may not be greater than 10 characters.',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Address Validation
+    |--------------------------------------------------------------------------
+    */
+
+    'type' => [
+        'required' => 'Address type is required.',
+        'in' => 'Selected address type is invalid.',
+    ],
+    'label' => [
+        'required' => 'Address label is required.',
+        'max' => 'Address label may not be greater than :max characters.',
+    ],
+    'street' => [
+        'required' => 'Street address is required.',
+        'max' => 'Street address may not be greater than :max characters.',
+    ],
+    'city' => [
+        'required' => 'City is required.',
+        'max' => 'City may not be greater than :max characters.',
+    ],
+    'province' => [
+        'required' => 'Province is required.',
+        'max' => 'Province may not be greater than :max characters.',
+    ],
+    'postal_code' => [
+        'required' => 'Postal code is required.',
+        'max' => 'Postal code may not be greater than :max characters.',
+        'regex' => 'Postal code format is invalid.',
+    ],
+    'latitude' => [
+        'numeric' => 'Latitude must be a number.',
+        'between' => 'Latitude must be between -90 and 90 degrees.',
+    ],
+    'longitude' => [
+        'numeric' => 'Longitude must be a number.',
+        'between' => 'Longitude must be between -180 and 180 degrees.',
+    ],
+
     'failed' => 'Validation failed.',
 ];

@@ -11,9 +11,9 @@ enum DocumentTypeEnum: string
     public function label(): string
     {
         return match ($this) {
-            self::ID_CARD => 'ID Card',
-            self::SELFIE_WITH_ID_CARD => 'Selfie with ID Card',
-            self::OTHER => 'Other Document',
+            self::ID_CARD => __('customer::enum.document_type.id_card'),
+            self::SELFIE_WITH_ID_CARD => __('customer::enum.document_type.selfie_with_id_card'),
+            self::OTHER => __('customer::enum.document_type.other'),
         };
     }
 

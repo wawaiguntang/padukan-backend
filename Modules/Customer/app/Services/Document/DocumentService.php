@@ -87,7 +87,7 @@ class DocumentService implements IDocumentService
 
             return $this->documentRepository->create($documentData);
         } catch (\Exception $e) {
-            throw new FileUploadException('customer.file.upload_failed', ['error' => $e->getMessage()]);
+            throw new FileUploadException('exception.file.upload_failed', ['error' => $e->getMessage()]);
         }
     }
 

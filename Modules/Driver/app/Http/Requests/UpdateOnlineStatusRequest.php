@@ -26,9 +26,10 @@ class UpdateOnlineStatusRequest extends FormRequest
             'online_status' => 'required|in:online,offline',
         ];
 
-        // When going online, active_service and vehicle_id are required
+        // When going online, active_services and vehicle_id are required
         if ($this->input('online_status') === 'online') {
-            $rules['active_service'] = 'required|in:food,ride,car,send,mart';
+            $rules['active_services'] = 'required|array|min:1|max:5';
+            $rules['active_services.*'] = 'required|in:food,ride,car,send,mart';
             $rules['vehicle_id'] = 'required|uuid|exists:driver.vehicles,id';
         }
 
@@ -45,34 +46,19 @@ class UpdateOnlineStatusRequest extends FormRequest
             'online_status.in' => __('driver::validation.status.online_status.in'),
         ];
 
-        // Add active_service and vehicle_id messages when going online
         if ($this->input('online_status') === 'online') {
-            $messages['active_service.required'] = __('driver::validation.status.active_service.required');
-            $messages['active_service.in'] = __('driver::validation.status.active_service.in');
-            $messages['vehicle_id.required'] = __('driver::status.vehicle_id.required');
-            $messages['vehicle_id.uuid'] = __('driver::status.vehicle_id.uuid');
-            $messages['vehicle_id.exists'] = __('driver::status.vehicle_id.exists');
+            $messages['active_services.required'] = __('driver::validation.status.active_services.required');
+            $messages['active_services.array'] = __('driver::validation.status.active_services.array');
+            $messages['active_services.min'] = __('driver::validation.status.active_services.min');
+            $messages['active_services.max'] = __('driver::validation.status.active_services.max');
+            $messages['active_services.*.required'] = __('driver::validation.status.active_service.required');
+            $messages['active_services.*.in'] = __('driver::validation.status.active_service.in');
+            $messages['vehicle_id.required'] = __('driver::validation.status.vehicle_id.required');
+            $messages['vehicle_id.uuid'] = __('driver::validation.status.vehicle_id.uuid');
+            $messages['vehicle_id.exists'] = __('driver::validation.status.vehicle_id.exists');
         }
 
         return $messages;
-    }
-
-    /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        $attributes = [
-            'online_status' => __('driver::attributes.status.online_status'),
-        ];
-
-        // Add active_service and vehicle_id attributes when going online
-        if ($this->input('online_status') === 'online') {
-            $attributes['active_service'] = __('driver::attributes.status.active_service');
-            $attributes['vehicle_id'] = __('driver::status.vehicle_id');
-        }
-
-        return $attributes;
     }
 
     /**

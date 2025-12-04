@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'profile' => [
+        'access_denied' => 'Anda tidak memiliki izin untuk mengakses profil ini.',
+        'retrieved_successfully' => 'Profil berhasil diambil.',
+        'not_found' => 'Profil tidak ditemukan.',
+        'verification' => [
+            'status_retrieved' => 'Status verifikasi profil berhasil diambil.',
+            'resubmitted_successfully' => 'Verifikasi profil berhasil dikirim ulang.',
+            'resubmit_not_allowed' => 'Pengiriman ulang verifikasi profil tidak diizinkan kecuali telah ditolak.',
+            'resubmission_failed' => 'Gagal mengirim ulang verifikasi profil.',
+            'cannot_submit' => 'Anda tidak dapat mengirim verifikasi profil saat ini.',
+            'submitted_successfully' => 'Verifikasi profil berhasil dikirim.',
+            'submission_failed' => 'Gagal mengirim verifikasi profil.',
+        ],
+        'updated_successfully' => 'Profil berhasil diperbarui.',
+        'update_failed' => 'Gagal memperbarui profil.',
+        'modify_denied' => 'Anda tidak memiliki izin untuk memodifikasi profil ini.',
+    ],
+    'address' => [
+        'retrieved_successfully' => 'Alamat berhasil diambil.',
+        'created_successfully' => 'Alamat berhasil dibuat.',
+        'updated_successfully' => 'Alamat berhasil diperbarui.',
+        'deleted_successfully' => 'Alamat berhasil dihapus.',
+        'primary_updated_successfully' => 'Alamat utama berhasil diperbarui.',
+        'not_found' => 'Alamat tidak ditemukan.',
+        'access_denied' => 'Anda tidak memiliki izin untuk mengakses alamat ini.',
+        'create_denied' => 'Anda tidak memiliki izin untuk membuat alamat.',
+        'max_limit_reached' => 'Batas maksimum alamat tercapai untuk profil ini.',
+        'create_failed' => 'Gagal membuat alamat.',
+        'update_failed' => 'Gagal memperbarui alamat.',
+        'delete_failed' => 'Gagal menghapus alamat.',
+        'primary_update_failed' => 'Gagal memperbarui alamat utama.',
+    ],
+    'document' => [
+        'retrieved_successfully' => 'Dokumen berhasil diambil.',
+        'uploaded_successfully' => 'Dokumen berhasil diunggah.',
+        'deleted_successfully' => 'Dokumen berhasil dihapus.',
+        'not_found' => 'Dokumen tidak ditemukan.',
+        'access_denied' => 'Anda tidak memiliki izin untuk mengakses dokumen ini.',
+        'upload_failed' => 'Gagal mengunggah dokumen.',
+        'delete_failed' => 'Gagal menghapus dokumen.',
+    ],
+];

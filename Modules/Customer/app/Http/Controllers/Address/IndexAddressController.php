@@ -41,7 +41,7 @@ class IndexAddressController
 
         return response()->json([
             'status' => true,
-            'message' => __('customer::address.retrieved_successfully'),
+            'message' => __('customer::controller.address.retrieved_successfully'),
             'data' => AddressResource::collection($addresses),
         ]);
     }

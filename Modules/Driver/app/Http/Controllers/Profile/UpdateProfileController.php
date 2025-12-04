@@ -51,10 +51,10 @@ class UpdateProfileController
         }
 
         // Check if user can modify this profile
-        if (!$this->profileOwnershipPolicy->canModifyProfile($user->id, $profile->id)) {
+        if (!$this->profileOwnershipPolicy->ownsProfile($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::profile.modify_denied'),
+                'message' => __('driver::controller.profile.modify_denied'),
             ], 403);
         }
 
@@ -64,7 +64,7 @@ class UpdateProfileController
         if (!$updated) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::profile.update_failed'),
+                'message' => __('driver::controller.profile.update_failed'),
             ], 500);
         }
 
@@ -73,7 +73,7 @@ class UpdateProfileController
 
         return response()->json([
             'status' => true,
-            'message' => __('driver::profile.updated_successfully'),
+            'message' => __('driver::controller.profile.updated_successfully'),
             'data' => new ProfileResource($updatedProfile),
         ]);
     }

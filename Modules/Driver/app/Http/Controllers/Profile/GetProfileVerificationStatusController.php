@@ -47,15 +47,15 @@ class GetProfileVerificationStatusController
         if (!$profile) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::profile.not_found'),
+                'message' => __('driver::controller.profile.not_found'),
             ], 404);
         }
 
         // Check if user can access this profile
-        if (!$this->profileOwnershipPolicy->canAccessProfile($user->id, $profile->id)) {
+        if (!$this->profileOwnershipPolicy->ownsProfile($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::profile.access_denied'),
+                'message' => __('driver::controller.profile.access_denied'),
             ], 403);
         }
 
@@ -63,7 +63,7 @@ class GetProfileVerificationStatusController
 
         return response()->json([
             'status' => true,
-            'message' => __('driver::profile.verification.status_retrieved'),
+            'message' => __('driver::controller.profile.verification.status_retrieved'),
             'data' => $verificationData,
         ]);
     }

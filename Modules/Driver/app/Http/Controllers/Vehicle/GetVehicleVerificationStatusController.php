@@ -7,7 +7,8 @@ use Illuminate\Http\JsonResponse;
 use Modules\Driver\Enums\DocumentTypeEnum;
 use Modules\Driver\Services\Vehicle\IVehicleService;
 use Modules\Driver\Repositories\Document\IDocumentRepository;
-use Modules\Driver\Policies\VehicleOwnership\IVehicleOwnershipPolicy;
+use Modules\Driver\Policies\VehicleManagement\IVehicleManagementPolicy;
+use Modules\Driver\Services\Profile\IProfileService;
 
 /**
  * Get Vehicle Verification Status Controller
@@ -29,7 +30,12 @@ class GetVehicleVerificationStatusController
     /**
      * Vehicle ownership policy instance
      */
-    protected IVehicleOwnershipPolicy $vehicleOwnershipPolicy;
+    protected IVehicleManagementPolicy $vehicleManagementPolicy;
+
+    /**
+     * Profile service instance
+     */
+    protected IProfileService $profileService;
 
     /**
      * Constructor
@@ -37,11 +43,13 @@ class GetVehicleVerificationStatusController
     public function __construct(
         IVehicleService $vehicleService,
         IDocumentRepository $documentRepository,
-        IVehicleOwnershipPolicy $vehicleOwnershipPolicy
+        IVehicleManagementPolicy $vehicleManagementPolicy,
+        IProfileService $profileService
     ) {
         $this->vehicleService = $vehicleService;
         $this->documentRepository = $documentRepository;
-        $this->vehicleOwnershipPolicy = $vehicleOwnershipPolicy;
+        $this->vehicleManagementPolicy = $vehicleManagementPolicy;
+        $this->profileService = $profileService;
     }
 
     /**
@@ -55,28 +63,25 @@ class GetVehicleVerificationStatusController
         if (!$vehicle) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.not_found'),
+                'message' => __('driver::controller.vehicle.not_found'),
             ], 404);
         }
 
-        // Check if user can access this vehicle
-        if (!$this->vehicleOwnershipPolicy->canAccessVehicle($user->id, $vehicle->id)) {
+        if (!$this->vehicleManagementPolicy->ownsVehicle($user->id, $vehicle->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::vehicle.access_denied'),
+                'message' => __('driver::controller.vehicle.access_denied'),
             ], 403);
         }
 
-        // Get vehicle documents - Note: This still uses repository since we need profile ID
-        // In a real implementation, this should be moved to a service method
-        $profile = app(\Modules\Driver\Repositories\Profile\IProfileRepository::class)->findByUserId($user->id);
+        $profile = $this->profileService->getProfileByUserId($user->id);
         $simDocument = $this->documentRepository->findByTypeAndProfileId($profile->id, DocumentTypeEnum::SIM)->first();
         $stnkDocument = $this->documentRepository->findByTypeAndProfileId($profile->id, DocumentTypeEnum::STNK)->first();
         $vehiclePhotos = $this->documentRepository->findByTypeAndProfileId($profile->id, DocumentTypeEnum::VEHICLE_PHOTO);
 
         return response()->json([
             'status' => true,
-            'message' => __('driver::vehicle.verification.status_retrieved'),
+            'message' => __('driver::controller.vehicle.verification.status_retrieved'),
             'data' => [
                 'vehicle_verified' => $vehicle->is_verified,
                 'verification_status' => $vehicle->verification_status,
@@ -110,7 +115,8 @@ class GetVehicleVerificationStatusController
                         ];
                     }),
                 ],
-                'can_resubmit' => $vehicle->verification_status->value === 'rejected'
+                'can_resubmit' => $vehicle->verification_status === \Modules\Driver\Enums\VerificationStatusEnum::REJECTED,
+                'can_submit' => $vehicle->verification_status === \Modules\Driver\Enums\VerificationStatusEnum::PENDING,
             ],
         ]);
     }

@@ -1,0 +1,412 @@
+# MODULE DEVELOPMENT SPECIFICATIONS
+
+## Overview
+This document outlines the comprehensive rules and standards for developing new modules in the Padukan Backend system. All modules must follow these specifications to ensure consistency, maintainability, and scalability.
+
+## 1. MODULE STRUCTURE
+
+### 1.1 Directory Structure
+Every module MUST follow this exact directory structure:
+
+```
+Modules/ModuleName/
+├── composer.json
+├── module.json
+├── package.json
+├── phpunit.xml (optional, for driver module)
+├── vite.config.js
+├── app/
+│   ├── Cache/
+│   │   └── KeyManager/
+│   │       ├── IKeyManager.php
+│   │       └── KeyManager.php
+│   ├── Enums/
+│   │   └── [Entity]Enum.php
+│   ├── Exceptions/
+│   │   └── [Entity][Action]Exception.php
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── [Entity]/
+│   │   │   │   └── [Action][Entity]Controller.php
+│   │   │   └── .gitkeep
+│   │   ├── Middleware/
+│   │   │   └── [ModuleName][Type]Middleware.php
+│   │   ├── Requests/
+│   │   │   └── [Entity][Action]Request.php
+│   │   └── Resources/
+│   │       └── [Entity]Resource.php
+│   ├── Models/
+│   │   └── [Entity].php
+│   ├── Observers/
+│   │   └── [Entity]Observer.php
+│   ├── Policies/
+│   │   └── [Entity]Management/
+│   │       ├── [Entity]ManagementPolicy.php
+│   │       └── I[Entity]ManagementPolicy.php
+│   ├── Providers/
+│   │   ├── .gitkeep
+│   │   ├── [ModuleName]ServiceProvider.php
+│   │   ├── EventServiceProvider.php
+│   │   └── RouteServiceProvider.php
+│   ├── Repositories/
+│   │   └── [Entity]/
+│   │       ├── [Entity]Repository.php
+│   │       └── I[Entity]Repository.php
+│   └── Services/
+│       └── [Entity]/
+│           ├── [Entity]Service.php
+│           └── I[Entity]Service.php
+├── config/
+│   ├── .gitkeep
+│   └── config.php
+├── database/
+│   ├── factories/
+│   │   ├── .gitkeep
+│   │   └── [Entity]Factory.php
+│   ├── migrations/
+│   │   ├── .gitkeep
+│   │   └── YYYY_MM_DD_HHMMSS_create_[entities]_table.php
+│   ├── seeders/
+│   │   ├── .gitkeep
+│   │   └── [ModuleName]DatabaseSeeder.php
+├── resources/
+│   ├── assets/
+│   │   ├── .gitkeep
+│   │   ├── js/
+│   │   │   └── app.js
+│   │   └── sass/
+│   │       └── app.scss
+│   ├── lang/
+│   │   ├── en/
+│   │   │   ├── attributes.php
+│   │   │   ├── controller.php
+│   │   │   ├── enum.php
+│   │   │   ├── exception.php
+│   │   │   ├── middleware.php
+│   │   │   └── validation.php
+│   │   └── id/
+│   │       ├── attributes.php
+│   │       ├── controller.php
+│   │       ├── enum.php
+│   │       ├── exception.php
+│   │       ├── middleware.php
+│   │       └── validation.php
+│   └── views/
+│       ├── .gitkeep
+│       ├── index.blade.php
+│       └── components/
+│           └── layouts/
+│               └── master.blade.php
+├── routes/
+│   ├── .gitkeep
+│   ├── api.php
+│   └── web.php
+└── tests/
+    ├── Feature/
+    │   └── .gitkeep
+    └── Unit/
+        ├── .gitkeep
+        └── Middleware/
+            └── [ModuleName][Type]MiddlewareTest.php
+```
+
+### 1.2 File Naming Conventions
+- **Classes**: PascalCase (e.g., `UserProfileService`)
+- **Interfaces**: PascalCase with 'I' prefix (e.g., `IUserProfileService`)
+- **Files**: Match class names exactly
+- **Directories**: lowercase, singular nouns
+- **Database**: snake_case (e.g., `user_profiles`)
+- **Routes**: kebab-case (e.g., `/user-profiles`)
+
+## 2. ARCHITECTURAL PATTERNS
+
+### 2.1 Service-Repository Pattern
+Every module MUST implement the Service-Repository pattern:
+
+#### Repository Layer
+- **Interface**: Defines contract for data operations
+- **Implementation**: Handles database/cache operations
+- **Caching**: All repositories MUST implement caching with TTL
+- **Key Management**: Use dedicated KeyManager for cache keys
+
+#### Service Layer
+- **Interface**: Defines business logic contract
+- **Implementation**: Contains business logic, validation, and orchestration
+- **Dependency Injection**: Services MUST be injected, not instantiated directly
+
+### 2.2 Dependency Injection
+- All dependencies MUST be injected through constructors
+- Use Laravel's service container for binding
+- Bind interfaces to implementations in ServiceProvider
+
+### 2.3 SOLID Principles
+- **Single Responsibility**: Each class has one reason to change
+- **Open/Closed**: Classes open for extension, closed for modification
+- **Liskov Substitution**: Subtypes must be substitutable for base types
+- **Interface Segregation**: Clients should not depend on unused interfaces
+- **Dependency Inversion**: Depend on abstractions, not concretions
+
+## 3. CODING STANDARDS
+
+### 3.1 PHP Standards
+- **PSR-4**: Autoloading standard MUST be followed
+- **PSR-12**: Extended coding style guide MUST be followed
+- **Namespaces**: Match directory structure exactly
+- **Imports**: Group by type (classes, interfaces, traits)
+
+### 3.2 Documentation
+- **PHPDoc**: Every class, method, and property MUST have PHPDoc
+- **Method Documentation**: Include @param, @return, @throws
+- **Class Documentation**: Include purpose and usage
+- **Inline Comments**: For complex business logic
+
+### 3.3 Error Handling
+- **Custom Exceptions**: Create specific exceptions for each error type
+- **Exception Hierarchy**: Extend base exceptions appropriately
+- **Logging**: Use Laravel's logging with appropriate levels
+- **User-Friendly Messages**: Use language files for error messages
+
+## 4. DATABASE DESIGN
+
+### 4.1 Migrations
+- **Naming**: `YYYY_MM_DD_HHMMSS_description.php`
+- **Structure**: Use Laravel migration methods
+- **Indexes**: Add appropriate indexes for performance
+- **Foreign Keys**: Define relationships properly
+- **Timestamps**: Include created_at and updated_at
+
+### 4.2 Models
+- **Eloquent**: Extend Illuminate\Database\Eloquent\Model
+- **Relationships**: Define all relationships explicitly
+- **Fillable/Guarded**: Use fillable for security
+- **Observers**: Attach observers for cache invalidation
+- **UUID**: Use UUID as primary keys where appropriate
+
+### 4.3 Seeders and Factories
+- **Factories**: Create for all models
+- **Seeders**: Create database seeders
+- **Fake Data**: Use appropriate fake data generators
+
+## 5. API DESIGN
+
+### 5.1 RESTful Routes
+- **Versioning**: Use `/v1/module-name/` prefix
+- **Resource Naming**: Use plural nouns
+- **HTTP Methods**: GET, POST, PUT, PATCH, DELETE appropriately
+- **Nested Resources**: Use proper nesting when logical
+
+### 5.2 Controllers
+- **Single Action**: Each controller handles one action
+- **Naming**: `[Action][Entity]Controller`
+- **Resource**: Return appropriate resources
+- **Validation**: Use Form Requests for validation
+
+### 5.3 Form Requests
+- **Validation Rules**: Define comprehensive validation rules
+- **Authorization**: Include authorization logic if needed
+- **Messages**: Use language files for validation messages
+
+### 5.4 API Resources
+- **Transformation**: Transform models to API format
+- **Relationships**: Include related data appropriately
+- **Conditional Fields**: Show/hide fields based on context
+
+## 6. AUTHENTICATION & AUTHORIZATION
+
+### 6.1 Middleware
+- **Authentication**: Custom middleware for module authentication
+- **Permissions**: Custom middleware for module permissions
+- **Naming**: `[ModuleName][Type]Middleware`
+
+### 6.2 Policies
+- **Interface**: Define policy contract
+- **Implementation**: Implement authorization logic
+- **Methods**: Standard CRUD methods plus custom methods
+- **Registration**: Register in ServiceProvider
+
+## 7. FILE UPLOAD & STORAGE
+
+### 7.1 File Upload Service
+- **Interface**: `IFileUploadService`
+- **Implementation**: Handle file uploads, validation, storage
+- **Temporary URLs**: Generate temporary URLs for private files
+- **Cleanup**: Handle file deletion and cleanup
+
+### 7.2 Document Management
+- **Polymorphic Relations**: Use documentable relationships
+- **Verification Workflow**: Support document verification process
+- **File Types**: Validate file types and sizes
+- **Storage**: Use appropriate storage disks
+
+## 8. CACHING STRATEGY
+
+### 8.1 Cache Key Management
+- **Interface**: `IKeyManager`
+- **Implementation**: Centralize cache key generation
+- **Naming**: Descriptive, hierarchical keys
+- **Invalidation**: Proper cache invalidation on data changes
+
+### 8.2 Cache TTL
+- **Profile Data**: 15 minutes (900 seconds)
+- **Reference Data**: 1 hour (3600 seconds)
+- **Static Data**: 24 hours (86400 seconds)
+
+### 8.3 Observers
+- **Model Events**: Listen to created, updated, deleted events
+- **Cache Invalidation**: Clear relevant cache keys
+- **Registration**: Register observers in ServiceProvider
+
+## 9. CONFIGURATION
+
+### 9.1 Module Configuration
+- **Database**: Separate database connection per module
+- **Environment Variables**: Use appropriate prefixes
+- **Config Structure**: Hierarchical configuration
+- **Publishing**: Allow config publishing
+
+### 9.2 Service Provider
+- **Registration Order**: Register components in logical order
+- **Bindings**: Bind all interfaces to implementations
+- **Middleware**: Register custom middleware
+- **Observers**: Register model observers
+
+## 10. TESTING
+
+### 10.1 Unit Tests
+- **Coverage**: Test all classes and methods
+- **Mocks**: Mock external dependencies
+- **Assertions**: Comprehensive assertions
+- **Naming**: `[ClassName]Test`
+
+### 10.2 Feature Tests
+- **API Endpoints**: Test all API endpoints
+- **Authentication**: Test authentication requirements
+- **Authorization**: Test permission requirements
+- **Validation**: Test input validation
+
+## 11. INTERNATIONALIZATION
+
+### 11.1 Language Files
+- **Structure**: Separate files for different contexts
+- **Keys**: Hierarchical, descriptive keys
+- **Languages**: Support English and Indonesian
+- **Fallback**: Proper fallback handling
+
+### 11.2 Translation Usage
+- **Controllers**: Use `__()` helper for messages
+- **Exceptions**: Use language keys in exceptions
+- **Validation**: Use language keys in form requests
+
+## 12. EXCEPTION HANDLING
+
+### 12.1 Custom Exceptions
+- **Naming**: `[Entity][Action]Exception`
+- **Messages**: Use language keys
+- **Context**: Include relevant context data
+- **Logging**: Log appropriate exception details
+
+### 12.2 Exception Types
+- **Not Found**: For missing resources
+- **Validation**: For input validation failures
+- **Authorization**: For permission/access failures
+- **Business Logic**: For business rule violations
+
+## 13. VERIFICATION WORKFLOW
+
+### 13.1 Document Verification
+- **Status Enum**: Define verification statuses
+- **Workflow**: Support submission, review, approval, rejection
+- **Resubmission**: Allow document resubmission
+- **Notifications**: Trigger appropriate notifications
+
+### 13.2 Profile Verification
+- **Multi-step**: Support multiple verification steps
+- **Document Requirements**: Define required documents
+- **Status Tracking**: Track verification progress
+- **Audit Trail**: Maintain verification history
+
+## 14. PERFORMANCE CONSIDERATIONS
+
+### 14.1 Database Optimization
+- **Indexes**: Add appropriate database indexes
+- **Eager Loading**: Use eager loading to prevent N+1 queries
+- **Pagination**: Implement pagination for large datasets
+- **Query Optimization**: Optimize complex queries
+
+### 14.2 Caching Strategy
+- **Cache Warming**: Implement cache warming where needed
+- **Cache Invalidation**: Proper cache invalidation strategies
+- **Cache Keys**: Efficient cache key generation
+- **Memory Usage**: Monitor cache memory usage
+
+### 14.3 Code Optimization
+- **Lazy Loading**: Use lazy loading appropriately
+- **Resource Optimization**: Optimize resource usage
+- **Background Jobs**: Use queues for heavy operations
+- **CDN**: Use CDN for static assets
+
+## 15. SECURITY CONSIDERATIONS
+
+### 15.1 Input Validation
+- **Form Requests**: Use comprehensive validation rules
+- **Sanitization**: Sanitize all user inputs
+- **Type Casting**: Proper type casting
+- **SQL Injection**: Use parameterized queries
+
+### 15.2 Authentication
+- **JWT Tokens**: Use secure JWT implementation
+- **Token Expiration**: Implement proper token expiration
+- **Refresh Tokens**: Support token refresh mechanism
+- **Rate Limiting**: Implement rate limiting
+
+### 15.3 Authorization
+- **Role-Based Access**: Implement RBAC
+- **Permission Checks**: Granular permission checks
+- **Policy Classes**: Use policy classes for authorization
+- **Middleware**: Use middleware for route protection
+
+### 15.4 File Security
+- **File Validation**: Validate file types and content
+- **Storage Security**: Secure file storage
+- **Access Control**: Control file access permissions
+- **Virus Scanning**: Implement virus scanning if needed
+
+## 16. DEPLOYMENT & MAINTENANCE
+
+### 16.1 Module Registration
+- **module.json**: Proper module configuration
+- **Composer**: PSR-4 autoloading configuration
+- **Service Provider**: Register module service provider
+- **Migration Loading**: Load migrations appropriately
+
+### 16.2 Version Control
+- **Git Flow**: Follow Git Flow branching strategy
+- **Commit Messages**: Descriptive commit messages
+- **Code Reviews**: Mandatory code reviews
+- **Testing**: Comprehensive testing before merge
+
+### 16.3 Documentation
+- **README**: Module-specific README
+- **API Documentation**: Comprehensive API documentation
+- **Code Comments**: Well-documented code
+- **Change Logs**: Maintain change logs
+
+## 17. MONITORING & LOGGING
+
+### 17.1 Logging
+- **Log Levels**: Appropriate log levels (debug, info, warning, error)
+- **Context**: Include relevant context in logs
+- **Performance**: Log performance metrics
+- **Errors**: Comprehensive error logging
+
+### 17.2 Monitoring
+- **Health Checks**: Implement health check endpoints
+- **Metrics**: Collect performance metrics
+- **Alerts**: Set up appropriate alerts
+- **Dashboards**: Create monitoring dashboards
+
+## CONCLUSION
+
+Following these specifications ensures that all modules in the Padukan Backend system maintain consistency, reliability, and scalability. New modules MUST adhere to all rules outlined in this document. Any deviations require explicit approval and documentation of the rationale.
+
+For questions or clarifications regarding these specifications, consult the development team lead or refer to the existing Customer and Driver modules as reference implementations.

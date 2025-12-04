@@ -25,7 +25,7 @@ class VehicleUpdateRequest extends FormRequest
         $vehicleId = $this->route('id');
 
         return [
-            'type' => 'nullable|string|in:motorcycle,car,truck',
+            'type' => 'nullable|string|in:motorcycle,car',
             'brand' => 'nullable|string|max:100',
             'model' => 'nullable|string|max:100',
             'year' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
@@ -49,21 +49,6 @@ class VehicleUpdateRequest extends FormRequest
             'color.max' => __('driver::validation.vehicle.color.max'),
             'license_plate.max' => __('driver::validation.vehicle.license_plate.max'),
             'license_plate.unique' => __('driver::validation.vehicle.license_plate.unique'),
-        ];
-    }
-
-    /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'type' => __('driver::validation.attributes.type'),
-            'brand' => __('driver::validation.attributes.brand'),
-            'model' => __('driver::validation.attributes.model'),
-            'year' => __('driver::validation.attributes.year'),
-            'color' => __('driver::validation.attributes.color'),
-            'license_plate' => __('driver::validation.attributes.license_plate'),
         ];
     }
 

@@ -39,16 +39,6 @@ class UpdateOperationalStatusRequest extends FormRequest
     }
 
     /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'operational_status' => __('driver::attributes.status.operational_status'),
-        ];
-    }
-
-    /**
      * Handle a failed validation attempt.
      */
     protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)

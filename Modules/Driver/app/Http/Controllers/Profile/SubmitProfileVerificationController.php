@@ -66,63 +66,31 @@ class SubmitProfileVerificationController
             $profile = $this->profileService->createProfile($user->id, []);
         }
 
-        // Check if user can submit verification
-        if (!$this->profileOwnershipPolicy->canSubmitVerification($user->id, $profile->id)) {
-            return response()->json([
-                'status' => false,
-                'message' => __('driver::profile.verification.cannot_submit'),
-            ], 400);
-        }
-
         try {
-            // Upload documents directly
-            $idCardDocument = $this->documentService->uploadDocument(
-                $user->id,
-                DocumentTypeEnum::ID_CARD,
-                $request->file('id_card_file'),
-                [
-                    'meta' => $validated['id_card_meta'],
-                    'expiry_date' => $validated['id_card_expiry_date'] ?? null,
-                ]
-            );
+            if ($profile->verification_status === \Modules\Driver\Enums\VerificationStatusEnum::PENDING) {
+                $result = $this->profileService->resubmitVerification($user->id, [
+                    'id_card_file' => $request->file('id_card_file'),
+                    'id_card_meta' => $validated['id_card_meta'],
+                    'id_card_expiry_date' => $validated['id_card_expiry_date'] ?? null,
+                    'selfie_with_id_card_file' => $request->file('selfie_with_id_card_file'),
+                    'selfie_with_id_card_meta' => $validated['selfie_with_id_card_meta'] ?? null,
+                ]);
 
-            $selfieDocument = $this->documentService->uploadDocument(
-                $user->id,
-                DocumentTypeEnum::SELFIE_WITH_ID_CARD,
-                $request->file('selfie_with_id_card_file'),
-                [
-                    'meta' => $validated['selfie_with_id_card_meta'] ?? null,
-                ]
-            );
-
-            // Update profile verification status to pending via service
-            $this->profileService->updateVerificationStatus($user->id, false, 'pending');
-
-            $uploadedDocuments = [$idCardDocument, $selfieDocument];
-
-            return response()->json([
-                'status' => true,
-                'message' => __('driver::profile.verification.submitted_successfully'),
-                'data' => [
-                    'verification_id' => $profile->id,
-                    'status' => 'pending',
-                    'documents_uploaded' => count($uploadedDocuments),
-                    'documents' => array_map(function ($document) {
-                        return [
-                            'id' => $document->id,
-                            'type' => $document->type,
-                            'file_name' => $document->file_name,
-                            'uploaded_at' => $document->created_at,
-                            'temporary_url' => $this->fileUploadService->generateTemporaryUrl($document->file_path),
-                        ];
-                    }, $uploadedDocuments),
-                    'submitted_at' => now(),
-                ],
-            ], 201);
+                return response()->json([
+                    'status' => true,
+                    'message' => __('driver::controller.profile.verification.submitted_successfully'),
+                    'data' => $result,
+                ], 201);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('driver::controller.profile.verification.cannot_submit'),
+                ], 400);
+            }
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::profile.verification.submission_failed'),
+                'message' => __('driver::controller.profile.verification.submission_failed'),
                 'error' => $e->getMessage(),
             ], 500);
         }

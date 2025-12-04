@@ -54,20 +54,6 @@ class ProfileUpdateRequest extends FormRequest
     }
 
     /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'first_name' => __('customer::attributes.first_name'),
-            'last_name' => __('customer::attributes.last_name'),
-            'avatar_file' => __('customer::attributes.avatar_file'),
-            'gender' => __('customer::attributes.gender'),
-            'language' => __('customer::attributes.language'),
-        ];
-    }
-
-    /**
      * Handle a failed validation attempt.
      *
      * @param \Illuminate\Contracts\Validation\Validator $validator

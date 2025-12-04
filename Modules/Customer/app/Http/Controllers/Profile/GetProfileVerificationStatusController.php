@@ -47,7 +47,7 @@ class GetProfileVerificationStatusController
         if (!$profile) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::profile.not_found'),
+                'message' => __('customer::controller.profile.not_found'),
             ], 404);
         }
 
@@ -55,7 +55,7 @@ class GetProfileVerificationStatusController
         if (!$this->profileOwnershipPolicy->ownsProfile($user->id, $profile->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::profile.access_denied'),
+                'message' => __('customer::controller.profile.access_denied'),
             ], 403);
         }
 
@@ -63,7 +63,7 @@ class GetProfileVerificationStatusController
 
         return response()->json([
             'status' => true,
-            'message' => __('customer::profile.verification.status_retrieved'),
+            'message' => __('customer::controller.profile.verification.status_retrieved'),
             'data' => $verificationData,
         ]);
     }

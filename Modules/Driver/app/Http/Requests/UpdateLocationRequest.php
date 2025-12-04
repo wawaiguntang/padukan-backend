@@ -44,17 +44,6 @@ class UpdateLocationRequest extends FormRequest
     }
 
     /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'latitude' => __('driver::attributes.status.latitude'),
-            'longitude' => __('driver::attributes.status.longitude'),
-        ];
-    }
-
-    /**
      * Handle a failed validation attempt.
      */
     protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)

@@ -11,17 +11,17 @@ enum VerificationStatusEnum: string
 
     public function label(): string
     {
-        return match($this) {
-            self::PENDING => 'Pending',
-            self::APPROVED => 'Approved',
-            self::REJECTED => 'Rejected',
-            self::ON_REVIEW => 'On Review',
+        return match ($this) {
+            self::PENDING => __('driver::enum.verification_status.pending'),
+            self::APPROVED => __('driver::enum.verification_status.approved'),
+            self::REJECTED => __('driver::enum.verification_status.rejected'),
+            self::ON_REVIEW => __('driver::enum.verification_status.on_review'),
         };
     }
 
     public function color(): string
     {
-        return match($this) {
+        return match ($this) {
             self::PENDING => 'yellow',
             self::APPROVED => 'green',
             self::REJECTED => 'red',

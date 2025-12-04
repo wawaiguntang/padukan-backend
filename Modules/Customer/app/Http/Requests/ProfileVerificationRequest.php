@@ -67,22 +67,6 @@ class ProfileVerificationRequest extends FormRequest
     }
 
     /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'id_card_file' => __('customer::attributes.profile_verification.id_card_file'),
-            'id_card_meta' => __('customer::attributes.profile_verification.id_card_meta'),
-            'id_card_meta.name' => __('customer::attributes.profile_verification.id_card_meta.name'),
-            'id_card_meta.number' => __('customer::attributes.profile_verification.id_card_meta.number'),
-            'id_card_expiry_date' => __('customer::attributes.profile_verification.id_card_expiry_date'),
-            'selfie_with_id_card_file' => __('customer::attributes.profile_verification.selfie_with_id_card_file'),
-            'selfie_with_id_card_meta' => __('customer::attributes.profile_verification.selfie_with_id_card_meta'),
-        ];
-    }
-
-    /**
      * Handle a failed validation attempt.
      *
      * @param \Illuminate\Contracts\Validation\Validator $validator

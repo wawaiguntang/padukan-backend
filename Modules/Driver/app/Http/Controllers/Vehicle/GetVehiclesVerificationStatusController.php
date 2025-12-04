@@ -38,6 +38,7 @@ class GetVehiclesVerificationStatusController
         $verificationStats = [
             'total' => $vehicles->count(),
             'pending' => $vehicles->where('verification_status', 'pending')->count(),
+            'on_review' => $vehicles->where('verification_status', 'on_review')->count(),
             'verified' => $vehicles->where('is_verified', true)->count(),
             'rejected' => $vehicles->where('verification_status', 'rejected')->count(),
         ];
@@ -51,6 +52,16 @@ class GetVehiclesVerificationStatusController
                     'model' => $vehicle->model,
                     'license_plate' => $vehicle->license_plate,
                     'submitted_at' => $vehicle->updated_at,
+                ];
+            }),
+            'on_review' => $vehicles->where('verification_status', 'on_review')->map(function ($vehicle) {
+                return [
+                    'id' => $vehicle->id,
+                    'type' => $vehicle->type,
+                    'brand' => $vehicle->brand,
+                    'model' => $vehicle->model,
+                    'license_plate' => $vehicle->license_plate,
+                    'reviewed_at' => $vehicle->updated_at,
                 ];
             }),
             'verified' => $vehicles->where('is_verified', true)->map(function ($vehicle) {
@@ -77,7 +88,7 @@ class GetVehiclesVerificationStatusController
 
         return response()->json([
             'status' => true,
-            'message' => __('driver::vehicle.verification_status_retrieved'),
+            'message' => __('driver::controller.vehicle.verification_status_retrieved'),
             'data' => [
                 'statistics' => $verificationStats,
                 'vehicles' => $vehiclesByStatus,

@@ -47,7 +47,7 @@ class DriverPermissionMiddleware
         if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::auth.user_not_authenticated'),
+                'message' => __('driver::middleware.user_not_authenticated'),
             ], 401);
         }
 
@@ -64,7 +64,7 @@ class DriverPermissionMiddleware
         if (!$hasPermission) {
             return response()->json([
                 'status' => false,
-                'message' => __('driver::auth.insufficient_permissions'),
+                'message' => __('driver::middleware.insufficient_permissions'),
             ], 403);
         }
 

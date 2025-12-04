@@ -38,7 +38,7 @@ class DestroyAddressController
         if (!$address) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.not_found'),
+                'message' => __('customer::controller.address.not_found'),
             ], 404);
         }
 
@@ -46,7 +46,7 @@ class DestroyAddressController
         if (!$this->addressService->isAddressOwnedByUser($id, $user->id)) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.access_denied'),
+                'message' => __('customer::controller.address.access_denied'),
             ], 403);
         }
 
@@ -55,13 +55,13 @@ class DestroyAddressController
         if (!$deleted) {
             return response()->json([
                 'status' => false,
-                'message' => __('customer::address.delete_failed'),
+                'message' => __('customer::controller.address.delete_failed'),
             ], 500);
         }
 
         return response()->json([
             'status' => true,
-            'message' => __('customer::address.deleted_successfully'),
+            'message' => __('customer::controller.address.deleted_successfully'),
         ]);
     }
 }

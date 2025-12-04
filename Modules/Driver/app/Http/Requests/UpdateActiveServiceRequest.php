@@ -23,7 +23,8 @@ class UpdateActiveServiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'active_service' => 'required|in:food,ride,car,send,mart',
+            'active_services' => 'required|array|min:1|max:5',
+            'active_services.*' => 'required|in:food,ride,car,send,mart',
         ];
     }
 
@@ -33,18 +34,12 @@ class UpdateActiveServiceRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'active_service.required' => __('driver::validation.status.active_service.required'),
-            'active_service.in' => __('driver::validation.status.active_service.in'),
-        ];
-    }
-
-    /**
-     * Get custom attributes for validator errors.
-     */
-    public function attributes(): array
-    {
-        return [
-            'active_service' => __('driver::attributes.status.active_service'),
+            'active_services.required' => __('driver::validation.status.active_services.required'),
+            'active_services.array' => __('driver::validation.status.active_services.array'),
+            'active_services.min' => __('driver::validation.status.active_services.min'),
+            'active_services.max' => __('driver::validation.status.active_services.max'),
+            'active_services.*.required' => __('driver::validation.status.active_service.required'),
+            'active_services.*.in' => __('driver::validation.status.active_service.in'),
         ];
     }
 

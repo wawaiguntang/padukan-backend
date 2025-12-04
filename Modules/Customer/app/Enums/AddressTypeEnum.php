@@ -11,11 +11,11 @@ enum AddressTypeEnum: string
 
     public function label(): string
     {
-        return match($this) {
-            self::HOME => 'Home',
-            self::WORK => 'Work',
-            self::BUSINESS => 'Business',
-            self::OTHER => 'Other',
+        return match ($this) {
+            self::HOME => __('customer::enum.address_type.home'),
+            self::WORK => __('customer::enum.address_type.work'),
+            self::BUSINESS => __('customer::enum.address_type.business'),
+            self::OTHER => __('customer::enum.address_type.other'),
         };
     }
 }

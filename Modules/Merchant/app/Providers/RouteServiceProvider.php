@@ -17,6 +17,19 @@ class RouteServiceProvider extends ServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        $this->registerMiddleware();
+    }
+
+    /**
+     * Register module middleware.
+     */
+    protected function registerMiddleware(): void
+    {
+        $router = $this->app['router'];
+
+        $router->aliasMiddleware('merchant.auth', \Modules\Merchant\Http\Middleware\MerchantAuthMiddleware::class);
+        $router->aliasMiddleware('merchant.permission', \Modules\Merchant\Http\Middleware\MerchantPermissionMiddleware::class);
     }
 
     /**
