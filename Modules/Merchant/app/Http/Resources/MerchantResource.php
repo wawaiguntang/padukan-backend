@@ -27,15 +27,16 @@ class MerchantResource extends JsonResource
             'address' => $this->street . ', ' . $this->city . ', ' . $this->province . ', ' . $this->country . ' ' . $this->postal_code,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
+            'schedule' => [
+                'regular_hours' => $this->regular_hours ? json_decode($this->regular_hours, true) : null,
+                'special_schedules' => $this->special_schedules ? json_decode($this->special_schedules, true) : null,
+            ],
             'is_verified' => $this->is_verified,
             'verification_status' => $this->verification_status,
-            'is_active' => $this->is_active,
             'status' => $this->status,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'address_details' => $this->whenLoaded('address'),
             'settings' => $this->whenLoaded('settings'),
-            'schedule' => $this->whenLoaded('schedules'),
         ];
     }
 }

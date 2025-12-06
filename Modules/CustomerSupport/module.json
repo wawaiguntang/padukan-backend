@@ -1,0 +1,11 @@
+{
+    "name": "CustomerSupport",
+    "alias": "customersupport",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\CustomerSupport\\Providers\\CustomerSupportServiceProvider"
+    ],
+    "files": []
+}

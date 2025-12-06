@@ -4,5 +4,19 @@
     "Driver": true,
     "Customer": true,
     "Merchant": true,
-    "Setting": true
+    "Setting": true,
+    "Product": true,
+    "Inventory": true,
+    "Promotion": true,
+    "Order": true,
+    "Notification": true,
+    "Location": true,
+    "Routing": true,
+    "Wallet": true,
+    "Payment": true,
+    "Chat": true,
+    "CustomerSupport": true,
+    "FraudDetection": true,
+    "Analytic": true,
+    "Monitor": true
 }

@@ -247,7 +247,7 @@ class MerchantService implements IMerchantService
 
             // Update merchant verification status
             $this->merchantRepository->updateById($merchantId, [
-                'verification_status' => VerificationStatusEnum::PENDING->value,
+                'verification_status' => VerificationStatusEnum::ON_REVIEW->value,
                 'is_verified' => false,
                 'verified_at' => null,
             ]);
@@ -257,12 +257,12 @@ class MerchantService implements IMerchantService
             // Update document verification statuses
             $this->documentService->updateVerificationStatus(
                 $merchantDocument->id,
-                VerificationStatusEnum::PENDING
+                VerificationStatusEnum::ON_REVIEW
             );
 
             $this->documentService->updateVerificationStatus(
                 $bannerDocument->id,
-                VerificationStatusEnum::PENDING
+                VerificationStatusEnum::ON_REVIEW
             );
 
             return [
@@ -317,7 +317,15 @@ class MerchantService implements IMerchantService
             return null;
         }
 
-        return $merchant->address;
+        return [
+            'street' => $merchant->street,
+            'city' => $merchant->city,
+            'province' => $merchant->province,
+            'country' => $merchant->country,
+            'postal_code' => $merchant->postal_code,
+            'latitude' => $merchant->latitude,
+            'longitude' => $merchant->longitude,
+        ];
     }
 
     /**
@@ -325,13 +333,18 @@ class MerchantService implements IMerchantService
      */
     public function getMerchantDocuments(string $merchantId)
     {
+        // Validate merchant ID format
+        if (empty($merchantId) || !\Illuminate\Support\Str::isUuid($merchantId)) {
+            return collect();
+        }
+
         $merchant = $this->merchantRepository->findById($merchantId);
 
         if (!$merchant) {
             return collect();
         }
 
-        return $merchant->documents;
+        return $this->documentService->getDocumentsByMerchantId($merchantId);
     }
 
     /**
@@ -356,16 +369,7 @@ class MerchantService implements IMerchantService
      */
     public function updateMerchantAddress(string $merchantId, array $data)
     {
-        $merchant = $this->merchantRepository->findById($merchantId);
-
-        if (!$merchant) {
-            return null;
-        }
-
-        return $merchant->address()->updateOrCreate(
-            ['merchant_id' => $merchantId],
-            $data
-        );
+        return $this->updateMerchant($merchantId, $data);
     }
 
     /**

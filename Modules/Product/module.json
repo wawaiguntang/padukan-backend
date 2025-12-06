@@ -1,0 +1,9 @@
+{
+    "name": "Product",
+    "alias": "product",
+    "description": "Product module for managing products, categories, attributes, and related entities",
+    "keywords": ["product", "category", "attribute"],
+    "priority": 0,
+    "providers": ["Modules\\Product\\Providers\\ProductServiceProvider"],
+    "files": []
+}

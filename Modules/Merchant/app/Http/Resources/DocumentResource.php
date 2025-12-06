@@ -35,6 +35,9 @@ class DocumentResource extends JsonResource
                 }
                 return round($bytes, 2) . ' ' . $units[$i];
             }),
+            'temporary_url' => $this->when($this->file_path, function () {
+                return app(\Modules\Merchant\Services\FileUpload\IFileUploadService::class)->generateTemporaryUrl($this->file_path);
+            }),
             'expiry_date' => $this->expiry_date?->toISOString(),
             'is_expired' => $this->when($this->expiry_date, function () {
                 return $this->expiry_date->isPast();

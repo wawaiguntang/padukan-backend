@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Modules\Merchant\Services\Merchant\IMerchantService;
 use Modules\Merchant\Services\Profile\IProfileService;
+use Modules\Merchant\Http\Resources\DocumentResource;
 
 /**
  * Get Merchant Verification Status Controller
@@ -56,7 +57,7 @@ class GetMerchantVerificationStatusController
                 'merchant_id' => $merchant->id,
                 'is_verified' => $merchant->is_verified,
                 'verification_status' => $merchant->verification_status,
-                'documents' => $this->merchantService->getMerchantDocuments($merchantId),
+                'documents' => DocumentResource::collection($this->merchantService->getMerchantDocuments($merchantId)),
                 'can_submit' => $merchant->verification_status === \Modules\Merchant\Enums\VerificationStatusEnum::PENDING,
                 'can_resubmit' => $merchant->verification_status === \Modules\Merchant\Enums\VerificationStatusEnum::REJECTED,
             ],

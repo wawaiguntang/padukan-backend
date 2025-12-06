@@ -1,0 +1,11 @@
+{
+    "name": "FraudDetection",
+    "alias": "frauddetection",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\FraudDetection\\Providers\\FraudDetectionServiceProvider"
+    ],
+    "files": []
+}

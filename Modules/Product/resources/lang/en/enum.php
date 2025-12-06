@@ -1,0 +1,20 @@
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Product Enum Language Lines
+    |--------------------------------------------------------------------------
+    |
+    | The following language lines are used for enum values in the product module.
+    | These translations provide human-readable labels for enum values.
+    |
+    */
+
+    // Product Type Enum
+    'product_type' => [
+        'food' => 'Food',
+        'mart' => 'Mart',
+        'service' => 'Service',
+    ],
+];
