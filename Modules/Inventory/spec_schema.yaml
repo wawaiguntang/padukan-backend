@@ -1,0 +1,709 @@
+module: inventory
+version: 1.0.0
+title: Inventory Module Spec Schema (Enterprise)
+description: >
+  Enterprise-grade Inventory module schema.
+  Supports:
+    - inventory_items mapping to product/variant/extra/bundle (bundle virtual)
+    - inventory_batches (batch/lot, purchase price, expiry)
+    - inventory_movements (immutable audit trail)
+    - inventory_balances (snapshot)
+    - inventory_reservations
+    - inventory_transfers
+    - inventory_opnames (cycle count)
+    - inventory_waste (spoilage, breakage, loss)
+    - inventory_reorder_settings (ROP)
+    - inventory_forecast (basic forecasting)
+    - inventory_valuation_ledger (IVL)
+    - inventory_serials (per-item serialization)
+    - inventory_bom (nested multi-level BOM)
+    - inventory_production (production runs)
+  Notes:
+    - All quantities stored in base unit only (use product.unit_conversions on input/output)
+    - Warehouse_id is nullable to allow UMKM simple operation
+    - Default COGS = Weighted Average (can be overridden per merchant or per item)
+    - Bundle items are virtual: bundle inventory derived from children
+    - Circular/nested BOM prevention required at application level (and DB constraint)
+
+# --------------------------------------------------------------------------------
+# GLOBAL SETTINGS / FLAGS
+# --------------------------------------------------------------------------------
+settings:
+  inventory_enabled_flag:
+    name: inventory_enabled
+    type: boolean
+    description: >
+      Per-merchant runtime flag. If false, inventory business logic is skipped,
+      though schema/tables remain present. Use to avoid runtime overhead for merchants
+      who do not use inventory features.
+  merchant_defaults:
+    default_cogs_method: AVERAGE
+    serial_global_uniqueness: true
+    qty_precision: 4
+    price_precision: 2
+
+# --------------------------------------------------------------------------------
+# TABLES
+# For each table: fields, datatypes, constraints, important indexes
+# --------------------------------------------------------------------------------
+tables:
+
+  inventory_items:
+    description: >
+      Logical inventory item mapping to product/variant/extra/bundle.
+      At most one of product_id/variant_id/extra_id/bundle_id MUST be non-null.
+      Bundles are virtual (no own stock_batches or stock_balances).
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid, required: true }
+      product_id: { type: uuid, nullable: true }           # products.id
+      variant_id: { type: uuid, nullable: true }           # product_variants.id
+      extra_id: { type: uuid, nullable: true }             # product_extras.id
+      bundle_id: { type: uuid, nullable: true }            # product_bundles.id (virtual)
+      sku: { type: varchar(255), nullable: true }
+      base_unit: { type: varchar(64), nullable: true }     # fallback to product/base_unit
+      conversion_id: { type: uuid, nullable: true }       # optional direct conversion ref
+      has_expired: { type: boolean, default: false }
+      is_virtual: { type: boolean, default: false }        # true for bundle virtual items
+      metadata: { type: jsonb, nullable: true }
+      created_at: { type: timestamp, required: true }
+      updated_at: { type: timestamp, required: true }
+      deleted_at: { type: timestamp, nullable: true }
+    constraints:
+      - "CHECK exactly_one_product_variant_extra_bundle: (CASE WHEN product_id IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN variant_id IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN extra_id IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN bundle_id IS NOT NULL THEN 1 ELSE 0 END) = 1"
+      - "IF bundle_id IS NOT NULL -> is_virtual MUST be true"
+    indexes:
+      - { name: idx_inv_items_merchant, fields: [merchant_id] }
+      - { name: idx_inv_items_sku, fields: [merchant_id, sku] }
+
+  inventory_batches:
+    description: >
+      Each inbound receipt creates a batch/lot carrying purchase_price and qty.
+      Quantities stored in base unit. remaining_qty_base used for allocation.
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid, required: true }
+      inventory_item_id: { type: uuid, required: true }   # inventory_items.id
+      warehouse_id: { type: uuid, nullable: true }       # nullable for UMKM
+      batch_code: { type: varchar(255), nullable: true }
+      purchase_price: { type: decimal(18,2), required: true }
+      currency: { type: varchar(16), default: "IDR" }
+      qty_received_base: { type: decimal(18,4), required: true }
+      remaining_qty_base: { type: decimal(18,4), required: true }
+      received_at: { type: timestamp, required: true }
+      expiry_date: { type: date, nullable: true }
+      supplier_ref: { type: jsonb, nullable: true }
+      metadata: { type: jsonb, nullable: true }
+      version: { type: integer, default: 1 }  # optimistic lock
+      created_at: { type: timestamp, required: true }
+    constraints:
+      - "CHECK remaining_le_received: remaining_qty_base <= qty_received_base"
+      - "IF inventory_item.has_expired = true THEN expiry_date IS NOT NULL"
+    indexes:
+      - { name: idx_batches_item, fields: [inventory_item_id] }
+      - { name: idx_batches_warehouse, fields: [warehouse_id] }
+      - { name: idx_batches_expiry, fields: [expiry_date] }
+
+  inventory_balances:
+    description: >
+      Denormalized snapshot per inventory_item per warehouse (warehouse nullable).
+      Maintained by transactions or incremental job.
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid, required: true }
+      inventory_item_id: { type: uuid, required: true }
+      warehouse_id: { type: uuid, nullable: true }
+      total_qty_base: { type: decimal(18,4), default: 0.0000 }
+      reserved_qty_base: { type: decimal(18,4), default: 0.0000 }
+      available_qty_base: { type: decimal(18,4), default: 0.0000 }
+      average_cost: { type: decimal(18,4), nullable: true }
+      last_valuation_at: { type: timestamp, nullable: true }
+      updated_at: { type: timestamp, required: true }
+    constraints:
+      - "available_qty_base = total_qty_base - reserved_qty_base"
+    indexes:
+      - { name: uq_balances_item_warehouse, fields: [inventory_item_id, warehouse_id], unique: true }
+
+  inventory_movements:
+    description: >
+      Immutable audit trail for all inventory changes. Every movement has a tx_id
+      (UUID idempotency) and created_at. Movement rows must NOT be updated/deleted.
+    fields:
+      id: { type: uuid, pk: true }                           # movement id
+      merchant_id: { type: uuid }
+      tx_id: { type: uuid, nullable: true }                  # correlates multiple movement rows
+      movement_type:
+        type: enum
+        values: [PURCHASE_IN, SALE_OUT, TRANSFER_IN, TRANSFER_OUT, ADJUSTMENT_PLUS, ADJUSTMENT_MINUS, RESERVE, UNRESERVE, CONSUME_RESERVATION, WASTE, SPOILAGE, BREAKAGE, LOSS, PRODUCTION_IN, PRODUCTION_OUT]
+      inventory_item_id: { type: uuid, required: true }
+      warehouse_id: { type: uuid, nullable: true }
+      batch_id: { type: uuid, nullable: true }
+      qty_base: { type: decimal(18,4), required: true }     # positive for in, negative for out (app rule)
+      cogs_unit_cost: { type: decimal(18,4), nullable: true } # unit cost applied for this movement
+      total_cost: { type: decimal(18,4), nullable: true }     # cogs_unit_cost * qty_abs
+      ref_type: { type: varchar(64), nullable: true }       # ORDER, PURCHASE, TRANSFER, PRODUCTION
+      ref_id: { type: uuid, nullable: true }
+      balance_after: { type: decimal(18,4), nullable: true } # snapshot after applying movement
+      reason_code: { type: varchar(128), nullable: true }   # for adjustments/waste
+      metadata: { type: jsonb, nullable: true }
+      created_by: { type: uuid, nullable: true }
+      created_at: { type: timestamp, required: true }
+    constraints:
+      - "qty_base != 0"
+      - "movement rows immutable: application-level policy"
+    indexes:
+      - { name: idx_movements_item, fields: [inventory_item_id] }
+      - { name: idx_movements_ref, fields: [ref_type, ref_id] }
+      - { name: idx_movements_tx, fields: [tx_id] }
+
+  inventory_reservations:
+    description: >
+      Reservation locks used to prevent oversell. Reservations reduce available_qty
+      (reflected in inventory_balances.reserved_qty_base), but do not reduce remaining_qty_base until consumption.
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid }
+      inventory_item_id: { type: uuid }
+      warehouse_id: { type: uuid, nullable: true }
+      qty_reserved_base: { type: decimal(18,4), required: true }
+      order_id: { type: uuid, nullable: true }
+      status:
+        type: enum
+        values: [ACTIVE, CANCELED, CONSUMED]
+      expires_at: { type: timestamp, nullable: true }
+      created_by: { type: uuid, nullable: true }
+      created_at: { type: timestamp, required: true }
+    constraints:
+      - "qty_reserved_base > 0"
+    indexes:
+      - { name: idx_reservations_item, fields: [inventory_item_id] }
+      - { name: idx_reservations_order, fields: [order_id] }
+
+  inventory_transfers:
+    description: >
+      Transfer orders between warehouses (source/destination may be nullable).
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid }
+      from_warehouse_id: { type: uuid, nullable: true }
+      to_warehouse_id: { type: uuid, nullable: true }
+      status:
+        type: enum
+        values: [DRAFT, SENT, RECEIVED, CANCELED]
+      created_by: { type: uuid }
+      metadata: { type: jsonb, nullable: true }
+      created_at: { type: timestamp, required: true }
+    constraints:
+      - "CHECK from_to_different: from_warehouse_id IS DISTINCT FROM to_warehouse_id"
+    indexes:
+      - { name: idx_transfers_merchant, fields: [merchant_id] }
+
+  inventory_opnames:
+    description: >
+      Cycle count / stock take session. Produces opname_items and adjustments (movements).
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid }
+      name: { type: varchar(255), nullable: true }
+      warehouse_id: { type: uuid, nullable: true }
+      status:
+        type: enum
+        values: [DRAFT, IN_PROGRESS, COMPLETED, CANCELLED]
+      performed_by: { type: uuid, nullable: true }
+      started_at: { type: timestamp, nullable: true }
+      completed_at: { type: timestamp, nullable: true }
+      metadata: { type: jsonb, nullable: true }
+      created_at: { type: timestamp, required: true }
+    indexes:
+      - { name: idx_opnames_merchant, fields: [merchant_id] }
+
+  inventory_opname_items:
+    description: >
+      Lines for opname session. Compares expected_qty vs counted_qty and will create adjustments when session completed.
+    fields:
+      id: { type: uuid, pk: true }
+      opname_id: { type: uuid, required: true }           # inventory_opnames.id
+      inventory_item_id: { type: uuid, required: true }
+      expected_qty_base: { type: decimal(18,4), required: true }
+      counted_qty_base: { type: decimal(18,4), required: true }
+      variance_qty_base: { type: decimal(18,4), computed: "counted - expected" }
+      notes: { type: text, nullable: true }
+      created_at: { type: timestamp, required: true }
+    indexes:
+      - { name: idx_opname_items_opname, fields: [opname_id] }
+
+  inventory_waste:
+    description: >
+      Master record for a waste event (spoilage, breakage, loss) which may have multiple item lines.
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid }
+      warehouse_id: { type: uuid, nullable: true }
+      event_type:
+        type: enum
+        values: [WASTE, SPOILAGE, BREAKAGE, LOSS]
+      reason_code: { type: varchar(128), nullable: true }  # e.g., expired, damaged, theft
+      description: { type: text, nullable: true }
+      occurred_at: { type: timestamp, required: true }
+      recorded_by: { type: uuid, nullable: true }
+      created_at: { type: timestamp, required: true }
+    indexes:
+      - { name: idx_waste_merchant, fields: [merchant_id] }
+
+  inventory_waste_items:
+    description: Lines for waste event (reduces stock via movement).
+    fields:
+      id: { type: uuid, pk: true }
+      waste_id: { type: uuid, required: true }            # inventory_waste.id
+      inventory_item_id: { type: uuid, required: true }
+      qty_base: { type: decimal(18,4), required: true }
+      unit_cost_at_loss: { type: decimal(18,4), nullable: true }
+      notes: { type: text, nullable: true }
+      created_at: { type: timestamp, required: true }
+
+  inventory_reorder_settings:
+    description: Reorder point and low stock alert settings per item.
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid }
+      inventory_item_id: { type: uuid, required: true }
+      reorder_point_base: { type: decimal(18,4), nullable: true } # trigger when available < reorder_point
+      reorder_qty_base: { type: decimal(18,4), nullable: true }
+      alert_threshold_pct: { type: decimal(5,2), nullable: true } # percent of reorder_point
+      auto_create_po: { type: boolean, default: false }           # Po is in procurement module
+      created_at: { type: timestamp, required: true }
+    indexes:
+      - { name: idx_reorder_item, fields: [inventory_item_id] }
+
+  inventory_forecast:
+    description: >
+      Forecast store for predicted demand. Populated by background jobs.
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid }
+      inventory_item_id: { type: uuid, required: true }
+      model: { type: varchar(64), default: "moving_average" }
+      period_days: { type: integer, default: 30 }
+      predicted_qty_next_7_days: { type: decimal(18,4), nullable: true }
+      predicted_qty_next_30_days: { type: decimal(18,4), nullable: true }
+      confidence: { type: decimal(5,2), nullable: true }
+      last_run_at: { type: timestamp, nullable: true }
+      metadata: { type: jsonb, nullable: true }
+      created_at: { type: timestamp, required: true }
+    indexes:
+      - { name: idx_forecast_item, fields: [inventory_item_id] }
+
+  inventory_valuation_ledger:
+    description: >
+      Valuation ledger for tracking inventory value changes for accounting.
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid }
+      inventory_item_id: { type: uuid, nullable: true }
+      warehouse_id: { type: uuid, nullable: true }
+      valuation_date: { type: date, required: true }
+      valuation_before: { type: decimal(18,4) }
+      valuation_after: { type: decimal(18,4) }
+      delta: { type: decimal(18,4) }
+      cause:
+        type: enum
+        values: [MOVEMENT, ADJUSTMENT, WASTE, REVALUATION, PRODUCTION]
+      ref_type: { type: varchar(64), nullable: true }
+      ref_id: { type: uuid, nullable: true }
+      created_at: { type: timestamp, required: true }
+    indexes:
+      - { name: idx_ivl_date, fields: [valuation_date] }
+
+  inventory_serials:
+    description: >
+      Per-item serial tracking. Each serial belongs to a merchant and optionally a batch.
+      Serial number unique per merchant (global uniqueness enforced).
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid, required: true }
+      inventory_item_id: { type: uuid, required: true }
+      serial_number: { type: varchar(255), required: true }
+      batch_id: { type: uuid, nullable: true }
+      current_warehouse_id: { type: uuid, nullable: true }
+      status:
+        type: enum
+        values: [IN_STOCK, RESERVED, SOLD, RMA, SCRAPPED, TRANSIT]
+      metadata: { type: jsonb, nullable: true }
+      created_at: { type: timestamp, required: true }
+      updated_at: { type: timestamp, required: true }
+    constraints:
+      - "UNIQUE(merchant_id, serial_number)"
+    indexes:
+      - { name: idx_serial_item, fields: [inventory_item_id] }
+      - { name: idx_serial_status, fields: [status] }
+      - { name: idx_serial_merchant, fields: [merchant_id, serial_number] }
+
+  inventory_serial_movements:
+    description: >
+      Movements tied to serials: when a serial moves, we record event.
+    fields:
+      id: { type: uuid, pk: true }
+      serial_id: { type: uuid, required: true }           # inventory_serials.id
+      movement_type: { type: varchar(64), required: true }
+      from_warehouse_id: { type: uuid, nullable: true }
+      to_warehouse_id: { type: uuid, nullable: true }
+      ref_type: { type: varchar(64), nullable: true }
+      ref_id: { type: uuid, nullable: true }
+      performed_by: { type: uuid, nullable: true }
+      notes: { type: text, nullable: true }
+      created_at: { type: timestamp, required: true }
+    indexes:
+      - { name: idx_serial_moves_serial, fields: [serial_id] }
+
+  inventory_bom:
+    description: >
+      Bill of Materials (multi-level/nested). A BOM row defines a finished_item -> component_item with qty.
+      Supports nested BOM: a component may itself be a finished_item with its own BOM.
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid }
+      finished_item_id: { type: uuid, required: true }    # inventory_items.id for finished goods
+      component_item_id: { type: uuid, required: true }   # inventory_items.id for component
+      qty_component_base: { type: decimal(18,4), required: true } # quantity of component per 1 finished
+      unit_yield: { type: decimal(18,4), default: 1.0 }   # yield multiplier per production
+      scrap_pct: { type: decimal(5,2), default: 0.00 }    # % scrap expected
+      metadata: { type: jsonb, nullable: true }
+      created_at: { type: timestamp, required: true }
+    constraints:
+      - "qty_component_base > 0"
+      - "prevent_self_reference: finished_item_id != component_item_id"
+      - "application should prevent circular references at insert/update"
+    indexes:
+      - { name: idx_bom_finished, fields: [finished_item_id] }
+      - { name: idx_bom_component, fields: [component_item_id] }
+
+  inventory_production:
+    description: >
+      Production runs: consume components and produce finished goods.
+      For nested BOM, production planner should resolve recursive consumption.
+    fields:
+      id: { type: uuid, pk: true }
+      merchant_id: { type: uuid }
+      production_code: { type: varchar(255), nullable: true }
+      finished_item_id: { type: uuid, required: true }
+      qty_finished_base: { type: decimal(18,4), required: true }
+      status:
+        type: enum
+        values: [PLANNED, IN_PROGRESS, COMPLETED, CANCELLED]
+      started_at: { type: timestamp, nullable: true }
+      completed_at: { type: timestamp, nullable: true }
+      created_by: { type: uuid, nullable: true }
+      metadata: { type: jsonb, nullable: true }
+      created_at: { type: timestamp, required: true }
+    indexes:
+      - { name: idx_prod_finished, fields: [finished_item_id] }
+
+  inventory_production_items:
+    description: >
+      Lines for production: component consumption/outcome.
+    fields:
+      id: { type: uuid, pk: true }
+      production_id: { type: uuid, required: true }        # inventory_production.id
+      component_item_id: { type: uuid, required: true }
+      qty_component_base: { type: decimal(18,4), required: true }
+      qty_consumed_base: { type: decimal(18,4), nullable: true }
+      created_at: { type: timestamp, required: true }
+
+# --------------------------------------------------------------------------------
+# RELATIONSHIPS (FK references)
+# --------------------------------------------------------------------------------
+relationships:
+  inventory_items:
+    - merchant_id -> merchants.id
+    - product_id -> products.id
+    - variant_id -> product_variants.id
+    - extra_id -> product_extras.id
+    - bundle_id -> product_bundles.id
+  inventory_batches:
+    - inventory_item_id -> inventory_items.id
+  inventory_balances:
+    - inventory_item_id -> inventory_items.id
+  inventory_movements:
+    - inventory_item_id -> inventory_items.id
+    - batch_id -> inventory_batches.id
+  inventory_reservations:
+    - inventory_item_id -> inventory_items.id
+  inventory_opname_items:
+    - opname_id -> inventory_opnames.id
+    - inventory_item_id -> inventory_items.id
+  inventory_waste_items:
+    - waste_id -> inventory_waste.id
+    - inventory_item_id -> inventory_items.id
+  inventory_serials:
+    - inventory_item_id -> inventory_items.id
+    - batch_id -> inventory_batches.id
+  inventory_bom:
+    - finished_item_id -> inventory_items.id
+    - component_item_id -> inventory_items.id
+  inventory_production_items:
+    - production_id -> inventory_production.id
+    - component_item_id -> inventory_items.id
+
+# --------------------------------------------------------------------------------
+# BUSINESS RULES & LOGIC
+# --------------------------------------------------------------------------------
+business_rules:
+
+  general:
+    - "All quantities stored in base unit only. Unit conversions must be applied by the caller (product.unit_conversions)."
+    - "Warehouse_id NULLABLE: null indicates merchant-level simple store."
+    - "Bundle inventory (is_virtual=true): no batches or balances; bundle availability computed from children."
+    - "All operations creating state change MUST create inventory_movements (immutable audit)."
+
+  reservations:
+    - "Reserve reduces available_qty_base and increases reserved_qty_base in inventory_balances."
+    - "Reserve does NOT alter batch.remaining_qty_base until reservation is consumed (CONSUME_RESERVATION)."
+
+  average_cogs (default):
+    description: "Weighted Average COGS algorithm (per merchant-item-warehouse)."
+    steps:
+      - "On inbound (purchase_in): increase total_qty and total_cost, then compute new average_cost = ((old_total_qty * old_avg_cost) + (inbound_qty * inbound_price)) / (old_total_qty + inbound_qty)."
+      - "On outbound (sale_out / production_out): use current average_cost as cogs_unit_cost; decrement total_qty. Do NOT recalc average on outbound."
+      - "Round average_cost to price_precision."
+      - "Maintain inventory_valuation_ledger entries for each valuation-impacting event."
+
+  batch_allocation (for Average / FEFO support):
+    - "Default allocation for outbound uses: if FEFO rule required, pick earliest expiry batch first; otherwise for Average just decrement proportionally or FIFO by batches while recording cogs_unit_cost = inventory_balances.average_cost."
+    - "When consuming by batch (e.g., serial-tracked items), mark batch.remaining_qty_base accordingly."
+
+  BOM / production:
+    - "Nested BOM resolution: expand BOM recursively to resolved component list with multiplication factors. Prevent circular BOM by check on insertion/update."
+    - "During production: create PRODUCTION_OUT movements for components (negative qty) and PRODUCTION_IN movement for finished_good (positive qty)."
+    - "Handle yields and scrap_pct in qty calculation."
+
+  stock_opname:
+    - "When opname completed, for each opname_item with variance != 0, create ADJUSTMENT_PLUS or ADJUSTMENT_MINUS movement with reason code 'STOCK_OPNAME' and adjust inventory_balances & batches policy: default adjust to nearest batch cost or create synthetic batch for inbound."
+
+  waste_spoilage:
+    - "Waste events create WASTE/SPOILAGE/BREAKAGE/LOSS movements. unit_cost_at_loss can be populated from current average_cost. Record in IVL."
+
+  serials:
+    - "Serial numbers unique per merchant. Serial movements must be recorded for traceability."
+    - "If serial moved out in sale, set status = SOLD and record inventory_serial_movements row."
+
+# --------------------------------------------------------------------------------
+# ALGORITHMS / PSEUDOCODE (critical behaviors)
+# --------------------------------------------------------------------------------
+algorithms:
+
+  compute_weighted_average_on_inbound:
+    description: "Compute new average cost when receiving batch."
+    pseudocode: |
+      function computeNewAverage(balance, inbound_qty, inbound_price):
+        # balance.total_qty_base, balance.average_cost
+        old_qty = balance.total_qty_base or 0
+        old_avg = balance.average_cost or 0
+        new_total_qty = old_qty + inbound_qty
+        if new_total_qty == 0:
+          return 0
+        new_total_cost = (old_qty * old_avg) + (inbound_qty * inbound_price)
+        new_avg = new_total_cost / new_total_qty
+        return round(new_avg, price_precision)
+
+  sale_commit_consume_batches_average:
+    description: "When committing sale under AVERAGE COGS: decrement total_qty, use average_cost as COGS; optionally decrement batches by FIFO to maintain batch.remaining_qty (to keep consistency)."
+    pseudocode: |
+      function consumeForSale(item_id, qty_to_consume, warehouse_id):
+        # 1) Lock inventory_balances row FOR UPDATE
+        balance = select balance for update
+        if balance.available_qty_base < qty_to_consume:
+          if allow_negative_stock: proceed with negative after logging
+          else throw OutOfStock
+        cogs_unit = balance.average_cost
+        create movement SALE_OUT with qty = -qty_to_consume, cogs_unit_cost = cogs_unit
+        # 2) Decrement batches in FIFO order (or FEFO if expiry prioritized) while qty_to_consume > 0:
+        for batch in select batches where inventory_item_id and warehouse order by expiry_date nulls last, received_at asc for update:
+          take = min(batch.remaining_qty_base, qty_to_consume)
+          if take > 0:
+            update batch.remaining_qty_base -= take
+            qty_to_consume -= take
+            create inventory_movement row referencing batch with qty = -take and cogs_unit_cost = cogs_unit
+        # 3) update inventory_balances.total_qty_base and available_qty_base and record balance_after.
+
+  nested_bom_expand:
+    description: "Resolve BOM into flat component list (recursive)."
+    pseudocode: |
+      function expandBOM(finished_item_id, qty_finished):
+        components = {}
+        stack = [(finished_item_id, qty_finished)]
+        visited = set()
+        while stack not empty:
+          (current_finished, current_qty) = stack.pop()
+          if current_finished in visited: error CircularBOM
+          visited.add(current_finished)
+          rows = select * from inventory_bom where finished_item_id = current_finished
+          for row in rows:
+            required_qty = row.qty_component_base * current_qty / row.unit_yield
+            if row.component_item_id has bom children:
+              stack.push((row.component_item_id, required_qty))
+            else:
+              components[row.component_item_id] += required_qty
+        return components
+
+# --------------------------------------------------------------------------------
+# EXAMPLE RECORDS (YAML) — show key use cases
+# --------------------------------------------------------------------------------
+examples:
+
+  inbound_batch_example:
+    description: "Purchase inbound creates batch, updates balance, recalculates average"
+    inventory_batch:
+      id: "uuid-batch-1"
+      merchant_id: "m1"
+      inventory_item_id: "item-cream"
+      warehouse_id: null
+      batch_code: "PO-123-LOT1"
+      purchase_price: 5000.00
+      currency: "IDR"
+      qty_received_base: 100.0000
+      remaining_qty_base: 100.0000
+      received_at: "2025-11-01T09:00:00Z"
+    inventory_movement:
+      id: "mv-batch-1"
+      movement_type: PURCHASE_IN
+      inventory_item_id: "item-cream"
+      qty_base: 100.0000
+      cogs_unit_cost: 5000.00
+      total_cost: 500000.00
+      ref_type: "PURCHASE"
+      ref_id: "po-123"
+      created_at: "2025-11-01T09:00:00Z"
+    inventory_balance:
+      inventory_item_id: "item-cream"
+      total_qty_base: 100.0000
+      reserved_qty_base: 0.0000
+      available_qty_base: 100.0000
+      average_cost: 5000.00
+
+  sale_commit_example:
+    description: "Sale commit consumes average COGS and reduces batches."
+    sale:
+      ref_type: "ORDER"
+      ref_id: "order-789"
+      inventory_movements:
+        - { movement_type: SALE_OUT, inventory_item_id: "item-cream", qty_base: -2.0000, cogs_unit_cost: 5000.00, total_cost: 10000.00, batch_id: "uuid-batch-1", created_at: "2025-11-20T12:00:00Z" }
+
+  opname_adjustment_example:
+    opname:
+      id: "op-1"
+      warehouse_id: null
+      opname_items:
+        - { inventory_item_id: "item-cream", expected_qty_base: 98.0000, counted_qty_base: 95.0000 }
+    resulting_movements:
+      - { movement_type: ADJUSTMENT_MINUS, inventory_item_id: "item-cream", qty_base: -3.0000, reason_code: "STOCK_OPNAME", created_at: "2025-12-01T10:00:00Z" }
+
+  waste_example:
+    waste_event:
+      id: "w1"
+      event_type: SPOILAGE
+      occurred_at: "2025-12-02T08:00:00Z"
+    waste_item:
+      inventory_item_id: "item-milk"
+      qty_base: 10.0000
+      unit_cost_at_loss: 3000.00
+    movement:
+      - { movement_type: SPOILAGE, qty_base: -10.0000, cogs_unit_cost: 3000.00, total_cost: 30000.00 }
+
+  serial_example:
+    serial:
+      id: "serial-0001"
+      merchant_id: "m1"
+      inventory_item_id: "item-phone-1"
+      serial_number: "SN-AX-0001"
+      batch_id: "uuid-batch-2"
+      current_warehouse_id: null
+      status: IN_STOCK
+      created_at: "2025-10-10T09:00:00Z"
+    serial_move:
+      - { serial_id: "serial-0001", movement_type: "SALE", from_warehouse_id: null, to_warehouse_id: null, ref_type: "ORDER", ref_id: "ord-200", created_at: "2025-11-05T11:00:00Z" }
+
+  bom_nested_example:
+    description: "Nested BOM: A -> B(2 units) ; B -> C(3 units). Produce 1 A consumes 2 B which consumes 6 C."
+    inventory_bom_rows:
+      - { finished_item_id: "A", component_item_id: "B", qty_component_base: 2.0 }
+      - { finished_item_id: "B", component_item_id: "C", qty_component_base: 3.0 }
+    production_request:
+      finished_item_id: "A"
+      qty_finished_base: 1.0
+    expanded_components:
+      - { inventory_item_id: "B", qty_required: 2.0 }
+      - { inventory_item_id: "C", qty_required: 6.0 }
+
+# --------------------------------------------------------------------------------
+# PARTITIONING, INDEXING, PERFORMANCE NOTES
+# --------------------------------------------------------------------------------
+performance_and_scaling:
+  - "inventory_movements: expected high write volume → partition by merchant_id AND date (monthly)."
+  - "inventory_serials: index on (merchant_id, serial_number) unique; consider partitioning by merchant for high-volume merchants."
+  - "inventory_batches: index on (inventory_item_id, warehouse_id, expiry_date, received_at) for allocation queries."
+  - "inventory_balances: keep as single-row per item+warehouse and update in transactions (SELECT FOR UPDATE)."
+  - "Use optimistic locking (version) on inventory_batches to avoid deadlocks at scale; implement retry loops."
+  - "Cache inventory_balances.available_qty in Redis for read-heavy endpoints; always invalidate on movement transactions."
+
+# --------------------------------------------------------------------------------
+# DATA RETENTION & HOUSEKEEPING
+# --------------------------------------------------------------------------------
+retention_and_housekeeping:
+  - "inventory_movements: retain indefinitely for audit; if required, archive old partitions to cheaper storage."
+  - "inventory_serials: keep full history; consider retention + export for merchants who request data deletion (GDPR-like)."
+  - "Old forecasts: keep last 2 years; older can be summarized."
+  - "BOM history: maintain versioning in metadata or separate bom_versions table for audit."
+
+# --------------------------------------------------------------------------------
+# MIGRATION NOTES
+# --------------------------------------------------------------------------------
+migration_notes:
+  - "When enabling inventory for existing products: create inventory_items for all products/variants/extras/bundles (bundle -> is_virtual true)."
+  - "Seed inventory_balances with total quantities aggregated from existing POS data if any."
+  - "If existing system had stock as product.stock_qty, map to inventory_batches synthetic batch (purchase_price = last_known_cost) or directly to inventory_balances (depending on accounting policy)."
+  - "Perform a reconciliation job after initial migration: compare sum(inventory_batches.remaining_qty_base) vs inventory_balances.total_qty_base."
+  - "Create migration scripts to backfill serials only if historical serial data exists."
+
+# --------------------------------------------------------------------------------
+# SECURITY & PERMISSIONS
+# --------------------------------------------------------------------------------
+security:
+  - "Role-based controls: who can adjust stock, who can create inventory_movements of type ADJUSTMENT_*, who can mark waste, who can perform opname."
+  - "All adjustments must capture performed_by and reason_code; keep actions audited."
+  - "Encrypt sensitive metadata if it contains supplier or cost-sensitive info."
+
+# --------------------------------------------------------------------------------
+# OPERATIONS & JOBS
+# --------------------------------------------------------------------------------
+background_jobs:
+  - "expiry_check: daily job to flag/notify batches approaching expiry (configurable thresholds 7/30/90 days)."
+  - "forecast_job: daily/weekly job to compute inventory_forecast entries."
+  - "reorder_check: continuous or scheduled job to evaluate inventory_reorder_settings and produce alerts or events (optionally create procurement.PO)."
+  - "opname_finalize_job: process completed opnames -> produce adjustments & movements."
+  - "ivl_valuation_job: nightly job to compute daily valuation and append entries to inventory_valuation_ledger."
+
+# --------------------------------------------------------------------------------
+# API / INTEGRATION NOTES (for implementers)
+# --------------------------------------------------------------------------------
+integrations:
+  - "Product Service: inventory_items.product_id/variant_id/extra_id/bundle_id reference product module entities. Product module owns unit_conversions and metadata; inventory must rely on product conversion engine for unit translations."
+  - "Warehouse Service: inventory_batches.warehouse_id references warehouses table in Warehouse module (module separate)."
+  - "Order Service: must call reservation -> consume (idempotent) and pass tx_id for correlating inventory_movements."
+  - "Procurement (external): purchase order module will call early to create batches or goods_received events."
+  - "Accounting: push IVL changes & movement cost events to accounting ledger (periodic or event-based)."
+
+# --------------------------------------------------------------------------------
+# GOVERNANCE & BEST PRACTICES
+# --------------------------------------------------------------------------------
+governance:
+  - "Always update inventory_balances inside the same DB transaction that creates inventory_movements to avoid drift."
+  - "Prefer SELECT ... FOR UPDATE on inventory_balances and involved batches during allocation."
+  - "Use idempotency keys (tx_id) for external calls to avoid duplicate movement creation."
+  - "Validate BOM circular references at insert/update time and refuse changes that create cycles."
+
+# --------------------------------------------------------------------------------
+# CHANGE LOG (for spec evolution)
+# --------------------------------------------------------------------------------
+changelog:
+  - { version: 1.0.0, date: 2025-12-07, changes: "Initial enterprise spec generated with nested BOM, per-item serials, IVL, forecasting, opname, waste, ROP, production" }
+
