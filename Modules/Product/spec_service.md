@@ -2,39 +2,160 @@
 
 ## Overview
 
-This document contains detailed specifications for all services in the Product module. Each service includes interface definitions, method signatures, and detailed descriptions of functionality.
+This document contains detailed specifications for all services in the Product module, focused on merchant product management operations. User-facing product access (search, browsing) is handled by the separate Catalog module. Each service includes interface definitions, method signatures, and detailed descriptions of functionality.
+
+## 1. Architecture Overview
+
+### Layer Architecture
+
+The Product module follows Clean Architecture principles with the following layers:
+
+```
+┌─────────────────────────────────────┐
+│         HTTP Controllers            │
+│         (API Endpoints)             │
+├─────────────────────────────────────┤
+│         Use Cases                   │
+│         (Business Logic)            │
+├─────────────────────────────────────┤
+│         Services                    │
+│         (Domain Logic)              │
+├─────────────────────────────────────┤
+│         Repositories                │
+│         (Data Access)               │
+├─────────────────────────────────────┤
+│         Models & Database           │
+└─────────────────────────────────────┘
+```
+
+### Key Principles
+
+-   **Use Cases use Services**: Use cases orchestrate business logic and delegate to services
+-   **Services use Repositories**: Services handle domain logic and data persistence
+-   **Dependency Injection**: All dependencies are injected through constructors
+-   **Interface Segregation**: Each service has its own interface
+
+### Folder Structure
+
+```
+Modules/Product/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   ├── Middleware/
+│   │   └── Requests/
+│   ├── UseCases/
+│   │   ├── Category/
+│   │   ├── Product/
+│   │   ├── Variant/
+│   │   └── Pricing/
+│   ├── Services/
+│   │   ├── Category/
+│   │   ├── Product/
+│   │   ├── Variant/
+│   │   └── Pricing/
+│   ├── Repositories/
+│   │   ├── Category/
+│   │   ├── Product/
+│   │   ├── Variant/
+│   │   └── Pricing/
+│   └── Models/
+├── database/
+└── routes/
+```
+
+## 2. Middleware
+
+### Authentication Middleware
+
+-   **Purpose**: Validates JWT tokens and user authentication
+-   **Location**: `Modules/Product/app/Http/Middleware/AuthenticationMiddleware`
+-   **Note**: Similar to `Modules/Authentication/app/Http/Middleware/JWTMiddleware` but implemented within Product module
+-   **Applied to**: All product management endpoints
+
+### Authorization Middleware
+
+-   **Purpose**: Validates user permissions and roles
+-   **Location**: `Modules/Product/app/Http/Middleware/AuthorizationMiddleware`
+-   **Note**: Similar to `Modules/Authorization/app/Http/Middleware/AuthorizationMiddleware` but implemented within Product module
+-   **Applied to**: All product management endpoints
+
+### Merchant Access Middleware
+
+-   **Purpose**: Identifies and validates the selected merchant context
+-   **Functionality**:
+    -   Extracts merchant ID from request headers or route parameters
+    -   Validates merchant exists and is active
+    -   Sets merchant context for the request
+    -   Ensures user has access to the merchant
+-   **Applied to**: All merchant-specific endpoints
+
+### Middleware Stack Order
+
+```php
+// Applied in this order for product endpoints
+'middleware' => [
+    'auth.jwt',           // Authentication
+    'auth.authorization', // Authorization
+    'merchant.access',    // Merchant context
+    // ... other middleware
+]
+```
 
 ## Table of Contents
 
-1. [CategoryManagementService](#1-categorymanagementservice)
-2. [ProductManagementService](#2-productmanagementservice)
-3. [ProductVariantManagementService](#3-productvariantmanagementservice)
-4. [ProductSearchService](#4-productsearchservice)
-5. [ProductInventoryService](#5-productinventoryservice)
+1. [Architecture Overview](#1-architecture-overview)
+2. [Middleware](#2-middleware)
+3. [CategoryManagementService](#3-categorymanagementservice)
+4. [ProductManagementService](#4-productmanagementservice)
+5. [ProductVariantManagementService](#5-productvariantmanagementservice)
 6. [ProductPricingService](#6-productpricingservice)
-7. [MerchantProductService](#7-merchantproductservice)
-8. [ProductAuthorizationService](#8-productauthorizationservice)
-9. [Business Logic Services](business_logic_services.md) - AI-powered intelligence and automation services
-10. [Elasticsearch Integration](elasticsearch_integration.md) - Search index management and data synchronization
+7. [AttributeManagementService](#7-attributemanagementservice)
+8. [ProductExtrasManagementService](#8-productextrasmanagementservice)
+9. [ProductBundlesManagementService](#9-productbundlesmanagementservice)
+10. [UnitConversionManagementService](#10-unitconversionmanagementservice)
+11. [ProductServiceDetailsManagementService](#11-productserviceDetailsmanagementservice)
+12. [MerchantProductService](#12-merchantproductservice)
+13. [Use Cases](#13-use-cases)
+14. [Elasticsearch Integration](#14-elasticsearch-integration) - Search index management and data synchronization
+15. [Business Logic Services](business_logic_services.md) - AI-powered intelligence and automation services
 
 ---
 
-## 1. CategoryManagementService
+## 3. CategoryManagementService
+
+### Overview
+
+The CategoryManagementService handles all category-related business operations with strict hierarchy management and business rule enforcement. It ensures category integrity, prevents circular references, and manages category relationships with business context. Categories are global/system-wide and not tied to specific merchants.
 
 ### Interface Definition
 
 ```php
 interface ICategoryManagementService {
-    public function getCategories(?string $parentId = null): Collection;
+    // Core CRUD Operations with Business Logic
+    public function createCategory(array $categoryData): Category;
+    public function updateCategory(string $categoryId, array $categoryData): Category;
+    public function deleteCategory(string $categoryId): bool;
     public function getCategoryById(string $categoryId): ?Category;
-    public function getCategoryHierarchy(string $categoryId): ?Category;
-    public function createCategory(array $categoryData, string $merchantId): Category;
-    public function updateCategory(string $categoryId, array $categoryData, string $merchantId): Category;
-    public function deleteCategory(string $categoryId, string $merchantId): bool;
+    public function getCategoryWithHierarchy(string $categoryId): ?Category;
+
+    // Advanced Retrieval with Business Context
+    public function getCategories(array $filters = []): Collection;
     public function getCategoryTree(): Collection;
     public function getCategoryPath(string $categoryId): Collection;
-    public function moveCategory(string $categoryId, ?string $newParentId, string $merchantId): bool;
-    public function validateCategoryHierarchy(string $categoryId, ?string $parentId): bool;
+
+    // Business Logic Operations
+    public function moveCategory(string $categoryId, ?string $newParentId): bool;
+    public function bulkUpdateCategories(array $categoryIds, array $updateData): array;
+
+    // Business Validation & Rules
+    public function validateCategoryData(array $categoryData): array;
+    public function validateCategoryHierarchy(string $categoryId, ?string $parentId): array;
+    public function checkCategoryConstraints(string $categoryId): array;
+
+    // Business Rules Enforcement
+    public function enforceCategoryLimits(): array;
+    public function validateCategoryUniqueness(array $uniquenessData): array;
 }
 ```
 
@@ -86,7 +207,7 @@ interface ICategoryManagementService {
 -   Eager loads parent and children relationships
 -   Used for detailed category management
 
-#### `createCategory(array $categoryData, string $merchantId): Category`
+#### `createCategory(array $categoryData): Category`
 
 **Purpose**: Create new category with validation
 
@@ -97,7 +218,6 @@ interface ICategoryManagementService {
     -   `slug` (string, optional): URL slug, auto-generated if not provided
     -   `description` (string, optional): Category description
     -   `parent_id` (string, optional): Parent category UUID
--   `$merchantId` (string): Merchant UUID for ownership
 
 **Returns**: `Category` - Created category model
 
@@ -106,7 +226,6 @@ interface ICategoryManagementService {
 -   Name: required, max 255 characters
 -   Slug: unique, auto-generated from name
 -   Parent ID: must exist if provided
--   Merchant ownership validation
 
 **Business Rules**:
 
@@ -114,7 +233,7 @@ interface ICategoryManagementService {
 -   Sets initial level based on parent
 -   Updates category path
 
-#### `updateCategory(string $categoryId, array $categoryData, string $merchantId): Category`
+#### `updateCategory(string $categoryId, array $categoryData): Category`
 
 **Purpose**: Update existing category
 
@@ -122,25 +241,22 @@ interface ICategoryManagementService {
 
 -   `$categoryId` (string): Category UUID
 -   `$categoryData` (array): Updated category data (same structure as create)
--   `$merchantId` (string): Merchant UUID for ownership validation
 
 **Returns**: `Category` - Updated category model
 
 **Business Rules**:
 
--   Validates ownership
 -   Regenerates slug if name changed
 -   Updates path if parent changed
 -   Updates descendant paths if hierarchy changed
 
-#### `deleteCategory(string $categoryId, string $merchantId): bool`
+#### `deleteCategory(string $categoryId): bool`
 
 **Purpose**: Soft delete category
 
 **Parameters**:
 
 -   `$categoryId` (string): Category UUID
--   `$merchantId` (string): Merchant UUID for ownership validation
 
 **Returns**: `bool` - Success status
 
@@ -177,7 +293,7 @@ interface ICategoryManagementService {
 -   Traverses parent relationships
 -   Used for breadcrumb navigation
 
-#### `moveCategory(string $categoryId, ?string $newParentId, string $merchantId): bool`
+#### `moveCategory(string $categoryId, ?string $newParentId): bool`
 
 **Purpose**: Move category to new parent in hierarchy
 
@@ -185,7 +301,6 @@ interface ICategoryManagementService {
 
 -   `$categoryId` (string): Category UUID to move
 -   `$newParentId` (string|null): New parent UUID or null for root
--   `$merchantId` (string): Merchant UUID for validation
 
 **Returns**: `bool` - Success status
 
@@ -194,7 +309,6 @@ interface ICategoryManagementService {
 -   Validates no circular references
 -   Updates category level
 -   Updates paths for category and all descendants
--   Validates merchant ownership
 
 #### `validateCategoryHierarchy(string $categoryId, ?string $parentId): bool`
 
@@ -215,121 +329,265 @@ interface ICategoryManagementService {
 
 ---
 
-## 2. ProductManagementService
+## 4. ProductManagementService
+
+### Overview
+
+The ProductManagementService handles all product management business logic with proper validation, merchant isolation, and business rule enforcement. It coordinates with repositories while adding business value through validation, constraints, and workflow management.
 
 ### Interface Definition
 
 ```php
 interface IProductManagementService {
-    public function getProducts(array $filters = [], int $perPage = 20): LengthAwarePaginator;
-    public function getProductById(string $productId): ?Product;
-    public function getProductWithRelations(string $productId): ?Product;
+    // Core CRUD Operations with Business Logic
     public function createProduct(array $productData, string $merchantId): Product;
     public function updateProduct(string $productId, array $productData, string $merchantId): Product;
     public function deleteProduct(string $productId, string $merchantId): bool;
+    public function getProductById(string $productId, string $merchantId): ?Product;
+    public function getProductWithRelations(string $productId, string $merchantId): ?Product;
+
+    // Advanced Retrieval with Business Context
+    public function getMerchantProducts(string $merchantId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
+    public function searchProducts(array $searchCriteria, int $perPage = 20): LengthAwarePaginator;
+
+    // Business Logic Operations
+    public function duplicateProduct(string $productId, string $merchantId, array $overrides = []): Product;
+    public function bulkUpdateProducts(array $productIds, array $updateData, string $merchantId): array;
+    public function toggleProductStatus(string $productId, bool $active, string $merchantId): bool;
+
+    // Business Validation & Rules
     public function validateProductData(array $productData, string $merchantId): array;
+    public function validateProductUpdate(string $productId, array $updateData, string $merchantId): array;
+    public function checkProductConstraints(string $productId, string $merchantId): array;
+
+    // Business Rules Enforcement
+    public function enforceProductLimits(string $merchantId): array;
+
+    // Utility Methods with Business Logic
     public function generateProductSlug(string $name, ?string $excludeId = null): string;
     public function updateProductVersion(string $productId): bool;
-    public function toggleProductStatus(string $productId, bool $active, string $merchantId): bool;
-    public function duplicateProduct(string $productId, string $merchantId): Product;
-    public function bulkUpdateProducts(array $productIds, array $updateData, string $merchantId): int;
-    public function getProductStatistics(string $merchantId): array;
+    public function validateProductUniqueness(array $uniquenessData, string $merchantId): array;
 }
+```
+
+### Parameter and Return Type Definitions
+
+#### Product Data Structures
+
+**Create/Update Product Data:**
+
+```php
+[
+    'name' => 'string (required, max:255)',
+    'description' => 'string|null (optional)',
+    'type' => 'ProductTypeEnum (required: food|mart|service)',
+    'category_id' => 'string|null (optional, must exist)',
+    'price' => 'float|null (optional, >= 0)',
+    'sku' => 'string|null (optional, unique per merchant)',
+    'barcode' => 'string|null (optional, unique per merchant)',
+    'has_variant' => 'bool (optional, default: false)',
+    'metadata' => 'array|null (optional, custom fields)',
+    'status' => 'ProductStatusEnum (optional: active|inactive|draft)'
+]
+```
+
+**Filter Criteria:**
+
+```php
+[
+    'category_id' => 'string|null',
+    'type' => 'ProductTypeEnum|null',
+    'status' => 'ProductStatusEnum|null',
+    'search' => 'string|null (full-text search)',
+    'price_min' => 'float|null',
+    'price_max' => 'float|null',
+    'has_variant' => 'bool|null',
+    'date_from' => 'string|null (Y-m-d)',
+    'date_to' => 'string|null (Y-m-d)'
+]
+```
+
+**Validation Result:**
+
+```php
+[
+    'is_valid' => 'bool',
+    'errors' => 'array (field => message[])',
+    'warnings' => 'array (field => message[])',
+    'business_rules' => 'array (rule_name => status)'
+]
 ```
 
 ### Method Specifications
 
-#### `getProducts(array $filters = [], int $perPage = 20): LengthAwarePaginator`
-
-**Purpose**: Get paginated list of products with advanced filtering
-
-**Parameters**:
-
--   `$filters` (array): Filter criteria
-    -   `merchant_id` (string, optional): Filter by merchant
-    -   `category_id` (string, optional): Filter by category
-    -   `type` (string, optional): Product type ('food', 'mart', 'service')
-    -   `status` (string, optional): 'active', 'inactive'
-    -   `search` (string, optional): Full-text search query
-    -   `price_min` (float, optional): Minimum price
-    -   `price_max` (float, optional): Maximum price
-    -   `has_variant` (bool, optional): Filter by variant availability
--   `$perPage` (int): Items per page (default: 20)
-
-**Returns**: `LengthAwarePaginator<Product>` - Paginated product collection
-
-**Business Rules**:
-
--   Applies ownership filtering for non-admin users
--   Supports complex multi-field search
--   Orders by creation date descending
-
-#### `getProductById(string $productId): ?Product`
-
-**Purpose**: Get product details by ID
-
-**Parameters**:
-
--   `$productId` (string): Product UUID
-
-**Returns**: `Product|null` - Product model or null
-
-**Business Rules**:
-
--   Includes soft-deleted products for admin access
--   Basic product information without relationships
-
-#### `getProductWithRelations(string $productId): ?Product`
-
-**Purpose**: Get product with all relationships loaded
-
-**Parameters**:
-
--   `$productId` (string): Product UUID
-
-**Returns**: `Product|null` - Product with relationships
-
-**Relationships Loaded**:
-
--   `category` - Product category
--   `variants` - Product variants
--   `extras` - Product extras
--   `serviceDetails` - Service-specific details
-
 #### `createProduct(array $productData, string $merchantId): Product`
 
-**Purpose**: Create new product with validation
+**Purpose**: Creates a new product with comprehensive business validation and merchant-specific rules
 
 **Parameters**:
 
--   `$productData` (array): Product data
-    -   `name` (string, required): Product name
-    -   `description` (string, optional): Product description
-    -   `type` (string, required): 'food', 'mart', or 'service'
-    -   `category_id` (string, optional): Category UUID
-    -   `price` (float, optional): Base price
-    -   `sku` (string, optional): Stock keeping unit
-    -   `barcode` (string, optional): Product barcode
-    -   `has_variant` (bool, optional): Has variants flag
-    -   `metadata` (array, optional): Additional metadata
--   `$merchantId` (string): Merchant UUID for ownership
+-   `$productData` (array): Product creation data with clear structure (see Parameter Definitions above)
+-   `$merchantId` (string): Merchant UUID for ownership validation
 
-**Returns**: `Product` - Created product model
+**Returns**: `Product` - Created product model instance
 
-**Validations**:
+**Business Logic**:
 
--   Name: required, max 255 characters
--   Type: must be valid enum value
--   SKU: unique per merchant if provided
--   Barcode: unique per merchant if provided
--   Category: must exist if provided
--   Price: numeric, >= 0 if provided
+-   Validates merchant ownership and product creation limits
+-   Enforces SKU/barcode uniqueness within merchant scope
+-   Auto-generates SEO-friendly slug from product name
+-   Validates category exists and belongs to merchant
+-   Applies product type-specific validation rules
+-   Sets default values and business constraints
+-   Increments product version for change tracking
+-   Triggers audit logging and business events
 
-**Business Rules**:
+**Business Rules Applied**:
 
--   Auto-generates unique slug
--   Sets version to 1
--   Validates merchant ownership
+-   Merchant product limits based on subscription tier
+-   Product naming conventions and character restrictions
+-   Category hierarchy and merchant ownership validation
+-   Pricing validation (must be >= 0, proper decimal places)
+-   SKU/barcode uniqueness per merchant
+-   Product type constraints and metadata requirements
+
+#### `getMerchantProducts(GetMerchantProductsQuery $query): PaginatedProductResult`
+
+**Purpose**: Retrieves products for a specific merchant with business-aware filtering and pagination
+
+**Parameters**:
+
+-   `$query` (GetMerchantProductsQuery): Structured query with merchant context and filtering options
+
+**Returns**: `PaginatedProductResult` - Contains paginated products with business metadata
+
+**Business Logic**:
+
+-   Enforces strict merchant data isolation
+-   Applies role-based visibility rules (merchant vs admin)
+-   Includes real-time availability status
+-   Calculates dynamic pricing based on active promotions
+-   Filters out expired or discontinued products based on business rules
+-   Applies category hierarchy filtering with inheritance
+-   Includes performance metrics for each product
+
+**Business Rules Applied**:
+
+-   Merchant ownership validation at query level
+-   Product visibility based on publication status and business rules
+-   Dynamic pricing calculation including taxes and discounts
+-   Category-based access control
+-   Performance data aggregation (views, orders, ratings)
+
+#### `validateProductCreation(CreateProductCommand $command): ValidationResult`
+
+**Purpose**: Performs comprehensive business validation for product creation
+
+**Parameters**:
+
+-   `$command` (CreateProductCommand): Product creation data to validate
+
+**Returns**: `ValidationResult` - Detailed validation results with business rule violations
+
+**Business Validation Rules**:
+
+-   **Merchant Limits**: Checks against merchant's product creation limits
+-   **Uniqueness**: SKU/barcode uniqueness within merchant scope
+-   **Category Validation**: Ensures category exists and is active for merchant
+-   **Naming Conventions**: Validates product names against business rules
+-   **Pricing Rules**: Validates price ranges and decimal precision
+-   **Type Constraints**: Product type-specific validation rules
+-   **SEO Compliance**: Slug generation and uniqueness validation
+-   **Metadata Validation**: Custom field validation based on product type
+
+**Cross-cutting Concerns**:
+
+-   Audit logging of validation attempts
+-   Business rule violation tracking
+-   Warning generation for non-blocking issues
+
+#### `updateProduct(UpdateProductCommand $command): ProductResult`
+
+**Purpose**: Updates an existing product with comprehensive business rule enforcement and audit trail
+
+**Parameters**:
+
+-   `$command` (UpdateProductCommand): Structured update command with validation
+
+**Returns**: `ProductResult` - Update result with business context
+
+**Business Logic**:
+
+-   Validates update permissions based on merchant ownership
+-   Enforces field-level update restrictions
+-   Manages product version increment for optimistic locking
+-   Triggers business rule re-evaluation
+-   Updates related entities (variants, pricing) as needed
+-   Generates audit trail with change reasons
+-   Handles category changes with hierarchy validation
+-   Manages SEO slug updates with conflict resolution
+
+**Business Rules Applied**:
+
+-   **Version Control**: Increments version number for change tracking
+-   **Ownership Validation**: Ensures merchant owns the product
+-   **Field Restrictions**: Certain fields cannot be updated after publication
+-   **Dependency Checks**: Validates updates don't break related entities
+-   **Audit Requirements**: All changes logged with business justification
+
+#### `duplicateProduct(DuplicateProductCommand $command): ProductResult`
+
+**Purpose**: Creates a business-compliant duplicate of an existing product
+
+**Parameters**:
+
+-   `$command` (DuplicateProductCommand): Duplication parameters with business rules
+
+**Returns**: `ProductResult` - Result containing the new duplicated product
+
+**Business Logic**:
+
+-   Validates source product ownership and duplication permissions
+-   Generates new unique identifiers (SKU, barcode, slug)
+-   Applies duplication business rules (what to copy vs reset)
+-   Handles variant duplication with attribute uniqueness
+-   Resets business-relevant fields (version, timestamps)
+-   Maintains category relationships
+-   Generates audit trail for duplication action
+
+**Business Rules Applied**:
+
+-   **Selective Copying**: Only business-appropriate data is duplicated
+-   **Uniqueness Generation**: New unique identifiers generated
+-   **Ownership Transfer**: Duplicate belongs to same merchant
+-   **Version Reset**: New product starts with version 1
+-   **Relationship Handling**: Variants and extras duplicated appropriately
+
+#### `enforceProductLimits(string $merchantId): LimitEnforcementResult`
+
+**Purpose**: Enforces merchant-specific product limits and business constraints
+
+**Parameters**:
+
+-   `$merchantId` (string): Merchant UUID to check limits for
+
+**Returns**: `LimitEnforcementResult` - Current limits and enforcement status
+
+**Business Logic**:
+
+-   Retrieves merchant's subscription tier and limits
+-   Calculates current product counts by type and status
+-   Determines available capacity for new products
+-   Applies business rules for limit enforcement
+-   Provides recommendations for limit increases
+-   Logs limit check activities for compliance
+
+**Business Rules Applied**:
+
+-   **Tier-based Limits**: Different limits per subscription tier
+-   **Type-specific Quotas**: Separate limits for different product types
+-   **Time-based Limits**: Rate limiting for product creation
+-   **Soft vs Hard Limits**: Warnings vs blocking enforcement
 
 #### `updateProduct(string $productId, array $productData, string $merchantId): Product`
 
@@ -470,52 +728,146 @@ interface IProductManagementService {
 -   Validates ownership for all products
 -   Transaction safety with rollback on failure
 
-#### `getProductStatistics(string $merchantId): array`
+---
 
-**Purpose**: Get dashboard statistics for merchant
+## Business Rules & Validation
 
-**Parameters**:
+### Core Business Rules
 
--   `$merchantId` (string): Merchant UUID
+The ProductManagementService enforces comprehensive business rules across all operations:
 
-**Returns**: `array` - Statistics data
+#### 1. Merchant Ownership & Isolation
+
+-   **Strict Ownership**: All operations validate merchant ownership
+-   **Data Isolation**: Merchants can only access their own products
+-   **Cross-merchant Operations**: Explicit permissions required for transfers
+
+#### 2. Product Lifecycle Management
+
+-   **Creation Limits**: Enforced based on merchant subscription tier
+-   **Publication Workflow**: Draft → Review → Published states
+-   **Expiration Handling**: Automatic deactivation based on business rules
+-   **Version Control**: Optimistic locking with conflict resolution
+
+#### 3. Data Integrity & Uniqueness
+
+-   **SKU Uniqueness**: Per-merchant SKU uniqueness enforcement
+-   **Barcode Standards**: Validation against industry standards
+-   **Slug Generation**: SEO-friendly, unique URL slugs
+-   **Naming Conventions**: Business-specific naming rules
+
+#### 4. Pricing & Commerce Rules
+
+-   **Price Validation**: Minimum/maximum price constraints
+-   **Currency Handling**: Multi-currency support with conversion
+-   **Tax Compliance**: Automatic tax calculation and application
+-   **Discount Rules**: Business logic for discount application
+
+#### 5. Category & Classification
+
+-   **Hierarchy Enforcement**: Category hierarchy integrity
+-   **Classification Rules**: Product type-specific categorization
+-   **Cross-category Validation**: Business rules for category changes
+
+### Validation Approach
+
+#### Service-Level Validation
+
+Each service method performs validation appropriate to its business context:
+
+```php
+public function createProduct(array $productData, string $merchantId): Product
+{
+    // 1. Basic input validation
+    $this->validateProductData($productData, $merchantId);
+
+    // 2. Business rule validation
+    $this->validateProductConstraints($productData, $merchantId);
+
+    // 3. Merchant limit checks
+    $this->enforceProductLimits($merchantId);
+
+    // 4. Create product via repository
+    $product = $this->productRepository->create($productData);
+
+    // 5. Post-creation business logic
+    $this->updateProductVersion($product->id);
+    $this->triggerProductCreatedEvents($product);
+
+    return $product;
+}
+```
+
+#### Validation Result Structure
 
 ```php
 [
-    'total_products' => int,
-    'active_products' => int,
-    'inactive_products' => int,
-    'products_with_variants' => int,
-    'total_variants' => int,
-    'low_stock_products' => int
+    'is_valid' => bool,
+    'errors' => ['field' => ['error message']],
+    'warnings' => ['field' => ['warning message']],
+    'business_rules' => ['rule_name' => 'status']
 ]
 ```
 
-**Business Rules**:
+### Cross-cutting Concerns
 
--   Real-time calculation
--   Cached for performance
+#### Audit Trail
 
----
+-   All business operations logged with context
+-   Change reasons required for sensitive operations
+-   Compliance reporting capabilities
+-   Historical change tracking
 
-## 3. ProductVariantManagementService
+#### Event Dispatching
+
+-   Laravel events for significant business operations
+-   Asynchronous processing for performance
+-   Integration with external systems (Elasticsearch, analytics)
+
+#### Performance Optimization
+
+-   Strategic caching with business-aware invalidation
+-   Query optimization for complex business rules
+-   Background processing for heavy validations
+
+#### Error Handling
+
+-   Business-specific exceptions with context
+-   Graceful degradation for non-critical failures
+-   Comprehensive error logging and monitoring
+
+## 5. ProductVariantManagementService
+
+### Overview
+
+The ProductVariantManagementService manages product variants with complex attribute combinations, pricing strategies, and inventory constraints. It enforces variant uniqueness rules, manages attribute relationships, and handles bulk variant operations with business validation.
 
 ### Interface Definition
 
 ```php
 interface IProductVariantManagementService {
-    public function getVariantsByProduct(string $productId): Collection;
-    public function getVariantById(string $variantId): ?ProductVariant;
+    // Core CRUD Operations with Business Logic
     public function createVariant(array $variantData, string $productId, string $merchantId): ProductVariant;
     public function updateVariant(string $variantId, array $variantData, string $merchantId): ProductVariant;
     public function deleteVariant(string $variantId, string $merchantId): bool;
-    public function validateVariantData(array $variantData, string $productId): array;
+    public function getVariantById(string $variantId, string $merchantId): ?ProductVariant;
+
+    // Advanced Retrieval with Business Context
+    public function getProductVariants(string $productId, string $merchantId): Collection;
+    public function getVariantCombinations(string $productId, string $merchantId): Collection;
+
+    // Business Logic Operations
+    public function updateVariantPrice(string $variantId, float $price, string $merchantId): bool;
+    public function bulkUpdateVariantPrices(array $variantIds, float $priceAdjustment, string $merchantId): array;
+
+    // Attribute & Combination Management
+    public function validateVariantData(array $variantData, string $productId, string $merchantId): array;
     public function generateVariantSku(string $productSku, array $attributes): string;
     public function checkAttributeCombinationExists(array $attributes, string $productId, ?string $excludeId = null): bool;
-    public function updateVariantPrice(string $variantId, float $price, string $merchantId): bool;
-    public function bulkUpdateVariantPrices(array $variantIds, float $priceAdjustment, string $merchantId): int;
-    public function getVariantCombinations(string $productId): Collection;
-    public function validateVariantStock(string $variantId, int $requestedQty): bool;
+
+    // Business Rules Enforcement
+    public function validateVariantConstraints(string $variantId, string $merchantId): array;
+    public function enforceVariantLimits(string $merchantId): array;
 }
 ```
 
@@ -738,581 +1090,42 @@ interface IProductVariantManagementService {
 
 ---
 
-## 4. ProductSearchService
-
-### Interface Definition
-
-```php
-interface IProductSearchService {
-    public function searchProducts(string $query, array $filters = [], int $perPage = 20): LengthAwarePaginator;
-    public function searchByCategory(string $categoryId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
-    public function searchByMerchant(string $merchantId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
-    public function advancedSearch(array $criteria, int $perPage = 20): LengthAwarePaginator;
-    public function getSearchSuggestions(string $query, int $limit = 10): Collection;
-    public function getPopularSearchTerms(int $limit = 20): Collection;
-    public function getAvailableFilters(): array;
-    public function getPriceRange(?string $categoryId = null): array;
-    public function getCategoryFacets(): Collection;
-    public function getAttributeFacets(string $attributeKey): Collection;
-    public function logSearchQuery(string $query, array $filters = [], int $resultCount = 0): void;
-    public function getSearchAnalytics(\DateTime $startDate, \DateTime $endDate): array;
-}
-```
-
-### Method Specifications
-
-#### `searchProducts(string $query, array $filters = [], int $perPage = 20): LengthAwarePaginator`
-
-**Purpose**: Perform full-text search across products
-
-**Parameters**:
-
--   `$query` (string): Search query string
--   `$filters` (array): Additional filters
-    -   `category_ids` (array, optional): Category UUIDs
-    -   `merchant_ids` (array, optional): Merchant UUIDs
-    -   `price_min` (float, optional): Minimum price
-    -   `price_max` (float, optional): Maximum price
-    -   `product_types` (array, optional): Product types
--   `$perPage` (int): Results per page (default: 20)
-
-**Returns**: `LengthAwarePaginator` - Paginated search results
-
-**Search Fields**: name, description, category names, merchant name
-
-**Business Rules**:
-
--   Relevance-based scoring
--   Fuzzy matching for typos
--   Result highlighting
-
-#### `searchByCategory(string $categoryId, array $filters = [], int $perPage = 20): LengthAwarePaginator`
-
-**Purpose**: Search products within specific category
-
-**Parameters**:
-
--   `$categoryId` (string): Category UUID
--   `$filters` (array): Same as searchProducts
--   `$perPage` (int): Results per page
-
-**Returns**: `LengthAwarePaginator` - Category-specific results
-
-**Business Rules**:
-
--   Includes subcategory products
--   Category-specific ranking
-
-#### `searchByMerchant(string $merchantId, array $filters = [], int $perPage = 20): LengthAwarePaginator`
-
-**Purpose**: Search products for specific merchant
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
--   `$filters` (array): Same as searchProducts
--   `$perPage` (int): Results per page
-
-**Returns**: `LengthAwarePaginator` - Merchant-specific results
-
-**Business Rules**:
-
--   Ownership validation
--   Merchant-specific optimizations
-
-#### `advancedSearch(array $criteria, int $perPage = 20): LengthAwarePaginator`
-
-**Purpose**: Multi-criteria advanced search
-
-**Parameters**:
-
--   `$criteria` (array): Advanced search criteria
-    -   `query` (string, optional): Full-text search
-    -   `category_ids` (array, optional): Category filters
-    -   `merchant_ids` (array, optional): Merchant filters
-    -   `price_min` (float, optional): Price range start
-    -   `price_max` (float, optional): Price range end
-    -   `product_types` (array, optional): Product type filters
-    -   `attributes` (array, optional): Attribute filters
-    -   `in_stock` (bool, optional): Stock availability
-    -   `has_variants` (bool, optional): Variant availability
-    -   `rating_min` (float, optional): Minimum rating
--   `$perPage` (int): Results per page
-
-**Returns**: `LengthAwarePaginator` - Advanced search results
-
-**Business Rules**:
-
--   Complex query building
--   Multiple filter combinations
--   Performance optimization
-
-#### `getSearchSuggestions(string $query, int $limit = 10): Collection`
-
-**Purpose**: Get autocomplete suggestions
-
-**Parameters**:
-
--   `$query` (string): Partial search query
--   `$limit` (int): Maximum suggestions (default: 10)
-
-**Returns**: `Collection<string>` - Suggestion strings
-
-**Sources**:
-
--   Product names
--   Category names
--   Popular search terms
--   Brand names
-
-#### `getPopularSearchTerms(int $limit = 20): Collection`
-
-**Purpose**: Get trending search terms
-
-**Parameters**:
-
--   `$limit` (int): Maximum terms to return (default: 20)
-
-**Returns**: `Collection` - Search terms with frequency
-
-```php
-[
-    ['term' => 'nasi goreng', 'count' => 150],
-    ['term' => 'ayam bakar', 'count' => 89]
-]
-```
-
-**Business Rules**:
-
--   Last 30 days data
--   Minimum search frequency threshold
-
-#### `getAvailableFilters(): array`
-
-**Purpose**: Get all available filter options
-
-**Returns**: `array` - Filter configuration
-
-```php
-[
-    'categories' => [...],
-    'price_ranges' => [...],
-    'product_types' => [...],
-    'attributes' => [...]
-]
-```
-
-#### `getPriceRange(?string $categoryId = null): array`
-
-**Purpose**: Get price range for filtering
-
-**Parameters**:
-
--   `$categoryId` (string|null): Optional category filter
-
-**Returns**: `array` - Price range data
-
-```php
-[
-    'min' => 1000.00,
-    'max' => 500000.00,
-    'currency' => 'IDR'
-]
-```
-
-#### `getCategoryFacets(): Collection`
-
-**Purpose**: Get category facets with product counts
-
-**Returns**: `Collection` - Categories with counts
-
-```php
-[
-    ['id' => 'uuid', 'name' => 'Makanan', 'count' => 150],
-    ['id' => 'uuid', 'name' => 'Minuman', 'count' => 89]
-]
-```
-
-#### `getAttributeFacets(string $attributeKey): Collection`
-
-**Purpose**: Get attribute values with counts
-
-**Parameters**:
-
--   `$attributeKey` (string): Attribute key (e.g., 'size', 'color')
-
-**Returns**: `Collection` - Attribute values with counts
-
-```php
-[
-    ['value' => 'L', 'name' => 'Large', 'count' => 45],
-    ['value' => 'M', 'name' => 'Medium', 'count' => 32]
-]
-```
-
-#### `logSearchQuery(string $query, array $filters = [], int $resultCount = 0): void`
-
-**Purpose**: Log search queries for analytics
-
-**Parameters**:
-
--   `$query` (string): Search query
--   `$filters` (array): Applied filters
--   `$resultCount` (int): Number of results returned
-
-**Returns**: `void`
-
-**Business Rules**:
-
--   Async logging
--   Rate limiting to prevent spam
--   IP-based filtering
-
-#### `getSearchAnalytics(\DateTime $startDate, \DateTime $endDate): array`
-
-**Purpose**: Get search performance analytics
-
-**Parameters**:
-
--   `$startDate` (\DateTime): Analysis start date
--   `$endDate` (\DateTime): Analysis end date
-
-**Returns**: `array` - Analytics data
-
-```php
-[
-    'total_searches' => 15420,
-    'unique_queries' => 2340,
-    'no_result_queries' => 450,
-    'popular_terms' => [...],
-    'conversion_rate' => 0.15,
-    'average_response_time' => 0.234
-]
-```
-
-**Business Rules**:
-
--   Comprehensive search metrics
--   Performance tracking
--   Conversion analysis
-
----
-
-## 5. ProductInventoryService
-
-### Interface Definition
-
-```php
-interface IProductInventoryService {
-    public function getProductStock(string $productId): array;
-    public function getVariantStock(string $variantId): array;
-    public function updateProductStock(string $productId, int $quantity, string $merchantId, string $reason = 'manual'): bool;
-    public function updateVariantStock(string $variantId, int $quantity, string $merchantId, string $reason = 'manual'): bool;
-    public function checkStockAvailability(string $productId, int $quantity, ?string $variantId = null): bool;
-    public function reserveStock(string $productId, int $quantity, string $orderId, ?string $variantId = null): bool;
-    public function releaseReservedStock(string $orderId): bool;
-    public function getLowStockProducts(string $merchantId, int $threshold = 10): Collection;
-    public function getOutOfStockProducts(string $merchantId): Collection;
-    public function sendLowStockAlert(string $productId): bool;
-    public function getInventoryReport(string $merchantId, array $filters = []): array;
-    public function getStockMovementHistory(string $productId, \DateTime $startDate, \DateTime $endDate): Collection;
-    public function bulkUpdateStock(array $stockUpdates, string $merchantId): array;
-    public function importStockFromFile(string $filePath, string $merchantId): array;
-}
-```
-
-### Method Specifications
-
-#### `getProductStock(string $productId): array`
-
-**Purpose**: Get comprehensive stock information for product
-
-**Parameters**:
-
--   `$productId` (string): Product UUID
-
-**Returns**: `array` - Stock information
-
-```php
-[
-    'product_id' => 'uuid',
-    'current_stock' => 150,
-    'reserved_stock' => 25,
-    'available_stock' => 125,
-    'low_stock_threshold' => 20,
-    'is_low_stock' => false,
-    'last_updated' => '2025-12-06T09:00:00Z',
-    'variants' => [...] // Variant stock summary
-]
-```
-
-#### `getVariantStock(string $variantId): array`
-
-**Purpose**: Get stock information for specific variant
-
-**Parameters**:
-
--   `$variantId` (string): Variant UUID
-
-**Returns**: `array` - Variant stock information (same structure as product)
-
-#### `updateProductStock(string $productId, int $quantity, string $merchantId, string $reason = 'manual'): bool`
-
-**Purpose**: Update product stock level
-
-**Parameters**:
-
--   `$productId` (string): Product UUID
--   `$quantity` (int): New stock quantity (can be negative for deductions)
--   `$merchantId` (string): Merchant UUID for ownership validation
--   `$reason` (string): Update reason ('manual', 'sale', 'return', 'adjustment')
-
-**Returns**: `bool` - Success status
-
-**Business Rules**:
-
--   Logs stock movement history
--   Triggers low stock alerts if threshold reached
--   Updates cache and search index
-
-#### `updateVariantStock(string $variantId, int $quantity, string $merchantId, string $reason = 'manual'): bool`
-
-**Purpose**: Update variant stock level
-
-**Parameters**: Same as updateProductStock
-
-**Returns**: `bool` - Success status
-
-**Business Rules**: Same as product stock update
-
-#### `checkStockAvailability(string $productId, int $quantity, ?string $variantId = null): bool`
-
-**Purpose**: Check if sufficient stock is available
-
-**Parameters**:
-
--   `$productId` (string): Product UUID
--   `$quantity` (int): Required quantity
--   `$variantId` (string|null): Specific variant UUID
-
-**Returns**: `bool` - Availability status
-
-**Calculation**: Available = Current - Reserved
-
-#### `reserveStock(string $productId, int $quantity, string $orderId, ?string $variantId = null): bool`
-
-**Purpose**: Reserve stock for pending order
-
-**Parameters**:
-
--   `$productId` (string): Product UUID
--   `$quantity` (int): Quantity to reserve
--   `$orderId` (string): Order UUID for tracking
--   `$variantId` (string|null): Specific variant UUID
-
-**Returns**: `bool` - Reservation success status
-
-**Business Rules**:
-
--   Prevents overselling
--   Reservation expires automatically
--   Tracks reservation history
-
-#### `releaseReservedStock(string $orderId): bool`
-
-**Purpose**: Release stock reservation
-
-**Parameters**:
-
--   `$orderId` (string): Order UUID
-
-**Returns**: `bool` - Release success status
-
-**Business Rules**:
-
--   Called when order is cancelled or fulfilled
--   Restores stock availability
-
-#### `getLowStockProducts(string $merchantId, int $threshold = 10): Collection`
-
-**Purpose**: Get products with low stock levels
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
--   `$threshold` (int): Low stock threshold (default: 10)
-
-**Returns**: `Collection` - Low stock products
-
-**Business Rules**:
-
--   Available stock <= threshold
--   Excludes out-of-stock items
-
-#### `getOutOfStockProducts(string $merchantId): Collection`
-
-**Purpose**: Get products that are completely out of stock
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
-
-**Returns**: `Collection` - Out of stock products
-
-**Business Rules**:
-
--   Available stock <= 0
--   Includes reserved stock information
-
-#### `sendLowStockAlert(string $productId): bool`
-
-**Purpose**: Send low stock notification to merchant
-
-**Parameters**:
-
--   `$productId` (string): Product UUID
-
-**Returns**: `bool` - Notification success status
-
-**Business Rules**:
-
--   Rate limiting to prevent spam
--   Multiple notification channels (email, SMS, dashboard)
--   Configurable alert thresholds
-
-#### `getInventoryReport(string $merchantId, array $filters = []): array`
-
-**Purpose**: Generate comprehensive inventory report
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
--   `$filters` (array): Report filters
-    -   `category_ids` (array, optional): Category filters
-    -   `date_from` (\DateTime, optional): Date range start
-    -   `date_to` (\DateTime, optional): Date range end
-    -   `stock_status` (string, optional): 'all', 'low', 'out'
-
-**Returns**: `array` - Inventory report data
-
-```php
-[
-    'summary' => [
-        'total_products' => 150,
-        'in_stock' => 120,
-        'low_stock' => 15,
-        'out_of_stock' => 15,
-        'total_value' => 2500000.00
-    ],
-    'products' => [...],
-    'movements' => [...],
-    'alerts' => [...]
-]
-```
-
-#### `getStockMovementHistory(string $productId, \DateTime $startDate, \DateTime $endDate): Collection`
-
-**Purpose**: Get stock movement history for product
-
-**Parameters**:
-
--   `$productId` (string): Product UUID
--   `$startDate` (\DateTime): History start date
--   `$endDate` (\DateTime): History end date
-
-**Returns**: `Collection` - Stock movements
-
-```php
-[
-    [
-        'date' => '2025-12-06T10:00:00Z',
-        'type' => 'sale',
-        'quantity' => -5,
-        'reason' => 'Order #12345',
-        'user' => 'customer@example.com'
-    ]
-]
-```
-
-#### `bulkUpdateStock(array $stockUpdates, string $merchantId): array`
-
-**Purpose**: Bulk update stock for multiple products
-
-**Parameters**:
-
--   `$stockUpdates` (array): Stock update data
-    ```php
-    [
-        ['product_id' => 'uuid', 'quantity' => 50, 'reason' => 'restock'],
-        ['variant_id' => 'uuid', 'quantity' => 25, 'reason' => 'adjustment']
-    ]
-    ```
--   `$merchantId` (string): Merchant UUID for ownership validation
-
-**Returns**: `array` - Update results with success/failure per item
-
-**Business Rules**:
-
--   Transaction safety
--   Rollback on partial failure
--   Comprehensive logging
-
-#### `importStockFromFile(string $filePath, string $merchantId): array`
-
-**Purpose**: Import stock updates from file
-
-**Parameters**:
-
--   `$filePath` (string): Path to import file
--   `$merchantId` (string): Merchant UUID for ownership validation
-
-**Returns**: `array` - Import results
-
-```php
-[
-    'success' => true,
-    'processed' => 150,
-    'successful' => 145,
-    'failed' => 5,
-    'errors' => [...],
-    'warnings' => [...]
-]
-```
-
-**Supported Formats**:
-
--   CSV
--   Excel (XLSX)
--   JSON
-
-**Business Rules**:
-
--   Async processing for large files
--   Data validation before import
--   Comprehensive error reporting
-
----
-
 ## 6. ProductPricingService
+
+### Overview
+
+The ProductPricingService manages all pricing-related business logic including dynamic pricing, discount strategies, tax calculations, currency conversions, and price consistency validation. It enforces pricing business rules and provides comprehensive pricing analytics.
 
 ### Interface Definition
 
 ```php
 interface IProductPricingService {
-    public function getProductPricing(string $productId): array;
+    // Core Pricing Operations
     public function updateProductBasePrice(string $productId, float $price, string $merchantId, string $reason = 'manual'): bool;
     public function updateVariantPrice(string $variantId, float $price, string $merchantId, string $reason = 'manual'): bool;
+    public function applyDiscount(string $productId, float $discountPercent, string $merchantId, \DateTime $startDate = null, \DateTime $endDate = null): bool;
+
+    // Price Calculation & Retrieval
     public function calculateProductPrice(string $productId, array $modifiers = []): float;
     public function calculateVariantPrice(string $variantId, array $modifiers = []): float;
-    public function applyDiscount(string $productId, float $discountPercent, string $merchantId, \DateTime $startDate = null, \DateTime $endDate = null): bool;
+    public function getProductPricing(string $productId): array;
+    public function getPriceHistory(string $productId, \DateTime $startDate, \DateTime $endDate): Collection;
+
+    // Business Logic Operations
     public function bulkUpdatePrices(array $priceUpdates, string $merchantId): array;
     public function applyPriceMarkup(string $categoryId, float $markupPercent, string $merchantId): int;
-    public function getPriceHistory(string $productId, \DateTime $startDate, \DateTime $endDate): Collection;
-    public function getPriceChangeAnalytics(string $merchantId, \DateTime $startDate, \DateTime $endDate): array;
+
+    // Tax & Currency Management
     public function calculatePriceWithTax(float $price, float $taxRate): float;
     public function convertCurrency(float $price, string $fromCurrency, string $toCurrency): float;
+
+    // Validation
     public function validatePrice(float $price, array $rules = []): bool;
     public function checkPriceConsistency(string $productId): array;
+
+    // Business Rules Enforcement
+    public function enforcePricingLimits(string $merchantId): array;
+    public function validatePriceConstraints(float $price, array $rules = []): array;
 }
 ```
 
@@ -1489,29 +1302,6 @@ interface IProductPricingService {
 ]
 ```
 
-#### `getPriceChangeAnalytics(string $merchantId, \DateTime $startDate, \DateTime $endDate): array`
-
-**Purpose**: Get pricing analytics for merchant
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
--   `$startDate` (\DateTime): Analysis start date
--   `$endDate` (\DateTime): Analysis end date
-
-**Returns**: `array` - Pricing analytics
-
-```php
-[
-    'total_price_changes' => 245,
-    'average_price_change' => 8.5,
-    'price_volatility' => 0.15,
-    'discount_usage' => 0.75,
-    'most_changed_products' => [...],
-    'price_trends' => [...]
-]
-```
-
 #### `calculatePriceWithTax(float $price, float $taxRate): float`
 
 **Purpose**: Calculate price including tax
@@ -1592,26 +1382,44 @@ interface IProductPricingService {
 
 ---
 
-## 7. MerchantProductService
+## 12. MerchantProductService
+
+### Overview
+
+The MerchantProductService provides merchant-specific product operations with enhanced security, business rule enforcement, and merchant-centric features. It acts as a facade over other product services while adding merchant-specific business logic and constraints.
 
 ### Interface Definition
 
 ```php
 interface IMerchantProductService {
-    public function getMerchantProducts(string $merchantId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
-    public function getMerchantProductById(string $productId, string $merchantId): ?Product;
+    // Core Merchant Product Operations
     public function createMerchantProduct(array $productData, string $merchantId): Product;
     public function updateMerchantProduct(string $productId, array $productData, string $merchantId): Product;
     public function deleteMerchantProduct(string $productId, string $merchantId): bool;
+    public function transferProductOwnership(string $productId, string $fromMerchantId, string $toMerchantId): bool;
+
+    // Merchant-Specific Retrieval
+    public function getMerchantProducts(string $merchantId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
+    public function getMerchantProductById(string $productId, string $merchantId): ?Product;
     public function getMerchantDashboardStats(string $merchantId): array;
-    public function getMerchantProductAnalytics(string $merchantId, \DateTime $startDate, \DateTime $endDate): array;
+
+    // Bulk Operations with Business Logic
     public function bulkCreateProducts(array $productsData, string $merchantId): array;
     public function bulkUpdateMerchantProducts(array $updates, string $merchantId): array;
     public function bulkDeleteMerchantProducts(array $productIds, string $merchantId): array;
+
+    // Business Logic & Validation
     public function validateMerchantOwnership(string $productId, string $merchantId): bool;
     public function checkMerchantLimits(string $merchantId): array;
     public function duplicateProductForMerchant(string $sourceProductId, string $targetMerchantId, string $requestingMerchantId): ?Product;
-    public function transferProductOwnership(string $productId, string $fromMerchantId, string $toMerchantId): bool;
+
+    // Business Rules Enforcement
+    public function enforceMerchantConstraints(string $merchantId): array;
+    public function validateMerchantPermissions(string $merchantId, string $permission): bool;
+
+    // Business Rules Enforcement
+    public function enforceMerchantConstraints(string $merchantId): array;
+    public function validateMerchantPermissions(string $merchantId, string $permission): bool;
 }
 ```
 
@@ -1697,66 +1505,6 @@ interface IMerchantProductService {
 
 -   Additional checks for active orders
 -   Validates no cross-merchant access
-
-#### `getMerchantDashboardStats(string $merchantId): array`
-
-**Purpose**: Get dashboard statistics for merchant
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
-
-**Returns**: `array` - Dashboard statistics
-
-```php
-[
-    'total_products' => 150,
-    'active_products' => 120,
-    'inactive_products' => 15,
-    'products_with_variants' => 45,
-    'total_variants' => 180,
-    'low_stock_products' => 12,
-    'out_of_stock_products' => 3,
-    'total_sales_today' => 2500000.00,
-    'total_orders_today' => 45,
-    'average_rating' => 4.2,
-    'total_reviews' => 1250,
-    'top_selling_products' => [...],
-    'recent_activities' => [...]
-]
-```
-
-**Business Rules**:
-
--   Real-time calculations
--   Cached for performance
--   Merchant-specific data isolation
-
-#### `getMerchantProductAnalytics(string $merchantId, \DateTime $startDate, \DateTime $endDate): array`
-
-**Purpose**: Get detailed product analytics for merchant
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
--   `$startDate` (\DateTime): Analysis start date
--   `$endDate` (\DateTime): Analysis end date
-
-**Returns**: `array` - Product analytics data
-
-```php
-[
-    'sales_by_product' => [...],
-    'sales_by_category' => [...],
-    'revenue_trends' => [...],
-    'top_performers' => [...],
-    'underperformers' => [...],
-    'inventory_turnover' => 4.2,
-    'average_order_value' => 55000.00,
-    'conversion_rate' => 0.15,
-    'customer_retention' => 0.68
-]
-```
 
 #### `bulkCreateProducts(array $productsData, string $merchantId): array`
 
@@ -1901,302 +1649,412 @@ interface IMerchantProductService {
 
 ---
 
-## 8. ProductAuthorizationService
+## 7. AttributeManagementService
+
+### Overview
+
+The AttributeManagementService manages both master attributes (system-defined) and custom attributes (merchant-defined) for product variants. It ensures attribute consistency, uniqueness, and proper relationships with products and variants.
 
 ### Interface Definition
 
 ```php
-interface IProductAuthorizationService {
-    public function canAccessProduct(string $userId, string $productId, string $permission = 'view'): bool;
-    public function canModifyProduct(string $userId, string $productId): bool;
-    public function canDeleteProduct(string $userId, string $productId): bool;
-    public function isProductOwner(string $merchantId, string $productId): bool;
-    public function canCreateProduct(string $merchantId): bool;
-    public function validateMerchantPermissions(string $merchantId, array $permissions): array;
-    public function hasRole(string $userId, string $role): bool;
-    public function hasPermission(string $userId, string $permission): bool;
-    public function getUserPermissions(string $userId): array;
-    public function canAccessMerchantData(string $userId, string $merchantId): bool;
-    public function validateCrossMerchantAccess(string $requestingMerchantId, string $targetMerchantId): bool;
-    public function canAdminAccess(string $adminId): bool;
-    public function validateAdminPermissions(string $adminId, array $permissions): array;
-    public function logAccessAttempt(string $userId, string $resourceId, string $action, bool $granted): void;
-    public function getAccessLogs(string $resourceId, \DateTime $startDate, \DateTime $endDate): Collection;
+interface IAttributeManagementService {
+    // Master Attribute Operations
+    public function createMasterAttribute(array $attributeData): AttributeMaster;
+    public function updateMasterAttribute(string $attributeId, array $attributeData): AttributeMaster;
+    public function deleteMasterAttribute(string $attributeId): bool;
+    public function getMasterAttributeById(string $attributeId): ?AttributeMaster;
+    public function getMasterAttributes(array $filters = []): Collection;
+
+    // Custom Attribute Operations
+    public function createCustomAttribute(array $attributeData, string $merchantId): AttributeCustom;
+    public function updateCustomAttribute(string $attributeId, array $attributeData, string $merchantId): AttributeCustom;
+    public function deleteCustomAttribute(string $attributeId, string $merchantId): bool;
+    public function getCustomAttributeById(string $attributeId, string $merchantId): ?AttributeCustom;
+    public function getMerchantCustomAttributes(string $merchantId, array $filters = []): Collection;
+
+    // Business Logic Operations
+    public function validateAttributeUniqueness(string $key, ?string $excludeId = null, ?string $merchantId = null): bool;
+    public function getAttributeCombinations(string $productId): array;
+    public function migrateCustomToMaster(string $customAttributeId, string $merchantId): ?AttributeMaster;
 }
 ```
 
-### Method Specifications
+---
 
-#### `canAccessProduct(string $userId, string $productId, string $permission = 'view'): bool`
+## 8. ProductExtrasManagementService
 
-**Purpose**: Check if user can access product with specific permission
+### Overview
 
-**Parameters**:
+The ProductExtrasManagementService manages additional items that can be added to products (like toppings, add-ons, customizations). It handles pricing, availability, and merchant-specific extras configuration.
 
--   `$userId` (string): User UUID
--   `$productId` (string): Product UUID
--   `$permission` (string): Permission type ('view', 'edit', 'delete', 'manage')
-
-**Returns**: `bool` - Access granted status
-
-**Permission Levels**:
-
--   `view`: Can see product details
--   `edit`: Can modify product
--   `delete`: Can delete product
--   `manage`: Full management rights
-
-#### `canModifyProduct(string $userId, string $productId): bool`
-
-**Purpose**: Check if user can modify product
-
-**Parameters**:
-
--   `$userId` (string): User UUID
--   `$productId` (string): Product UUID
-
-**Returns**: `bool` - Modification permission status
-
-**Business Rules**:
-
--   Checks ownership or admin rights
--   Validates user status (active, not suspended)
-
-#### `canDeleteProduct(string $userId, string $productId): bool`
-
-**Purpose**: Check if user can delete product
-
-**Parameters**:
-
--   `$userId` (string): User UUID
--   `$productId` (string): Product UUID
-
-**Returns**: `bool` - Deletion permission status
-
-**Business Rules**:
-
--   Stricter than modify permissions
--   Additional checks for active orders/references
-
-#### `isProductOwner(string $merchantId, string $productId): bool`
-
-**Purpose**: Check if merchant owns the product
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
--   `$productId` (string): Product UUID
-
-**Returns**: `bool` - Ownership status
-
-**Security**: Core ownership validation method
-
-#### `canCreateProduct(string $merchantId): bool`
-
-**Purpose**: Check if merchant can create new products
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
-
-**Returns**: `bool` - Creation permission status
-
-**Business Rules**:
-
--   Checks merchant status (active, verified)
--   Validates product limits/quota
--   Checks subscription plan permissions
-
-#### `validateMerchantPermissions(string $merchantId, array $permissions): array`
-
-**Purpose**: Validate multiple permissions for merchant
-
-**Parameters**:
-
--   `$merchantId` (string): Merchant UUID
--   `$permissions` (array): Array of permission strings
-
-**Returns**: `array` - Permission validation results
+### Interface Definition
 
 ```php
-[
-    'all_granted' => false,
-    'granted' => ['create_product', 'view_analytics'],
-    'denied' => ['delete_product', 'manage_users'],
-    'reasons' => [
-        'delete_product' => 'Merchant subscription does not allow deletion'
-    ]
-]
+interface IProductExtrasManagementService {
+    // Core CRUD Operations
+    public function createProductExtra(array $extraData, string $productId, string $merchantId): ProductExtra;
+    public function updateProductExtra(string $extraId, array $extraData, string $merchantId): ProductExtra;
+    public function deleteProductExtra(string $extraId, string $merchantId): bool;
+    public function getProductExtraById(string $extraId, string $merchantId): ?ProductExtra;
+
+    // Product-Specific Operations
+    public function getProductExtras(string $productId, string $merchantId): Collection;
+    public function bulkUpdateProductExtras(array $extrasData, string $productId, string $merchantId): array;
+
+    // Business Logic Operations
+    public function validateExtraConstraints(string $extraId, string $merchantId): array;
+    public function calculateExtraPriceImpact(array $selectedExtras): float;
+    public function checkExtraAvailability(string $extraId): bool;
+}
 ```
 
-#### `hasRole(string $userId, string $role): bool`
+---
 
-**Purpose**: Check if user has specific role
+## 9. ProductBundlesManagementService
 
-**Parameters**:
+### Overview
 
--   `$userId` (string): User UUID
--   `$role` (string): Role name ('merchant', 'admin', 'super_admin')
+The ProductBundlesManagementService manages product bundles that group multiple products together with special pricing. It handles bundle creation, validation, and pricing calculations.
 
-**Returns**: `bool` - Role possession status
-
-#### `hasPermission(string $userId, string $permission): bool`
-
-**Purpose**: Check if user has specific permission
-
-**Parameters**:
-
--   `$userId` (string): User UUID
--   `$permission` (string): Permission string
-
-**Returns**: `bool` - Permission possession status
-
-**Permission Examples**:
-
--   `products.create`
--   `products.edit.own`
--   `products.delete.any`
--   `analytics.view`
-
-#### `getUserPermissions(string $userId): array`
-
-**Purpose**: Get all permissions for user
-
-**Parameters**:
-
--   `$userId` (string): User UUID
-
-**Returns**: `array` - User permissions array
+### Interface Definition
 
 ```php
-[
-    'roles' => ['merchant'],
-    'permissions' => [
-        'products.create',
-        'products.edit.own',
-        'products.view.own',
-        'analytics.view.own'
-    ],
-    'restrictions' => [
-        'max_products' => 100,
-        'max_categories' => 10
-    ]
-]
+interface IProductBundlesManagementService {
+    // Core CRUD Operations
+    public function createProductBundle(array $bundleData): ProductBundle;
+    public function updateProductBundle(string $bundleId, array $bundleData): ProductBundle;
+    public function deleteProductBundle(string $bundleId): bool;
+    public function getProductBundleById(string $bundleId): ?ProductBundle;
+
+    // Bundle Management Operations
+    public function getProductBundles(array $filters = []): Collection;
+    public function addProductsToBundle(string $bundleId, array $productIds): bool;
+    public function removeProductsFromBundle(string $bundleId, array $productIds): bool;
+
+    // Business Logic Operations
+    public function calculateBundlePrice(string $bundleId): float;
+    public function validateBundleConstraints(string $bundleId): array;
+    public function getBundleSavings(string $bundleId): float;
+}
 ```
 
-#### `canAccessMerchantData(string $userId, string $merchantId): bool`
+---
 
-**Purpose**: Check if user can access merchant's data
+## 10. UnitConversionManagementService
 
-**Parameters**:
+### Overview
 
--   `$userId` (string): User UUID
--   `$merchantId` (string): Merchant UUID
+The UnitConversionManagementService manages unit conversions for products, enabling merchants to sell products in different units (kg to grams, liters to ml, etc.) with automatic price calculations.
 
-**Returns**: `bool` - Data access permission status
-
-**Business Rules**:
-
--   User must be merchant owner or admin
--   Validates merchant-user relationship
-
-#### `validateCrossMerchantAccess(string $requestingMerchantId, string $targetMerchantId): bool`
-
-**Purpose**: Validate cross-merchant access permissions
-
-**Parameters**:
-
--   `$requestingMerchantId` (string): Requesting merchant UUID
--   `$targetMerchantId` (string): Target merchant UUID
-
-**Returns**: `bool` - Cross-merchant access allowed
-
-**Business Rules**:
-
--   Prevents unauthorized data access
--   Used for product duplication/sharing features
-
-#### `canAdminAccess(string $adminId): bool`
-
-**Purpose**: Check if user has admin access
-
-**Parameters**:
-
--   `$adminId` (string): Admin user UUID
-
-**Returns**: `bool` - Admin access status
-
-**Business Rules**:
-
--   Validates admin role and status
--   Checks admin permissions scope
-
-#### `validateAdminPermissions(string $adminId, array $permissions): array`
-
-**Purpose**: Validate admin permissions
-
-**Parameters**:
-
--   `$adminId` (string): Admin user UUID
--   `$permissions` (array): Required permissions
-
-**Returns**: `array` - Permission validation results
-
-**Business Rules**:
-
--   Checks admin role hierarchy
--   Validates permission scope (global, regional, etc.)
-
-#### `logAccessAttempt(string $userId, string $resourceId, string $action, bool $granted): void`
-
-**Purpose**: Log access attempts for audit trail
-
-**Parameters**:
-
--   `$userId` (string): User UUID attempting access
--   `$resourceId` (string): Resource UUID being accessed
--   `$action` (string): Action attempted ('view', 'edit', 'delete')
--   `$granted` (bool): Whether access was granted
-
-**Returns**: `void`
-
-**Business Rules**:
-
--   Async logging for performance
--   Comprehensive audit trail
--   Security monitoring integration
-
-#### `getAccessLogs(string $resourceId, \DateTime $startDate, \DateTime $endDate): Collection`
-
-**Purpose**: Get access logs for resource
-
-**Parameters**:
-
--   `$resourceId` (string): Resource UUID
--   `$startDate` (\DateTime): Log start date
--   `$endDate` (\DateTime): Log end date
-
-**Returns**: `Collection` - Access log entries
+### Interface Definition
 
 ```php
-[
-    [
-        'timestamp' => '2025-12-06T10:00:00Z',
-        'user_id' => 'uuid',
-        'user_type' => 'merchant',
-        'action' => 'edit',
-        'granted' => true,
-        'ip_address' => '192.168.1.1',
-        'user_agent' => 'Mozilla/5.0...'
-    ]
-]
+interface IUnitConversionManagementService {
+    // Core CRUD Operations
+    public function createUnitConversion(array $conversionData): UnitConversion;
+    public function updateUnitConversion(string $conversionId, array $conversionData): UnitConversion;
+    public function deleteUnitConversion(string $conversionId): bool;
+    public function getUnitConversionById(string $conversionId): ?UnitConversion;
+
+    // Conversion Operations
+    public function getUnitConversions(array $filters = []): Collection;
+    public function convertUnit(float $value, string $fromUnit, string $toUnit): float;
+    public function calculateConvertedPrice(float $basePrice, string $conversionId): float;
+
+    // Business Logic Operations
+    public function validateConversionChain(string $fromUnit, string $toUnit): bool;
+    public function getConversionPath(string $fromUnit, string $toUnit): array;
+}
 ```
 
-**Business Rules**:
+---
 
--   Admin-only access
--   Comprehensive audit trail
--   GDPR compliance considerations
+## 11. ProductServiceDetailsManagementService
+
+### Overview
+
+The ProductServiceDetailsManagementService manages service-specific details for products that are services rather than physical goods. It handles scheduling, duration, capacity, and other service-specific attributes.
+
+### Interface Definition
+
+```php
+interface IProductServiceDetailsManagementService {
+    // Core CRUD Operations
+    public function createServiceDetails(array $detailsData, string $productId, string $merchantId): ProductServiceDetail;
+    public function updateServiceDetails(string $detailsId, array $detailsData, string $merchantId): ProductServiceDetail;
+    public function deleteServiceDetails(string $detailsId, string $merchantId): bool;
+    public function getServiceDetailsById(string $detailsId, string $merchantId): ?ProductServiceDetail;
+
+    // Product-Specific Operations
+    public function getProductServiceDetails(string $productId, string $merchantId): ?ProductServiceDetail;
+    public function updateServiceAvailability(string $detailsId, array $availabilityData, string $merchantId): bool;
+
+    // Business Logic Operations
+    public function validateServiceConstraints(string $detailsId, string $merchantId): array;
+    public function checkServiceAvailability(string $detailsId, \DateTime $dateTime, int $partySize = 1): bool;
+    public function calculateServiceDuration(string $detailsId): int;
+}
+```
+
+---
+
+## 12. Use Cases
+
+Use cases represent **business workflows** and **frontend-to-backend data flows**. They orchestrate the complete process of handling user requests, coordinating multiple services while **never duplicating service logic**. Use cases focus on:
+
+-   **Request Processing**: Handling complete user workflows (e.g., "create product with variants")
+-   **Data Flow Coordination**: Managing how data moves between frontend input and backend services
+-   **Transaction Boundaries**: Defining atomic operations that span multiple services
+-   **Business Rule Enforcement**: Applying high-level business rules across domains
+-   **Event Triggering**: Dispatching events for side effects and integrations
+
+**Key Principle**: Use cases are the **"what"** (business workflows) while services are the **"how"** (domain logic). Use cases delegate all actual business operations to services.
+
+### Use Case Structure
+
+```php
+class CreateProductUseCase
+{
+    public function __construct(
+        private ProductManagementService $productService,
+        private CategoryManagementService $categoryService,
+        private MerchantProductService $merchantService
+    ) {}
+
+    public function execute(array $data, string $merchantId): Product
+    {
+        // Business logic orchestration
+        // Validation, authorization, service calls
+    }
+}
+```
+
+### Category Use Cases
+
+#### `Modules/Product/app/UseCases/Category/`
+
+-   **CreateCategoryUseCase**: Creates new category with validation
+-   **UpdateCategoryUseCase**: Updates category with hierarchy validation
+-   **DeleteCategoryUseCase**: Soft deletes category with dependency checks
+-   **GetCategoryTreeUseCase**: Builds category hierarchy for navigation
+-   **MoveCategoryUseCase**: Moves category within hierarchy
+
+### Product Use Cases
+
+#### `Modules/Product/app/UseCases/Product/`
+
+Based on database structure where `price` is stored in products (`price` field) and variants (`price` field):
+
+-   **CreateProductUseCase**: Handles complete product creation workflow from frontend data (name, description, base price, variants with their prices, category, etc.)
+-   **UpdateProductUseCase**: Manages product updates including base price and variant price changes from frontend input
+-   **DeleteProductUseCase**: Manages product deletion with order validation
+-   **DuplicateProductUseCase**: Creates product copy with all pricing data (base price + variant prices)
+-   **ToggleProductStatusUseCase**: Changes product availability status
+-   **BulkUpdateProductsUseCase**: Mass updates including bulk price changes
+
+**Important**: Pricing data flows from frontend as part of product data. Discounts and taxes are calculated externally (Promotion/Order modules) and applied at display/calculation time, not stored in product tables.
+
+### Pricing Use Cases
+
+#### `Modules/Product/app/UseCases/Pricing/`
+
+-   **UpdateProductPriceUseCase**: Updates base price with history logging
+-   **ApplyDiscountUseCase**: Applies percentage discounts with validation
+-   **BulkUpdatePricesUseCase**: Mass price updates with consistency checks
+-   **CalculatePriceWithTaxUseCase**: Computes final prices with tax
+-   **GetPriceHistoryUseCase**: Retrieves price change history
+
+### Merchant Use Cases
+
+#### `Modules/Product/app/UseCases/Merchant/`
+
+-   **GetMerchantProductsUseCase**: Retrieves paginated merchant products
+-   **CreateMerchantProductUseCase**: Creates product for specific merchant
+-   **BulkCreateProductsUseCase**: Mass product creation with validation
+-   **TransferProductOwnershipUseCase**: Transfers products between merchants
+
+### Use Case Dependencies
+
+Each use case declares its service dependencies in the constructor:
+
+```php
+public function __construct(
+    private ProductManagementService $productService,
+    private CategoryManagementService $categoryService,
+    private ProductPricingService $pricingService,
+    private MerchantProductService $merchantService
+) {}
+```
+
+### Error Handling
+
+Use cases handle business logic errors and return appropriate responses:
+
+```php
+public function execute(array $data): Result
+{
+    try {
+        // Business logic
+        return Result::success($product);
+    } catch (ValidationException $e) {
+        return Result::failure('Validation failed', $e->errors());
+    } catch (AuthorizationException $e) {
+        return Result::failure('Unauthorized', [], 403);
+    }
+}
+```
+
+### Testing
+
+Use cases are tested with mocked services:
+
+```php
+public function test_create_product_success()
+{
+    $productService = Mockery::mock(ProductManagementService::class);
+    $useCase = new CreateProductUseCase($productService);
+
+    // Test with mocked dependencies
+}
+```
+
+---
+
+## 14. Elasticsearch Integration
+
+### Overview
+
+Product management operations trigger asynchronous updates to the Elasticsearch index in the Catalog module for real-time search capabilities. This ensures that product changes are immediately reflected in user-facing search results.
+
+### Event-Driven Updates
+
+Elasticsearch updates are triggered by the following product management events:
+
+#### Product Creation/Update Events
+
+-   **ProductCreated**: Fired when a new product is created
+-   **ProductUpdated**: Fired when product basic information is modified (name, description, category, status)
+-   **ProductDeleted**: Fired when product is soft-deleted
+
+#### Variant Management Events
+
+-   **VariantCreated**: Fired when a new product variant is added
+-   **VariantUpdated**: Fired when variant details are modified (price, attributes, stock)
+-   **VariantDeleted**: Fired when variant is removed
+
+#### Pricing Events
+
+-   **ProductPriceUpdated**: Fired when base product price changes
+-   **VariantPriceUpdated**: Fired when variant price changes
+-   **DiscountApplied**: Fired when discounts are added/modified
+-   **DiscountRemoved**: Fired when discounts expire or are removed
+
+#### Category Events
+
+-   **CategoryCreated**: Fired when new category is created
+-   **CategoryUpdated**: Fired when category details change
+-   **CategoryDeleted**: Fired when category is removed
+
+### Asynchronous Processing with Queues
+
+All Elasticsearch updates are processed asynchronously using Laravel's queue system to ensure:
+
+#### Queue Configuration
+
+-   **Queue Connection**: Redis/database queue for reliability
+-   **Queue Name**: `elasticsearch-updates`
+-   **Retry Policy**: 3 retry attempts with exponential backoff
+-   **Timeout**: 30 seconds per job
+
+#### Queue Job Structure
+
+```php
+class UpdateElasticsearchIndex implements ShouldQueue
+{
+    public function handle()
+    {
+        // Process document update in Elasticsearch
+        // Handle partial failures gracefully
+        // Log success/failure for monitoring
+    }
+}
+```
+
+#### Event-to-Queue Flow
+
+1. **Event Fired**: Product management operation completes successfully
+2. **Event Listener**: Captures event and dispatches queue job
+3. **Queue Processing**: Background worker processes Elasticsearch update
+4. **Error Handling**: Failed jobs are retried or logged for manual intervention
+
+### Update Scenarios and Rules
+
+#### Immediate Updates (High Priority)
+
+-   Product status changes (active/inactive)
+-   Price changes affecting availability
+-   Critical information updates
+
+#### Batch Updates (Normal Priority)
+
+-   Bulk product operations
+-   Category hierarchy changes
+-   Non-critical metadata updates
+
+#### Deferred Updates (Low Priority)
+
+-   Analytics data updates
+-   Historical price tracking
+-   Non-search affecting changes
+
+### Data Synchronization Rules
+
+#### Document Structure
+
+Elasticsearch documents include:
+
+-   Product basic information (name, description, category)
+-   Pricing data (base price, discounts, final price)
+-   Variant information (attributes, prices)
+-   Merchant details (name, location for filtering)
+-   Availability status
+-   Search metadata (tags, keywords)
+
+#### Synchronization Rules
+
+-   **Full Reindex**: Triggered on major schema changes
+-   **Partial Updates**: Only modified fields are updated
+-   **Delete Handling**: Soft-deleted products are removed from index
+-   **Version Control**: Uses product version numbers to prevent stale updates
+
+### Monitoring and Error Handling
+
+#### Logging
+
+-   All queue jobs log start/completion status
+-   Elasticsearch operation results are logged
+-   Failed operations trigger alerts
+
+#### Error Recovery
+
+-   Failed updates are retried with backoff
+-   Critical failures trigger manual intervention workflows
+-   Data consistency checks run periodically
+
+#### Performance Considerations
+
+-   Queue jobs are optimized for minimal database queries
+-   Elasticsearch bulk operations for multiple updates
+-   Circuit breaker pattern for Elasticsearch unavailability
+
+### Integration with Catalog Module
+
+The Product module communicates with Catalog module through:
+
+-   **Event Broadcasting**: Laravel events are broadcast to Catalog listeners
+-   **Queue Jobs**: Dedicated jobs handle cross-module communication
+-   **API Calls**: Fallback synchronous updates for critical operations
 
 ---
 
@@ -2204,36 +2062,87 @@ interface IProductAuthorizationService {
 
 ### Service Layer Architecture:
 
--   **Dependency Injection**: All services use constructor injection for repositories
--   **Interface Segregation**: Each service has its own interface
--   **Single Responsibility**: Each service handles one domain area
--   **Validation**: Business rule validation in service layer
--   **Caching**: Strategic caching for performance
--   **Logging**: Comprehensive audit logging
--   **Error Handling**: Proper exception handling and user feedback
+#### Service Organization
+
+-   **Domain Services**: Encapsulate business logic while coordinating with repositories
+-   **Validation Logic**: Business rule validation within service methods
+-   **Event Dispatching**: Laravel events for cross-cutting concerns and integrations
+-   **Audit Trail**: Comprehensive logging of business operations
+
+#### Method Design Patterns
+
+-   **Clear Parameters**: Array-based parameters with documented structure
+-   **Standard Returns**: Laravel models, collections, or primitive types
+-   **Business Validation**: Pre-operation validation with detailed error reporting
+-   **Post-Operation Logic**: Cache invalidation, events, and side effects
+
+#### Cross-cutting Concerns
+
+-   **Security**: Merchant isolation, permission validation, audit logging
+-   **Performance**: Strategic caching, query optimization, background processing
+-   **Monitoring**: Business metrics, error tracking, performance analytics
+-   **Compliance**: Audit trails, data retention, regulatory reporting
 
 ### Common Patterns:
 
--   **Ownership Validation**: Every merchant operation validates ownership
--   **Soft Deletes**: Respect soft delete constraints
--   **Version Control**: Track changes with version numbers
--   **Bulk Operations**: Support for mass operations with rollback
--   **Analytics**: Built-in analytics and reporting
--   **Caching Strategy**: TTL-based caching with smart invalidation
+#### Repository-Service Coordination
+
+-   **Service Delegates to Repository**: Services handle business logic, repositories handle data access
+-   **Business Validation in Services**: Validation rules enforced at service layer
+-   **Repository Abstraction**: Services work with repository interfaces for testability
+
+#### Business Rule Implementation
+
+-   **Inline Validation**: Business rules implemented directly in service methods
+-   **Helper Methods**: Complex validation extracted to private methods
+-   **Configuration-Driven Rules**: Business rules configurable per merchant/environment
+-   **Rule Categories**: Blocking vs warning validations with appropriate handling
+
+#### Laravel Integration Patterns
+
+-   **Eloquent Models**: Direct use of Laravel models with relationships
+-   **Query Builder**: Leveraging Laravel's query capabilities for complex filtering
+-   **Caching**: Laravel Cache facade with business-aware keys and TTL
+-   **Events**: Laravel event system for decoupling and async processing
 
 ### Security Considerations:
 
--   **Authorization**: Every endpoint validates permissions
--   **Data Isolation**: Merchant data isolation enforced
--   **Input Validation**: Comprehensive validation at service level
--   **Audit Trail**: All operations logged for compliance
+#### Multi-Layer Security
+
+-   **Authentication**: JWT-based authentication with merchant context
+-   **Authorization**: Role-based and resource-based access control
+-   **Data Isolation**: Strict merchant data segregation at all layers
+-   **Input Sanitization**: Comprehensive input validation and sanitization
+-   **Audit Logging**: Complete audit trail for compliance and forensics
+
+#### Business Security Rules
+
+-   **Ownership Validation**: Every operation validates merchant ownership
+-   **Permission Checks**: Granular permissions for different operations
+-   **Rate Limiting**: Business-rule based rate limiting per merchant tier
+-   **Data Leakage Prevention**: Query result filtering and masking
 
 ### Performance Optimizations:
 
--   **Database Indexing**: Optimized queries with proper indexes
--   **Caching**: Multi-level caching strategy
--   **Pagination**: Efficient pagination for large datasets
--   **Async Processing**: Background jobs for heavy operations
--   **Query Optimization**: N+1 problem prevention
+#### Caching Strategy
+
+-   **Multi-Level Caching**: Repository, Service, and Application-level caching
+-   **Business-Aware Invalidation**: Cache invalidation based on business events
+-   **Query Result Caching**: Complex query results cached with business context
+-   **Cache Warming**: Proactive cache population for frequently accessed data
+
+#### Database Optimization
+
+-   **Query Optimization**: N+1 prevention, efficient joins, and indexing
+-   **Connection Pooling**: Optimized database connection management
+-   **Read Replicas**: Separate read and write database connections
+-   **Query Batching**: Bulk operations for multiple related queries
+
+#### Asynchronous Processing
+
+-   **Queue-Based Processing**: Heavy operations processed asynchronously
+-   **Event-Driven Architecture**: Decoupled processing for scalability
+-   **Background Jobs**: Analytics, reporting, and maintenance tasks
+-   **Circuit Breakers**: Fault tolerance for external service dependencies
 
 This specification provides a comprehensive blueprint for implementing a production-ready product management system with proper separation of concerns, security, and performance considerations.

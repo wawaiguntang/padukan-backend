@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Modules\Product\Enums\ProductStatusEnum;
 use Modules\Product\Enums\ProductTypeEnum;
 
 class Product extends Model
@@ -34,6 +35,7 @@ class Product extends Model
         'slug',
         'description',
         'type',
+        'status',
         'barcode',
         'sku',
         'base_unit',
@@ -51,6 +53,7 @@ class Product extends Model
     {
         return [
             'type' => ProductTypeEnum::class,
+            'status' => ProductStatusEnum::class,
             'price' => 'decimal:2',
             'has_variant' => 'boolean',
             'has_expired' => 'boolean',

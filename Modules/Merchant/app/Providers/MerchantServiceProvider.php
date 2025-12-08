@@ -118,6 +118,12 @@ class MerchantServiceProvider extends ServiceProvider
             \Modules\Merchant\Policies\MerchantOwnership\IMerchantOwnershipPolicy::class,
             \Modules\Merchant\Policies\MerchantOwnership\MerchantOwnershipPolicy::class
         );
+
+        // Shared Merchant Service
+        $this->app->bind(
+            \App\Shared\Merchant\Services\IMerchantService::class,
+            \Modules\Merchant\Services\ForShare\MerchantService::class
+        );
     }
 
     /**

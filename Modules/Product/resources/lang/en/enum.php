@@ -17,4 +17,10 @@ return [
         'mart' => 'Mart',
         'service' => 'Service',
     ],
+
+    // Product Status Enum
+    'product_status' => [
+        'available' => 'Available',
+        'not_available' => 'Not Available',
+    ],
 ];

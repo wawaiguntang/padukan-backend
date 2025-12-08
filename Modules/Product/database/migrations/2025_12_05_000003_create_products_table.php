@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Nwidart\Modules\Module;
 
 return new class extends Migration
 {
@@ -18,7 +19,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
-            $table->enum('type', ['food', 'mart', 'service']);
+            $table->enum('type', array_column(\Modules\Product\Enums\ProductTypeEnum::cases(), 'value'));
             $table->string('barcode')->nullable();
             $table->string('sku')->nullable();
             $table->string('base_unit')->nullable();

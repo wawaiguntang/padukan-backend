@@ -2,9 +2,11 @@
 
 namespace Modules\Product\Repositories\AttributeMaster;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Collection;
-use Modules\Product\Cache\KeyManager\IKeyManager;
+use Illuminate\Support\Facades\Cache;
+use Modules\Product\Cache\AttributeMaster\AttributeMasterKeyManager;
+use Modules\Product\Cache\AttributeMaster\AttributeMasterCacheManager;
+use Modules\Product\Cache\AttributeMaster\AttributeMasterTtlManager;
 use Modules\Product\Models\AttributeMaster;
 
 /**
@@ -13,39 +15,50 @@ use Modules\Product\Models\AttributeMaster;
 class AttributeMasterRepository implements IAttributeMasterRepository
 {
     protected AttributeMaster $model;
-    protected Cache $cache;
-    protected IKeyManager $cacheKeyManager;
-    protected int $cacheTtl = 1800; // 30 minutes
 
-    public function __construct(AttributeMaster $model, Cache $cache, IKeyManager $cacheKeyManager)
+    public function __construct(AttributeMaster $model)
     {
         $this->model = $model;
-        $this->cache = $cache;
-        $this->cacheKeyManager = $cacheKeyManager;
     }
 
     public function findById(string $id): ?AttributeMaster
     {
-        $cacheKey = $this->cacheKeyManager::attributeMasterById($id);
-        return $this->cache->remember($cacheKey, $this->cacheTtl, fn() => $this->model->find($id));
+        $cacheKey = AttributeMasterKeyManager::attributeMasterById($id);
+        $ttl = AttributeMasterTtlManager::attributeMasterEntity();
+
+        return Cache::remember($cacheKey, $ttl, function () use ($id) {
+            return $this->model->find($id);
+        });
     }
 
     public function findByKey(string $key): ?AttributeMaster
     {
-        $cacheKey = $this->cacheKeyManager::attributeMasterByKey($key);
-        return $this->cache->remember($cacheKey, $this->cacheTtl, fn() => $this->model->where('key', $key)->first());
+        $cacheKey = AttributeMasterKeyManager::attributeMasterByKey($key);
+        $ttl = AttributeMasterTtlManager::attributeMasterLookup();
+
+        return Cache::remember($cacheKey, $ttl, function () use ($key) {
+            return $this->model->where('key', $key)->first();
+        });
     }
 
     public function getAll(): Collection
     {
-        $cacheKey = $this->cacheKeyManager::allAttributeMasters();
-        return $this->cache->remember($cacheKey, $this->cacheTtl, fn() => $this->model->orderBy('name')->get());
+        $cacheKey = AttributeMasterKeyManager::allAttributeMasters();
+        $ttl = AttributeMasterTtlManager::attributeMasterList();
+
+        return Cache::remember($cacheKey, $ttl, function () {
+            return $this->model->orderBy('name')->get();
+        });
     }
 
     public function create(array $data): AttributeMaster
     {
         $attribute = $this->model->create($data);
-        $this->invalidateCaches();
+
+        AttributeMasterCacheManager::invalidateForOperation('create', [
+            'key' => $attribute->key,
+        ]);
+
         return $attribute;
     }
 
@@ -54,14 +67,15 @@ class AttributeMasterRepository implements IAttributeMasterRepository
         $attribute = $this->model->find($id);
         if (!$attribute) return false;
 
-        $oldKey = $attribute->key;
+        $oldData = $attribute->toArray();
         $result = $attribute->update($data);
 
         if ($result) {
-            if (isset($data['key']) && $data['key'] !== $oldKey) {
-                $this->cache->forget($this->cacheKeyManager::attributeMasterByKey($oldKey));
-            }
-            $this->invalidateCaches();
+            AttributeMasterCacheManager::invalidateForOperation('update', [
+                'id' => $id,
+                'data' => $data,
+                'old_data' => $oldData,
+            ]);
         }
 
         return $result;
@@ -73,7 +87,12 @@ class AttributeMasterRepository implements IAttributeMasterRepository
         if (!$attribute) return false;
 
         $result = $attribute->delete();
-        if ($result) $this->invalidateCaches();
+        if ($result) {
+            AttributeMasterCacheManager::invalidateForOperation('delete', [
+                'id' => $id,
+                'attribute_master' => $attribute->toArray(),
+            ]);
+        }
 
         return $result;
     }
@@ -83,10 +102,5 @@ class AttributeMasterRepository implements IAttributeMasterRepository
         $query = $this->model->where('key', $key);
         if ($excludeId) $query->where('id', '!=', $excludeId);
         return $query->exists();
-    }
-
-    protected function invalidateCaches(): void
-    {
-        $this->cache->forget($this->cacheKeyManager::allAttributeMasters());
     }
 }

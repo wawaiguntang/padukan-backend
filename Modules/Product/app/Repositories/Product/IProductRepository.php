@@ -22,13 +22,6 @@ interface IProductRepository
      */
     public function findById(string $id): ?Product;
 
-    /**
-     * Find a product by its slug
-     *
-     * @param string $slug The product's slug
-     * @return Product|null The product model if found, null otherwise
-     */
-    public function findBySlug(string $slug): ?Product;
 
     /**
      * Get products by merchant ID
@@ -48,23 +41,6 @@ interface IProductRepository
      */
     public function getByCategoryId(string $categoryId, bool $includeExpired = false): Collection;
 
-    /**
-     * Get products by type
-     *
-     * @param ProductTypeEnum $type The product type
-     * @param bool $includeExpired Include expired products (default: false)
-     * @return Collection The collection of products
-     */
-    public function getByType(ProductTypeEnum $type, bool $includeExpired = false): Collection;
-
-    /**
-     * Search products by name or description
-     *
-     * @param string $query The search query
-     * @param int $limit Maximum number of results
-     * @return Collection The collection of products
-     */
-    public function search(string $query, int $limit = 50): Collection;
 
     /**
      * Create a new product
@@ -103,21 +79,6 @@ interface IProductRepository
      */
     public function delete(string $id): bool;
 
-    /**
-     * Force delete a product (permanent delete)
-     *
-     * @param string $id The product's UUID
-     * @return bool True if deletion was successful, false otherwise
-     */
-    public function forceDelete(string $id): bool;
-
-    /**
-     * Restore a soft deleted product
-     *
-     * @param string $id The product's UUID
-     * @return bool True if restoration was successful, false otherwise
-     */
-    public function restore(string $id): bool;
 
     /**
      * Check if a product exists by slug
@@ -147,14 +108,6 @@ interface IProductRepository
      * @return bool True if barcode exists, false otherwise
      */
     public function existsBarcodeForMerchant(string $merchantId, string $barcode, ?string $excludeId = null): bool;
-
-    /**
-     * Update product version (increment version number)
-     *
-     * @param string $id The product's UUID
-     * @return bool True if update was successful, false otherwise
-     */
-    public function incrementVersion(string $id): bool;
 
     /**
      * Get products that have variants
@@ -188,12 +141,4 @@ interface IProductRepository
      * @return bool True if update was successful, false otherwise
      */
     public function updateExpirationStatus(string $id, bool $expired): bool;
-
-    /**
-     * Get product with all relationships loaded
-     *
-     * @param string $id The product's UUID
-     * @return Product|null The product with relationships loaded
-     */
-    public function getProductWithRelations(string $id): ?Product;
 }

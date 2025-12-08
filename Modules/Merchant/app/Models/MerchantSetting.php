@@ -37,6 +37,7 @@ class MerchantSetting extends Model
         'auto_accept_orders',
         'preparation_time_minutes',
         'notifications_enabled',
+        'use_inventory',
     ];
 
     /**
@@ -51,6 +52,7 @@ class MerchantSetting extends Model
             'auto_accept_orders' => 'boolean',
             'preparation_time_minutes' => 'integer',
             'notifications_enabled' => 'boolean',
+            'use_inventory' => 'boolean',
         ];
     }
 

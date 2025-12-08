@@ -128,12 +128,11 @@ class ProductServiceProvider extends ServiceProvider
      */
     protected function registerServices(): void
     {
-        // Add service bindings here when services are created
-        // Example:
-        // $this->app->bind(
-        //     \Modules\Product\Services\Category\ICategoryService::class,
-        //     \Modules\Product\Services\Category\CategoryService::class
-        // );
+        // Category Service
+        $this->app->bind(
+            \Modules\Product\Services\Category\ICategoryService::class,
+            \Modules\Product\Services\Category\CategoryService::class
+        );
     }
 
     /**
@@ -178,7 +177,8 @@ class ProductServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-        // $this->commands([]);
+        $this->commands([
+        ]);
     }
 
     /**
@@ -263,10 +263,12 @@ class ProductServiceProvider extends ServiceProvider
     {
         $router = $this->app['router'];
 
-        // Add middleware registrations here if needed
-        // Example:
-        // $router->aliasMiddleware('product.auth', \Modules\Product\Http\Middleware\ProductAuthMiddleware::class);
+        // Register product module middleware
+        $router->aliasMiddleware('auth.jwt', \Modules\Product\Http\Middleware\AuthenticationMiddleware::class);
+        $router->aliasMiddleware('auth.authorization', \Modules\Product\Http\Middleware\AuthorizationMiddleware::class);
+        $router->aliasMiddleware('merchant.access', \Modules\Product\Http\Middleware\MerchantAccessMiddleware::class);
     }
+
 
     /**
      * Register views.
