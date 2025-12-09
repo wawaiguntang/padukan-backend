@@ -128,10 +128,28 @@ class ProductServiceProvider extends ServiceProvider
      */
     protected function registerServices(): void
     {
+        // Product Service
+        $this->app->bind(
+            \Modules\Product\Services\Product\IProductService::class,
+            \Modules\Product\Services\Product\ProductService::class
+        );
+
         // Category Service
         $this->app->bind(
             \Modules\Product\Services\Category\ICategoryService::class,
             \Modules\Product\Services\Category\CategoryService::class
+        );
+
+        // Attribute Master Service
+        $this->app->bind(
+            \Modules\Product\Services\AttributeMaster\IAttributeMasterService::class,
+            \Modules\Product\Services\AttributeMaster\AttributeMasterService::class
+        );
+
+        // Attribute Custom Service
+        $this->app->bind(
+            \Modules\Product\Services\AttributeCustom\IAttributeCustomService::class,
+            \Modules\Product\Services\AttributeCustom\AttributeCustomService::class
         );
     }
 
@@ -177,8 +195,7 @@ class ProductServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-        $this->commands([
-        ]);
+        $this->commands([]);
     }
 
     /**

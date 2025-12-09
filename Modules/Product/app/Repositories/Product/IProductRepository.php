@@ -27,10 +27,11 @@ interface IProductRepository
      * Get products by merchant ID
      *
      * @param string $merchantId The merchant ID
-     * @param bool $includeExpired Include expired products (default: false)
-     * @return Collection The collection of products
+     * @param array $filters Optional filters (category, status, search, etc.)
+     * @param int $perPage Items per page (0 for no pagination)
+     * @return Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator The collection or paginated products
      */
-    public function getByMerchantId(string $merchantId, bool $includeExpired = false): Collection;
+    public function getByMerchantId(string $merchantId, array $filters = [], int $perPage = 0);
 
     /**
      * Get products by category ID
@@ -141,4 +142,46 @@ interface IProductRepository
      * @return bool True if update was successful, false otherwise
      */
     public function updateExpirationStatus(string $id, bool $expired): bool;
+
+    // ==========================================
+    // MERCHANT-SCOPED METHODS
+    // ==========================================
+
+    /**
+     * Find a product by ID and merchant
+     *
+     * @param string $id The product's UUID
+     * @param string $merchantId The merchant's UUID
+     * @return Product|null The product model if found and owned by merchant, null otherwise
+     */
+    public function findByIdAndMerchant(string $id, string $merchantId): ?Product;
+
+    /**
+     * Create a new product for a specific merchant
+     *
+     * @param array $data Product data
+     * @param string $merchantId The merchant's UUID
+     * @return Product The created product model
+     */
+    public function createForMerchant(array $data, string $merchantId): Product;
+
+    /**
+     * Update an existing product for a specific merchant
+     *
+     * @param string $id The product's UUID
+     * @param array $data Product data to update
+     * @param string $merchantId The merchant's UUID for ownership validation
+     * @return bool True if update was successful, false otherwise
+     */
+    public function updateForMerchant(string $id, array $data, string $merchantId): bool;
+
+    /**
+     * Delete a product for a specific merchant
+     *
+     * @param string $id The product's UUID
+     * @param string $merchantId The merchant's UUID for ownership validation
+     * @return bool True if deletion was successful, false otherwise
+     */
+    public function deleteForMerchant(string $id, string $merchantId): bool;
+
 }

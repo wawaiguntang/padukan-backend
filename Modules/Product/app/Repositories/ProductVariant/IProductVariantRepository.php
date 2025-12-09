@@ -18,4 +18,14 @@ interface IProductVariantRepository
     public function existsBarcode(string $barcode, ?string $excludeId = null): bool;
     public function getExpiredVariants(string $productId): Collection;
     public function updateExpirationStatus(string $id, bool $expired): bool;
+
+    /**
+     * Create a variant for a specific product and merchant
+     *
+     * @param array $data Variant data
+     * @param string $productId Product UUID
+     * @param string $merchantId Merchant UUID
+     * @return ProductVariant Created variant
+     */
+    public function createForProduct(array $data, string $productId, string $merchantId): ProductVariant;
 }

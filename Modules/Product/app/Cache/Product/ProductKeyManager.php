@@ -40,6 +40,14 @@ class ProductKeyManager
         return self::PREFIX . ":category:{$categoryId}";
     }
 
+    /**
+     * Generate cache key for product by ID and merchant
+     */
+    public static function productByIdAndMerchant(string $id, string $merchantId): string
+    {
+        return self::PREFIX . ":merchant:{$merchantId}:id:{$id}";
+    }
+
 
     /**
      * Generate pattern for product-related cache keys

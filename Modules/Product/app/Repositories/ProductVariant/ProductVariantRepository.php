@@ -131,4 +131,11 @@ class ProductVariantRepository implements IProductVariantRepository
     {
         return $this->update($id, ['has_expired' => $expired]);
     }
+
+    public function createForProduct(array $data, string $productId, string $merchantId): ProductVariant
+    {
+        $data['product_id'] = $productId;
+        // Note: merchant_id validation should be done at service level
+        return $this->create($data);
+    }
 }

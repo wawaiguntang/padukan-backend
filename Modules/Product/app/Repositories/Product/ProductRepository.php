@@ -53,20 +53,76 @@ class ProductRepository implements IProductRepository
     /**
      * {@inheritDoc}
      */
-    public function getByMerchantId(string $merchantId, bool $includeExpired = false): Collection
+    public function getByMerchantId(string $merchantId, array $filters = [], int $perPage = 0)
     {
-        $cacheKey = ProductKeyManager::merchantProducts($merchantId);
-        $ttl = ProductTtlManager::productList();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($merchantId, $includeExpired) {
-            $query = $this->model->where('merchant_id', $merchantId);
-
-            if (!$includeExpired) {
-                $query->where('has_expired', false);
+        // Handle backward compatibility for boolean parameter
+        if (is_bool($filters)) {
+            $includeExpired = $filters;
+            $filters = [];
+            if ($includeExpired) {
+                $filters['include_expired'] = true;
             }
+        }
 
-            return $query->orderBy('name')->get();
-        });
+        // If perPage is 0, return collection
+        if ($perPage <= 0) {
+            $cacheKey = ProductKeyManager::merchantProducts($merchantId);
+            $ttl = ProductTtlManager::productList();
+
+            return Cache::remember($cacheKey, $ttl, function () use ($merchantId, $filters) {
+                $query = $this->model->where('merchant_id', $merchantId);
+
+                $includeExpired = $filters['include_expired'] ?? false;
+                if (!$includeExpired) {
+                    $query->where('has_expired', false);
+                }
+
+                return $query->orderBy('name')->get();
+            });
+        }
+
+        // Build query with filters for pagination
+        $query = $this->model->where('merchant_id', $merchantId);
+
+        // Apply filters
+        if (isset($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
+        if (isset($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
+        if (isset($filters['status'])) {
+            if ($filters['status'] === 'active') {
+                $query->where('has_expired', false);
+            } elseif ($filters['status'] === 'inactive') {
+                $query->where('has_expired', true);
+            }
+        }
+
+        if (isset($filters['has_variant'])) {
+            $query->where('has_variant', $filters['has_variant']);
+        }
+
+        if (isset($filters['search'])) {
+            $query->where('name', 'ILIKE', '%' . $filters['search'] . '%');
+        }
+
+        if (isset($filters['price_min'])) {
+            $query->where('price', '>=', $filters['price_min']);
+        }
+
+        if (isset($filters['price_max'])) {
+            $query->where('price', '<=', $filters['price_max']);
+        }
+
+        // Apply sorting
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortOrder = $filters['sort_order'] ?? 'desc';
+        $query->orderBy($sortBy, $sortOrder);
+
+        return $query->paginate($perPage);
     }
 
     /**
@@ -292,5 +348,61 @@ class ProductRepository implements IProductRepository
         }
 
         return $slug;
+    }
+
+    // ==========================================
+    // MERCHANT-SCOPED METHODS
+    // ==========================================
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findByIdAndMerchant(string $id, string $merchantId): ?Product
+    {
+        $cacheKey = ProductKeyManager::productByIdAndMerchant($id, $merchantId);
+        $ttl = ProductTtlManager::productEntity();
+
+        return Cache::remember($cacheKey, $ttl, function () use ($id, $merchantId) {
+            return $this->model->where('id', $id)
+                ->where('merchant_id', $merchantId)
+                ->first();
+        });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function createForMerchant(array $data, string $merchantId): Product
+    {
+        $data['merchant_id'] = $merchantId;
+        return $this->create($data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateForMerchant(string $id, array $data, string $merchantId): bool
+    {
+        // First check ownership
+        $product = $this->findByIdAndMerchant($id, $merchantId);
+        if (!$product) {
+            return false;
+        }
+
+        return $this->update($id, $data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteForMerchant(string $id, string $merchantId): bool
+    {
+        // First check ownership
+        $product = $this->findByIdAndMerchant($id, $merchantId);
+        if (!$product) {
+            return false;
+        }
+
+        return $this->delete($id);
     }
 }
