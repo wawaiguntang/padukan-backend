@@ -32,8 +32,6 @@ class Region extends Model
         'timezone',
         'currency_code',
         'is_active',
-        'parent_id',
-        'level',
     ];
 
     /**
@@ -44,7 +42,6 @@ class Region extends Model
         return [
             'polygon' => 'array',
             'is_active' => 'boolean',
-            'level' => 'integer',
         ];
     }
 

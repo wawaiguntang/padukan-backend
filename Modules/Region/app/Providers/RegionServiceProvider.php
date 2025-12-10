@@ -25,6 +25,11 @@ class RegionServiceProvider extends ServiceProvider
         $this->registerCommandSchedules();
         $this->registerTranslations();
         $this->registerConfig();
+
+        // Register module database connection
+        $dbConfig = config('region.database');
+        $this->app['config']['database.connections.region'] = $dbConfig;
+
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
     }
@@ -37,9 +42,22 @@ class RegionServiceProvider extends ServiceProvider
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
 
+        // Repository bindings
         $this->app->bind(
-            \App\Shared\Region\IRegionService::class,
-            \Modules\Region\Services\RegionService::class
+            \Modules\Region\Repositories\Region\IRegionRepository::class,
+            \Modules\Region\Repositories\Region\RegionRepository::class
+        );
+
+        // Service bindings
+        $this->app->bind(
+            \Modules\Region\Services\Region\IRegionService::class,
+            \Modules\Region\Services\Region\RegionService::class
+        );
+
+        // Shared Service bindings
+        $this->app->bind(
+            \App\Shared\Region\Services\IRegionService::class,
+            \Modules\Region\Services\ForShare\RegionService::class
         );
     }
 
@@ -73,8 +91,12 @@ class RegionServiceProvider extends ServiceProvider
             $this->loadTranslationsFrom($langPath, $this->nameLower);
             $this->loadJsonTranslationsFrom($langPath);
         } else {
-            $this->loadTranslationsFrom(module_path($this->name, 'lang'), $this->nameLower);
-            $this->loadJsonTranslationsFrom(module_path($this->name, 'lang'));
+            // Load translations from module's resources/lang directory
+            $moduleLangPath = module_path($this->name, 'resources/lang');
+            if (is_dir($moduleLangPath)) {
+                $this->loadTranslationsFrom($moduleLangPath, $this->nameLower);
+                $this->loadJsonTranslationsFrom($moduleLangPath);
+            }
         }
     }
 
@@ -142,7 +164,11 @@ class RegionServiceProvider extends ServiceProvider
      */
     public function provides(): array
     {
-        return [];
+        return [
+            \Modules\Region\Repositories\Region\IRegionRepository::class,
+            \Modules\Region\Services\Region\IRegionService::class,
+            \App\Shared\Region\Services\IRegionService::class,
+        ];
     }
 
     private function getPublishableViewPaths(): array

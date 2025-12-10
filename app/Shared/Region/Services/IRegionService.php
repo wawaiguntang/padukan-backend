@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\Region;
+namespace App\Shared\Region\Services;
 
 interface IRegionService
 {
