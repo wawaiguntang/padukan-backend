@@ -18,5 +18,7 @@
     "CustomerSupport": true,
     "FraudDetection": true,
     "Analytic": true,
-    "Monitor": true
+    "Monitor": true,
+    "Region": true,
+    "Tax": true
 }

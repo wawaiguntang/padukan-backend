@@ -32,6 +32,19 @@ class CategoryRepository implements ICategoryRepository
     }
 
     /**
+     * Find category by slug with caching
+     */
+    public function findBySlug(string $slug): ?Category
+    {
+        $cacheKey = CategoryKeyManager::categoryBySlug($slug);
+        $ttl = CategoryTtlManager::categoryEntity();
+
+        return Cache::remember($cacheKey, $ttl, function () use ($slug) {
+            return Category::where('slug', $slug)->first();
+        });
+    }
+
+    /**
      * Get all categories with caching
      */
     public function all(): Collection

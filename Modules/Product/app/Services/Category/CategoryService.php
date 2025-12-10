@@ -3,6 +3,7 @@
 namespace Modules\Product\Services\Category;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Product\Models\Category;
@@ -74,9 +75,40 @@ class CategoryService implements ICategoryService
                 $this->validateParentCategory($data['parent_id']);
             }
 
+            // Generate slug if not provided or generate from name
+            if (empty($data['slug'])) {
+                $data['slug'] = Str::slug($data['name']);
+            }
+            // Ensure slug uniqueness
+            $data['slug'] = $this->generateUniqueSlug($data['slug']);
+
+            // Set path and level
+            if (isset($data['parent_id']) && !empty($data['parent_id'])) {
+                $parent = $this->categoryRepository->find($data['parent_id']);
+                $data['level'] = ($parent->level ?? 0) + 1;
+                // Path will be updated after creation since we need the ID
+                // For now, we'll set a temporary path or handle it in the repository/model observer if we had one
+                // But here we'll do it in transaction
+            } else {
+                $data['level'] = 0;
+            }
+
             $category = DB::transaction(function () use ($data) {
                 try {
-                    return $this->categoryRepository->create($data);
+                    $category = $this->categoryRepository->create($data);
+
+                    // Update path: parent_path/id
+                    if (!empty($data['parent_id'])) {
+                        $parent = $this->categoryRepository->find($data['parent_id']);
+                        $path = ($parent->path ? $parent->path . '/' : '') . $category->id;
+                    } else {
+                        $path = $category->id;
+                    }
+
+                    $this->categoryRepository->update($category->id, ['path' => $path]);
+                    $category->path = $path;
+
+                    return $category;
                 } catch (\Exception $e) {
                     Log::error('Failed to create category in transaction', [
                         'data' => $data,
@@ -117,13 +149,37 @@ class CategoryService implements ICategoryService
             $this->validateCategoryData($data, $id);
 
             // Validate parent exists if provided
-            if (isset($data['parent_id']) && !empty($data['parent_id'])) {
-                $this->validateParentCategory($data['parent_id'], $id);
+            if (array_key_exists('parent_id', $data)) {
+                if (!empty($data['parent_id'])) {
+                    $this->validateParentCategory($data['parent_id'], $id);
+
+                    // Update level and path if parent changed
+                    $parent = $this->categoryRepository->find($data['parent_id']);
+                    $data['level'] = ($parent->level ?? 0) + 1;
+                } else {
+                    $data['level'] = 0;
+                    $data['parent_id'] = null;
+                }
             }
 
-            $result = DB::transaction(function () use ($id, $data) {
+            // Handle slug update
+            if (isset($data['slug'])) {
+                $data['slug'] = $this->generateUniqueSlug($data['slug'], $id);
+            } elseif (isset($data['name']) && !isset($data['slug'])) {
+                // Optionally regenerate slug if name changes, but usually better to keep stable URLs
+                // $data['slug'] = $this->generateUniqueSlug(Str::slug($data['name']), $id);
+            }
+
+            $result = DB::transaction(function () use ($id, $data, $category) {
                 try {
-                    return $this->categoryRepository->update($id, $data);
+                    $updated = $this->categoryRepository->update($id, $data);
+
+                    // If parent changed, we need to update path and children paths
+                    if (array_key_exists('parent_id', $data) && $data['parent_id'] !== $category->parent_id) {
+                        $this->updatePathAndChildren($id);
+                    }
+
+                    return $updated;
                 } catch (\Exception $e) {
                     Log::error('Failed to update category in transaction', [
                         'category_id' => $id,
@@ -261,11 +317,85 @@ class CategoryService implements ICategoryService
             $errors[] = __('exception.category.validation_failed');
         }
 
-        // Slug uniqueness check would go here
-        // Parent validation is done separately
-
         if (!empty($errors)) {
             throw new CategoryValidationException($errors);
+        }
+    }
+
+    /**
+     * Generate unique slug
+     */
+    private function generateUniqueSlug(string $slug, ?string $excludeId = null): string
+    {
+        $originalSlug = $slug;
+        $count = 1;
+
+        // This is a simplified check. Ideally repository should have existsBySlug
+        // Since we don't have it explicitly exposed in interface yet, we might need to add it or use raw query in repo
+        // For now, assuming we can add findBySlug to repo or use a direct check
+
+        while ($this->slugExists($slug, $excludeId)) {
+            $slug = $originalSlug . '-' . $count;
+            $count++;
+        }
+
+        return $slug;
+    }
+
+    /**
+     * Check if slug exists
+     */
+    private function slugExists(string $slug, ?string $excludeId = null): bool
+    {
+        // We need to add this method to repository or access model directly via repo if possible
+        // Since ICategoryRepository doesn't have it, let's assume we'll add it.
+        // For this patch, I'll use a workaround if repo doesn't support it, but better to add to repo.
+        // Let's assume we will add `findBySlug` or similar to repo.
+        // Wait, the repository implementation uses Eloquent directly, but interface needs update.
+        // For now, I will use a direct DB query here as a temporary measure or add to repo in next step.
+        // Ideally, service should not do direct DB queries.
+        // Let's rely on repository having a method or we add it.
+        // I will add `findBySlug` to the repository interface and implementation in the next step.
+
+        // Temporary: accessing the repository's underlying model is not possible via interface.
+        // I'll assume we'll add `findBySlug` to repository.
+        $category = $this->categoryRepository->findBySlug($slug);
+
+        if ($category) {
+            if ($excludeId && $category->id === $excludeId) {
+                return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Update path for category and its children recursively
+     */
+    private function updatePathAndChildren(string $categoryId): void
+    {
+        $category = $this->categoryRepository->find($categoryId);
+        if (!$category) return;
+
+        // Recalculate path
+        if ($category->parent_id) {
+            $parent = $this->categoryRepository->find($category->parent_id);
+            $newPath = ($parent->path ? $parent->path . '/' : '') . $category->id;
+        } else {
+            $newPath = $category->id;
+        }
+
+        // Only update if changed
+        if ($category->path !== $newPath) {
+            $this->categoryRepository->update($category->id, ['path' => $newPath]);
+
+            // Update children
+            $children = $this->categoryRepository->getChildren($categoryId);
+            foreach ($children as $child) {
+                $this->updatePathAndChildren($child->id);
+            }
         }
     }
 
@@ -289,7 +419,16 @@ class CategoryService implements ICategoryService
             throw new CategoryHierarchyException('self_reference');
         }
 
-        // Prevent circular references (simplified check)
-        // In a full implementation, you'd traverse the hierarchy
+        // Prevent circular references
+        if ($excludeId) {
+            // Check if new parent is a child of the category being updated
+            $parent = $this->categoryRepository->find($parentId);
+
+            // If parent's path contains the category ID, it means the parent is a descendant
+            // Path format: root_id/child_id/grandchild_id
+            if ($parent && $parent->path && str_contains($parent->path, $excludeId)) {
+                throw new CategoryHierarchyException('circular_reference');
+            }
+        }
     }
 }

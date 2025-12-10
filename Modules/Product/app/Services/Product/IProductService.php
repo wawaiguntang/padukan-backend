@@ -161,17 +161,6 @@ interface IProductService
     // ==========================================
 
     /**
-     * Update product base price
-     *
-     * @param string $productId Product UUID
-     * @param float $price New base price
-     * @param string $merchantId Merchant UUID
-     * @param string $reason Price change reason
-     * @return bool Success status
-     */
-    public function updateProductPrice(string $productId, float $price, string $merchantId, string $reason = 'manual'): bool;
-
-    /**
      * Publish product (make it available for sale)
      *
      * @param string $productId Product UUID
@@ -189,32 +178,6 @@ interface IProductService
      */
     public function unpublishProduct(string $productId, string $merchantId): bool;
 
-    /**
-     * Get complete pricing information for a product
-     *
-     * @param string $productId Product UUID
-     * @return array Pricing data with discounts, taxes, etc.
-     */
-    public function getProductPricing(string $productId): array;
-
-    /**
-     * Calculate final price with all modifiers
-     *
-     * @param string $productId Product UUID
-     * @param array $modifiers Price modifiers (tax, discounts, etc.)
-     * @return array Calculated pricing breakdown
-     */
-    public function calculateProductPrice(string $productId, array $modifiers = []): array;
-
-    /**
-     * Get price change history
-     *
-     * @param string $productId Product UUID
-     * @param array $dateRange Date range for history
-     * @return Collection Price change history
-     */
-    public function getPriceHistory(string $productId, array $dateRange = []): Collection;
-
     // ==========================================
     // BULK OPERATIONS
     // ==========================================
@@ -228,16 +191,6 @@ interface IProductService
      * @return array Update results
      */
     public function bulkUpdateProducts(array $productIds, array $updateData, string $merchantId): array;
-
-    /**
-     * Bulk update variant prices
-     *
-     * @param array $variantIds Array of variant UUIDs
-     * @param float $priceAdjustment Price adjustment
-     * @param string $merchantId Merchant UUID
-     * @return array Update results
-     */
-    public function bulkUpdateVariantPrices(array $variantIds, float $priceAdjustment, string $merchantId): array;
 
     // ==========================================
     // VALIDATION & BUSINESS RULES

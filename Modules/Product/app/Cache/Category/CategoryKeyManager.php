@@ -24,6 +24,14 @@ class CategoryKeyManager
     }
 
     /**
+     * Generate cache key for category by slug
+     */
+    public static function categoryBySlug(string $slug): string
+    {
+        return self::PREFIX . ":slug:{$slug}";
+    }
+
+    /**
      * Generate cache key for category roots
      */
     public static function categoryRoots(): string

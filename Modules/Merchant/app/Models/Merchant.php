@@ -33,6 +33,7 @@ class Merchant extends Model
      */
     protected $fillable = [
         'profile_id',
+        'region_id',
         'business_name',
         'business_description',
         'business_category',
@@ -108,5 +109,13 @@ class Merchant extends Model
     public function getLogoUrlAttribute(): ?string
     {
         return $this->logo ? \Illuminate\Support\Facades\Storage::url($this->logo) : null;
+    }
+
+    /**
+     * Get the region that the merchant belongs to.
+     */
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Region\Models\Region::class);
     }
 }

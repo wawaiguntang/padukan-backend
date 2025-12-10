@@ -47,9 +47,6 @@ class ProductServiceProvider extends ServiceProvider
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
 
-        // Register cache key manager
-        $this->registerCacheKeyManager();
-
         // Register repositories
         $this->registerRepositories();
 
@@ -121,6 +118,12 @@ class ProductServiceProvider extends ServiceProvider
             \Modules\Product\Repositories\ProductServiceDetail\IProductServiceDetailRepository::class,
             \Modules\Product\Repositories\ProductServiceDetail\ProductServiceDetailRepository::class
         );
+
+        // Product Image Repository
+        $this->app->bind(
+            \Modules\Product\Repositories\ProductImage\IProductImageRepository::class,
+            \Modules\Product\Repositories\ProductImage\ProductImageRepository::class
+        );
     }
 
     /**
@@ -150,6 +153,12 @@ class ProductServiceProvider extends ServiceProvider
         $this->app->bind(
             \Modules\Product\Services\AttributeCustom\IAttributeCustomService::class,
             \Modules\Product\Services\AttributeCustom\AttributeCustomService::class
+        );
+
+        // File Upload Service
+        $this->app->bind(
+            \Modules\Product\Services\FileUpload\IFileUploadService::class,
+            \Modules\Product\Services\FileUpload\FileUploadService::class
         );
     }
 
@@ -184,10 +193,7 @@ class ProductServiceProvider extends ServiceProvider
      */
     protected function registerCacheKeyManager(): void
     {
-        $this->app->bind(
-            \Modules\Product\Cache\KeyManager\IKeyManager::class,
-            \Modules\Product\Cache\KeyManager\KeyManager::class
-        );
+
     }
 
     /**

@@ -11,6 +11,7 @@ use Modules\Merchant\Services\Document\IDocumentService;
 use Modules\Merchant\Services\FileUpload\IFileUploadService;
 use Modules\Merchant\Enums\DocumentTypeEnum;
 use Modules\Merchant\Enums\VerificationStatusEnum;
+use App\Shared\Region\IRegionService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
@@ -26,19 +27,22 @@ class MerchantService implements IMerchantService
     private IMerchantSettingService $merchantSettingService;
     private IDocumentService $documentService;
     private IFileUploadService $fileUploadService;
+    private IRegionService $regionService;
 
     public function __construct(
         IMerchantRepository $merchantRepository,
         IProfileRepository $profileRepository,
         IMerchantSettingService $merchantSettingService,
         IDocumentService $documentService,
-        IFileUploadService $fileUploadService
+        IFileUploadService $fileUploadService,
+        IRegionService $regionService
     ) {
         $this->merchantRepository = $merchantRepository;
         $this->profileRepository = $profileRepository;
         $this->merchantSettingService = $merchantSettingService;
         $this->documentService = $documentService;
         $this->fileUploadService = $fileUploadService;
+        $this->regionService = $regionService;
     }
 
     /**
@@ -52,6 +56,22 @@ class MerchantService implements IMerchantService
             // Generate slug from business name if not provided
             if (!isset($data['slug']) && isset($data['business_name'])) {
                 $data['slug'] = $this->generateSlug($data['business_name']);
+            }
+
+            // Assign Region based on coordinates
+            if (isset($data['latitude']) && isset($data['longitude'])) {
+                $region = $this->regionService->getRegionByCoordinates($data['latitude'], $data['longitude']);
+                if ($region) {
+                    $data['region_id'] = $region['id'];
+
+                    // Check if service is available in region
+                    if (isset($data['business_category'])) {
+                        $serviceName = $data['business_category']->value;
+                        if (!$this->regionService->isServiceAvailable($region['id'], $serviceName)) {
+                            throw new \Modules\Merchant\Exceptions\ProfileAlreadyExistsException("Service '{$serviceName}' is not available in the selected region."); // Reusing exception or create new one
+                        }
+                    }
+                }
             }
 
             $data['regular_hours'] = json_encode([
@@ -128,6 +148,22 @@ class MerchantService implements IMerchantService
 
         if (!$merchant) {
             return false;
+        }
+
+        // Re-evaluate Region if coordinates changed
+        if (isset($data['latitude']) && isset($data['longitude'])) {
+            $region = $this->regionService->getRegionByCoordinates($data['latitude'], $data['longitude']);
+            $data['region_id'] = $region ? $region['id'] : null;
+
+            // Validate service availability if region changed
+            if ($data['region_id'] && isset($merchant->business_category)) {
+                $serviceName = $merchant->business_category->value;
+                if (!$this->regionService->isServiceAvailable($data['region_id'], $serviceName)) {
+                    // For update, maybe just warn or prevent update?
+                    // Let's prevent update for now to be strict
+                    throw new \RuntimeException("Service '{$serviceName}' is not available in the new region.");
+                }
+            }
         }
 
         // Handle logo upload

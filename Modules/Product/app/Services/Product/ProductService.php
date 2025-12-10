@@ -13,6 +13,8 @@ use Modules\Product\Models\Category;
 use Modules\Product\Repositories\Product\IProductRepository;
 use Modules\Product\Repositories\ProductVariant\IProductVariantRepository;
 use Modules\Product\Repositories\Category\ICategoryRepository;
+use Modules\Product\Repositories\ProductImage\IProductImageRepository;
+use Modules\Product\Services\FileUpload\IFileUploadService;
 use Modules\Product\Cache\Product\ProductCacheManager;
 use Modules\Product\Exceptions\ProductNotFoundException;
 use Modules\Product\Exceptions\ProductAccessDeniedException;
@@ -23,7 +25,10 @@ use Modules\Product\Exceptions\CategoryNotFoundException;
 use Modules\Product\Exceptions\ProductTransactionException;
 use Modules\Product\Enums\ProductTypeEnum;
 use Modules\Product\Enums\ProductStatusEnum;
+use Modules\Product\Events\ProductCreated;
+use Modules\Product\Events\ProductUpdated;
 use App\Shared\Merchant\Services\IMerchantService;
+use App\Shared\Setting\Services\ISettingService;
 
 /**
  * Product Service Implementation
@@ -37,7 +42,10 @@ class ProductService implements IProductService
         private IProductRepository $productRepository,
         private IProductVariantRepository $variantRepository,
         private ICategoryRepository $categoryRepository,
-        private IMerchantService $merchantService
+        private IMerchantService $merchantService,
+        private ISettingService $settingService,
+        private IFileUploadService $fileUploadService,
+        private IProductImageRepository $productImageRepository
     ) {}
 
     // ==========================================
@@ -81,13 +89,26 @@ class ProductService implements IProductService
                         }
                     }
 
-                    // Set initial price if provided
-                    if (isset($productData['price'])) {
-                        $this->updateProductPrice($product->id, $productData['price'], $merchantId, 'initial');
+                    // Handle product images
+                    if (isset($productData['images']) && is_array($productData['images'])) {
+                        foreach ($productData['images'] as $index => $imageFile) {
+                            if ($imageFile instanceof \Illuminate\Http\UploadedFile) {
+                                $uploaded = $this->fileUploadService->uploadProductImage($imageFile, $merchantId, $product->id);
+                                $this->productImageRepository->create([
+                                    'product_id' => $product->id,
+                                    'path' => $uploaded['path'],
+                                    'url' => $uploaded['url'],
+                                    'is_primary' => $index === 0, // First image is primary
+                                    'sort_order' => $index,
+                                    'metadata' => [
+                                        'filename' => $uploaded['filename'],
+                                        'size' => $uploaded['size'],
+                                        'mime_type' => $uploaded['mime_type']
+                                    ]
+                                ]);
+                            }
+                        }
                     }
-
-                    // Initialize inventory if merchant uses inventory
-                    $this->initializeInventory($product->id, $merchantId);
 
                     return $product;
                 } catch (\Exception $e) {
@@ -104,6 +125,8 @@ class ProductService implements IProductService
                 'product_id' => $product->id,
                 'merchant_id' => $merchantId
             ]);
+
+            event(new ProductCreated($product));
 
             // Return product with relationships
             return $this->getProductWithVariants($product->id, $merchantId);
@@ -147,12 +170,40 @@ class ProductService implements IProductService
                     // Update product
                     $this->productRepository->updateForMerchant($productId, $productData, $merchantId);
 
-                    // Update inventory if merchant uses inventory and relevant fields changed
-                    if (
-                        $this->merchantUsesInventory($merchantId) &&
-                        (isset($productData['price']) || isset($productData['name']))
-                    ) {
-                        $this->updateInventory($productId, $merchantId, $productData);
+                    // Handle new images
+                    if (isset($productData['new_images']) && is_array($productData['new_images'])) {
+                        // Get current max sort order
+                        $currentImages = $this->productImageRepository->getByProductId($productId);
+                        $maxSortOrder = $currentImages->max('sort_order') ?? -1;
+
+                        foreach ($productData['new_images'] as $index => $imageFile) {
+                            if ($imageFile instanceof \Illuminate\Http\UploadedFile) {
+                                $uploaded = $this->fileUploadService->uploadProductImage($imageFile, $merchantId, $productId);
+                                $this->productImageRepository->create([
+                                    'product_id' => $productId,
+                                    'path' => $uploaded['path'],
+                                    'url' => $uploaded['url'],
+                                    'is_primary' => $currentImages->isEmpty() && $index === 0,
+                                    'sort_order' => $maxSortOrder + 1 + $index,
+                                    'metadata' => [
+                                        'filename' => $uploaded['filename'],
+                                        'size' => $uploaded['size'],
+                                        'mime_type' => $uploaded['mime_type']
+                                    ]
+                                ]);
+                            }
+                        }
+                    }
+
+                    // Handle deleted images
+                    if (isset($productData['deleted_images']) && is_array($productData['deleted_images'])) {
+                        foreach ($productData['deleted_images'] as $imageId) {
+                            $image = $this->productImageRepository->findById($imageId);
+                            if ($image && $image->product_id === $productId) {
+                                $this->fileUploadService->deleteProductImage($image->path);
+                                $this->productImageRepository->delete($imageId);
+                            }
+                        }
                     }
                 } catch (\Exception $e) {
                     Log::error('Failed to update product in transaction', [
@@ -176,7 +227,10 @@ class ProductService implements IProductService
                 'merchant_id' => $merchantId
             ]);
 
-            return $this->getProductWithVariants($productId, $merchantId);
+            $product = $this->getProductWithVariants($productId, $merchantId);
+            event(new ProductUpdated($product));
+
+            return $product;
         } catch (\Exception $e) {
             Log::error('Product update failed', [
                 'product_id' => $productId,
@@ -210,14 +264,6 @@ class ProductService implements IProductService
 
                     // Delete product
                     $this->productRepository->deleteForMerchant($productId, $merchantId);
-
-                    // Handle inventory cleanup if merchant uses inventory
-                    if ($this->merchantUsesInventory($merchantId)) {
-                        // Dummy implementation - in real, call inventory service to remove stock
-                        Log::info("Cleaning up inventory for deleted product {$productId}", [
-                            'merchant_id' => $merchantId
-                        ]);
-                    }
                 } catch (\Exception $e) {
                     Log::error('Failed to delete product in transaction', [
                         'product_id' => $productId,
@@ -260,14 +306,7 @@ class ProductService implements IProductService
 
         if ($product) {
             $product->load(['variants', 'category']);
-
-            // Add inventory data if merchant uses inventory
-            if ($this->merchantUsesInventory($merchantId)) {
-                $product->inventory = $this->getDummyInventoryData($productId);
-            }
-
-            // Add promo data
-            $product->promos = $this->getDummyPromoData($productId);
+            $product->setRelation('images', $this->productImageRepository->getByProductId($productId));
         }
 
         return $product;
@@ -404,20 +443,6 @@ class ProductService implements IProductService
     // PRICING OPERATIONS
     // ==========================================
 
-    public function updateProductPrice(string $productId, float $price, string $merchantId, string $reason = 'manual'): bool
-    {
-        // Validate ownership
-        if (!$this->productRepository->findByIdAndMerchant($productId, $merchantId)) {
-            return false;
-        }
-
-        return $this->productRepository->updateForMerchant($productId, [
-            'price' => $price,
-            'price_updated_at' => now(),
-            'price_update_reason' => $reason
-        ], $merchantId);
-    }
-
     public function publishProduct(string $productId, string $merchantId): bool
     {
         // Validate ownership
@@ -450,55 +475,6 @@ class ProductService implements IProductService
         ], $merchantId);
     }
 
-    public function getProductPricing(string $productId): array
-    {
-        $product = $this->productRepository->findById($productId);
-        if (!$product) {
-            return [];
-        }
-
-        $basePrice = $product->price ?? 0;
-        $discountPercent = $product->discount_percent ?? 0;
-        $discountedPrice = $basePrice * (1 - $discountPercent / 100);
-
-        return [
-            'product_id' => $productId,
-            'base_price' => $basePrice,
-            'discount_percent' => $discountPercent,
-            'discounted_price' => $discountedPrice,
-            'currency' => 'IDR', // Default currency
-            'discount_active' => $product->discount_active ?? false,
-        ];
-    }
-
-    public function calculateProductPrice(string $productId, array $modifiers = []): array
-    {
-        $pricing = $this->getProductPricing($productId);
-        if (empty($pricing)) {
-            return [];
-        }
-
-        $finalPrice = $pricing['discounted_price'];
-
-        // Apply additional modifiers
-        if (isset($modifiers['tax_rate'])) {
-            $taxAmount = $finalPrice * ($modifiers['tax_rate'] / 100);
-            $finalPrice += $taxAmount;
-        }
-
-        return array_merge($pricing, [
-            'final_price' => $finalPrice,
-            'modifiers_applied' => $modifiers,
-        ]);
-    }
-
-    public function getPriceHistory(string $productId, array $dateRange = []): Collection
-    {
-        // This would require a price history table
-        // For now, return empty collection
-        return collect();
-    }
-
     // ==========================================
     // BULK OPERATIONS
     // ==========================================
@@ -514,30 +490,6 @@ class ProductService implements IProductService
             } catch (\Exception $e) {
                 $results['failed']++;
                 $results['errors'][] = "Product {$productId}: " . $e->getMessage();
-            }
-        }
-
-        return $results;
-    }
-
-    public function bulkUpdateVariantPrices(array $variantIds, float $priceAdjustment, string $merchantId): array
-    {
-        $results = ['successful' => 0, 'failed' => 0, 'errors' => []];
-
-        foreach ($variantIds as $variantId) {
-            try {
-                // Validate ownership
-                $variant = $this->variantRepository->findById($variantId);
-                if ($variant && $this->productRepository->findByIdAndMerchant($variant->product_id, $merchantId)) {
-                    $newPrice = $variant->price + $priceAdjustment;
-                    $this->variantRepository->update($variantId, ['price' => $newPrice]);
-                    $results['successful']++;
-                } else {
-                    throw new \RuntimeException('Variant not found or access denied');
-                }
-            } catch (\Exception $e) {
-                $results['failed']++;
-                $results['errors'][] = "Variant {$variantId}: " . $e->getMessage();
             }
         }
 
@@ -627,13 +579,24 @@ class ProductService implements IProductService
 
     public function checkProductLimits(string $merchantId): array
     {
-        // Simplified limit checking
-        // In real implementation, check subscription limits
+        // Get limits from setting service
+        $maxProducts = (int) $this->settingService->getValue('product.limit_per_merchant', 1000);
+
+        // Count current products for merchant
+        // We need a count method in repository, but for now we can use getByMerchantId with pagination 1 which returns count in paginator
+        // Or better, add countByMerchantId to repository.
+        // For now, using a less efficient way via existing method if count not available
+        // Ideally: $currentCount = $this->productRepository->countByMerchantId($merchantId);
+
+        // Using existing method with minimal data
+        $paginator = $this->productRepository->getByMerchantId($merchantId, [], 1);
+        $currentCount = $paginator->total();
+
         return [
-            'can_create' => true,
-            'current_count' => 0,
-            'max_allowed' => 1000,
-            'remaining' => 1000
+            'can_create' => $currentCount < $maxProducts,
+            'current_count' => $currentCount,
+            'max_allowed' => $maxProducts,
+            'remaining' => max(0, $maxProducts - $currentCount)
         ];
     }
 
@@ -643,8 +606,12 @@ class ProductService implements IProductService
         $originalSlug = $slug;
         $counter = 1;
 
-        // Check uniqueness logic here
-        // For now, just return the slug
+        // Check uniqueness via repository
+        while ($this->productRepository->existsBySlug($slug, $excludeId)) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
         return $slug;
     }
 
@@ -690,107 +657,5 @@ class ProductService implements IProductService
         if (!in_array($type, $validTypes)) {
             throw new ProductValidationException(['type' => "Invalid product type. Allowed: " . implode(', ', $validTypes)]);
         }
-    }
-
-    /**
-     * Check if merchant uses inventory
-     *
-     * @param string $merchantId
-     * @return bool
-     */
-    private function merchantUsesInventory(string $merchantId): bool
-    {
-        $settings = $this->merchantService->getMerchantSetting($merchantId);
-        return $settings['use_inventory'] ?? false;
-    }
-
-    /**
-     * Get dummy inventory data for product
-     *
-     * @param string $productId
-     * @return array
-     */
-    private function getDummyInventoryData(string $productId): array
-    {
-        // Dummy data - in real implementation, fetch from inventory module
-        return [
-            [
-                'product_id' => $productId,
-                'stock_quantity' => 100,
-                'location' => 'Main Warehouse',
-                'min_stock_level' => 10,
-                'last_updated' => now()->toISOString()
-            ],
-            [
-                'product_id' => $productId,
-                'stock_quantity' => 50,
-                'location' => 'Branch Store',
-                'min_stock_level' => 5,
-                'last_updated' => now()->toISOString()
-            ]
-        ];
-    }
-
-    /**
-     * Get dummy promo data for product
-     *
-     * @param string $productId
-     * @return array
-     */
-    private function getDummyPromoData(string $productId): array
-    {
-        // Dummy data - in real implementation, fetch from promo module
-        return [
-            [
-                'product_id' => $productId,
-                'discount_percentage' => 10,
-                'discount_type' => 'percentage',
-                'valid_from' => now()->toDateString(),
-                'valid_until' => now()->addDays(30)->toDateString(),
-                'is_active' => true
-            ]
-        ];
-    }
-
-    /**
-     * Initialize inventory for new product
-     *
-     * @param string $productId
-     * @param string $merchantId
-     * @return void
-     */
-    private function initializeInventory(string $productId, string $merchantId): void
-    {
-        if (!$this->merchantUsesInventory($merchantId)) {
-            return;
-        }
-
-        // Dummy implementation - in real, call inventory service
-        Log::info("Initializing inventory for product {$productId}", [
-            'merchant_id' => $merchantId,
-            'inventory_data' => $this->getDummyInventoryData($productId)
-        ]);
-    }
-
-    /**
-     * Update inventory for product changes
-     *
-     * @param string $productId
-     * @param string $merchantId
-     * @param array $changes
-     * @return void
-     */
-    private function updateInventory(string $productId, string $merchantId, array $changes): void
-    {
-        if (!$this->merchantUsesInventory($merchantId)) {
-            return;
-        }
-
-        // Dummy implementation - in real, call inventory service
-        Log::info("Updating inventory for product {$productId}", [
-            'merchant_id' => $merchantId,
-            'changes' => $changes,
-            'inventory_data' => $this->getDummyInventoryData($productId)
-        ]);
     }
 }

@@ -1,18 +1,18 @@
 <?php
 
-namespace Modules\Product\Http\Controllers;
+namespace Modules\Tax\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-class ProductController extends Controller
+class TaxController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return view('product::index');
+        return view('tax::index');
     }
 
     /**
@@ -20,7 +20,7 @@ class ProductController extends Controller
      */
     public function create()
     {
-        return view('product::create');
+        return view('tax::create');
     }
 
     /**
@@ -33,7 +33,7 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        return view('product::show');
+        return view('tax::show');
     }
 
     /**
@@ -41,7 +41,7 @@ class ProductController extends Controller
      */
     public function edit($id)
     {
-        return view('product::edit');
+        return view('tax::edit');
     }
 
     /**

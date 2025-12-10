@@ -22,6 +22,14 @@ interface ICategoryRepository
     public function find(string $id): ?Category;
 
     /**
+     * Find category by slug
+     *
+     * @param string $slug
+     * @return Category|null
+     */
+    public function findBySlug(string $slug): ?Category;
+
+    /**
      * Get all categories
      *
      * @return Collection The collection of all categories

@@ -21,6 +21,14 @@ class CategoryCacheManager
     }
 
     /**
+     * Invalidate category cache by Slug
+     */
+    public static function invalidateCategoryBySlug(string $slug): void
+    {
+        Cache::forget(CategoryKeyManager::categoryBySlug($slug));
+    }
+
+    /**
      * Invalidate all category caches using Redis pattern deletion
      */
     public static function invalidateAllCategories(): void
@@ -112,6 +120,10 @@ class CategoryCacheManager
                     self::invalidateCategoryEntity($id);
                 }
 
+                if (isset($data['slug'])) {
+                    self::invalidateCategoryBySlug($data['slug']);
+                }
+
                 // Structural changes require broader invalidation
                 if (isset($data['parent_id']) || isset($data['name'])) {
                     self::invalidateAllCategories();
@@ -125,6 +137,10 @@ class CategoryCacheManager
 
                 if ($id) {
                     self::invalidateCategoryEntity($id);
+                }
+
+                if ($category && isset($category['slug'])) {
+                    self::invalidateCategoryBySlug($category['slug']);
                 }
 
                 // Always invalidate lists and trees on delete
