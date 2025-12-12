@@ -14,7 +14,7 @@ interface IRegionService
      * @param int $perPage
      * @return LengthAwarePaginator
      */
-    public function getAllRegions(array $filters = [], int $perPage = 15): LengthAwarePaginator;
+    public function getAllRegions(array $filters = [], int $page = 1, int $perPage = 15): LengthAwarePaginator;
 
     /**
      * Create a new region.

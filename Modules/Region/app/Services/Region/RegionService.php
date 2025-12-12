@@ -19,9 +19,9 @@ class RegionService implements IRegionService
     /**
      * @param array{name?: string, is_active?: bool} $filters
      */
-    public function getAllRegions(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function getAllRegions(array $filters = [], int $page = 1, int $perPage = 15): LengthAwarePaginator
     {
-        return $this->regionRepository->getAll($filters, $perPage);
+        return $this->regionRepository->getAll($filters, $page, $perPage);
     }
 
     /**

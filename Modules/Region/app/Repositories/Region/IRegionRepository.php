@@ -38,7 +38,7 @@ interface IRegionRepository
      * @param int $perPage
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getAll(array $filters = [], int $perPage = 15);
+    public function getAll(array $filters = [], int $page = 1, int $perPage = 15);
 
     /**
      * Find a region by its ID.

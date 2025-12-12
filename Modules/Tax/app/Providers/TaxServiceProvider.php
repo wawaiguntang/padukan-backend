@@ -25,7 +25,13 @@ class TaxServiceProvider extends ServiceProvider
         $this->registerCommandSchedules();
         $this->registerTranslations();
         $this->registerConfig();
+
+        // Register module database connection
+        $dbConfig = config('tax.database');
+        $this->app['config']['database.connections.tax'] = $dbConfig;
+
         $this->registerViews();
+        $this->registerObservers();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
     }
 
@@ -37,11 +43,67 @@ class TaxServiceProvider extends ServiceProvider
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
 
+        $this->registerServices();
+    }
+
+    /**
+     * Register module services.
+     */
+    protected function registerServices(): void
+    {
+        // Tax Repository (Master)
         $this->app->bind(
-            \App\Shared\Tax\ITaxService::class,
-            \Modules\Tax\Services\TaxService::class
+            \Modules\Tax\Repositories\Tax\ITaxRepository::class,
+            \Modules\Tax\Repositories\Tax\TaxRepository::class
+        );
+
+        // Tax Service (Master)
+        $this->app->bind(
+            \Modules\Tax\Services\Tax\ITaxService::class,
+            \Modules\Tax\Services\Tax\TaxService::class
+        );
+
+        // Tax Group Repository (Config)
+        $this->app->bind(
+            \Modules\Tax\Repositories\TaxGroup\ITaxGroupRepository::class,
+            \Modules\Tax\Repositories\TaxGroup\TaxGroupRepository::class
+        );
+
+        // Tax Group Service
+        $this->app->bind(
+            \Modules\Tax\Services\TaxGroup\ITaxGroupService::class,
+            \Modules\Tax\Services\TaxGroup\TaxGroupService::class
+        );
+
+        // Tax Assignment Repository
+        $this->app->bind(
+            \Modules\Tax\Repositories\TaxAssignment\ITaxAssignmentRepository::class,
+            \Modules\Tax\Repositories\TaxAssignment\TaxAssignmentRepository::class
+        );
+
+        // Tax Rate Repository
+        $this->app->bind(
+            \Modules\Tax\Repositories\TaxRate\ITaxRateRepository::class,
+            \Modules\Tax\Repositories\TaxRate\TaxRateRepository::class
+        );
+
+        // Tax Rate Service
+        $this->app->bind(
+            \Modules\Tax\Services\TaxRate\ITaxRateService::class,
+            \Modules\Tax\Services\TaxRate\TaxRateService::class
+        );
+
+        // Tax Calculation Service
+        $this->app->bind(
+            \Modules\Tax\Services\TaxCalculation\ITaxCalculationService::class,
+            \Modules\Tax\Services\TaxCalculation\TaxCalculationService::class
         );
     }
+
+    /**
+     * Register model observers.
+     */
+    protected function registerObservers(): void {}
 
     /**
      * Register commands in the format of Command::class
@@ -73,8 +135,12 @@ class TaxServiceProvider extends ServiceProvider
             $this->loadTranslationsFrom($langPath, $this->nameLower);
             $this->loadJsonTranslationsFrom($langPath);
         } else {
-            $this->loadTranslationsFrom(module_path($this->name, 'lang'), $this->nameLower);
-            $this->loadJsonTranslationsFrom(module_path($this->name, 'lang'));
+            // Load translations from module's resources/lang directory
+            $moduleLangPath = module_path($this->name, 'resources/lang');
+            if (is_dir($moduleLangPath)) {
+                $this->loadTranslationsFrom($moduleLangPath, $this->nameLower);
+                $this->loadJsonTranslationsFrom($moduleLangPath);
+            }
         }
     }
 

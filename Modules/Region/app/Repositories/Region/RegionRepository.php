@@ -55,7 +55,7 @@ class RegionRepository implements IRegionRepository
     /**
      * @param array{name?: string, is_active?: bool} $filters
      */
-    public function getAll(array $filters = [], int $perPage = 15)
+    public function getAll(array $filters = [], int $page = 1,int $perPage = 15)
     {
         $query = Region::query();
 
@@ -67,7 +67,7 @@ class RegionRepository implements IRegionRepository
             $query->where('is_active', $filters['is_active']);
         }
 
-        return $query->paginate($perPage);
+        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function findById(string $id)
