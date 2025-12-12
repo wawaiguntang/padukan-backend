@@ -1,0 +1,284 @@
+{
+    "tables": [
+        {
+            "name": "promotions",
+            "description": "Master table untuk semua jenis promo, sepenuhnya dinamis",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "BIGINT",
+                    "description": "ID unik promo, primary key"
+                },
+                {
+                    "name": "code",
+                    "type": "VARCHAR",
+                    "description": "Kode promo / voucher (opsional)"
+                },
+                {
+                    "name": "name",
+                    "type": "VARCHAR",
+                    "description": "Nama promo"
+                },
+                {
+                    "name": "short_description",
+                    "type": "TEXT",
+                    "description": "Ringkasan promo, tampil di UI"
+                },
+                {
+                    "name": "terms_conditions",
+                    "type": "TEXT",
+                    "description": "Syarat & ketentuan promo secara lengkap"
+                },
+                {
+                    "name": "banner_image",
+                    "type": "VARCHAR",
+                    "description": "URL gambar/banner promo"
+                },
+                {
+                    "name": "owner_type",
+                    "type": "VARCHAR",
+                    "description": "Pemilik promo (admin, merchant, brand)"
+                },
+                {
+                    "name": "owner_id",
+                    "type": "VARCHAR",
+                    "description": "ID pemilik promo"
+                },
+                {
+                    "name": "priority",
+                    "type": "INT",
+                    "description": "Prioritas promo saat stackable"
+                },
+                {
+                    "name": "stackable",
+                    "type": "BOOLEAN",
+                    "description": "Apakah promo bisa digabung dengan promo lain"
+                },
+                {
+                    "name": "start_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu mulai berlaku"
+                },
+                {
+                    "name": "end_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu berakhir"
+                },
+                {
+                    "name": "status",
+                    "type": "ENUM",
+                    "description": "draft, active, expired, deleted"
+                },
+                {
+                    "name": "rules_json",
+                    "type": "JSON",
+                    "description": "Syarat / kondisi dinamis, format JSON"
+                },
+                {
+                    "name": "actions_json",
+                    "type": "JSON",
+                    "description": "Aksi promo, format JSON: discount, free item, cashback, dsb"
+                },
+                {
+                    "name": "metadata",
+                    "type": "JSON",
+                    "description": "Informasi tambahan fleksibel: tags, dsb"
+                },
+                {
+                    "name": "created_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu record dibuat"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu record diupdate"
+                }
+            ]
+        },
+        {
+            "name": "promotion_targets",
+            "description": "Target promo polymorphic: bisa produk, kategori, merchant, user, dsb",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "BIGINT",
+                    "description": "ID unik target"
+                },
+                {
+                    "name": "promotion_id",
+                    "type": "BIGINT",
+                    "description": "FK ke promotions"
+                },
+                {
+                    "name": "target_type",
+                    "type": "VARCHAR",
+                    "description": "Tipe target: product, category, merchant, user, dsb"
+                },
+                {
+                    "name": "target_id",
+                    "type": "VARCHAR",
+                    "description": "ID target eksternal"
+                },
+                {
+                    "name": "operator",
+                    "type": "ENUM",
+                    "description": "include / exclude"
+                },
+                {
+                    "name": "created_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu dibuat"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu diupdate"
+                }
+            ]
+        },
+        {
+            "name": "promotion_usages",
+            "description": "Tracking penggunaan promo polymorphic",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "BIGINT",
+                    "description": "ID unik usage"
+                },
+                {
+                    "name": "promotion_id",
+                    "type": "BIGINT",
+                    "description": "FK ke promotions"
+                },
+                {
+                    "name": "usage_by_type",
+                    "type": "VARCHAR",
+                    "description": "Siapa yang menggunakan: user, merchant, dsb"
+                },
+                {
+                    "name": "usage_by_id",
+                    "type": "VARCHAR",
+                    "description": "ID pemakai"
+                },
+                {
+                    "name": "usage_on_type",
+                    "type": "VARCHAR",
+                    "description": "Target entitas: order, cart, invoice, dsb"
+                },
+                {
+                    "name": "usage_on_id",
+                    "type": "VARCHAR",
+                    "description": "ID target entitas"
+                },
+                {
+                    "name": "usage_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu digunakan"
+                },
+                {
+                    "name": "metadata",
+                    "type": "JSON",
+                    "description": "Informasi tambahan: device, channel, cart_value, discount_applied"
+                },
+                {
+                    "name": "created_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu dibuat"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu diupdate"
+                }
+            ]
+        },
+        {
+            "name": "campaigns",
+            "description": "Grouping promo menjadi campaign/event",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "BIGINT",
+                    "description": "ID campaign unik"
+                },
+                {
+                    "name": "name",
+                    "type": "VARCHAR",
+                    "description": "Nama campaign"
+                },
+                {
+                    "name": "description",
+                    "type": "TEXT",
+                    "description": "Deskripsi campaign"
+                },
+                {
+                    "name": "banner_image",
+                    "type": "VARCHAR",
+                    "description": "Gambar/banner campaign"
+                },
+                {
+                    "name": "start_at",
+                    "type": "TIMESTAMP",
+                    "description": "Mulai campaign"
+                },
+                {
+                    "name": "end_at",
+                    "type": "TIMESTAMP",
+                    "description": "Akhir campaign"
+                },
+                {
+                    "name": "status",
+                    "type": "ENUM",
+                    "description": "draft, active, expired"
+                },
+                {
+                    "name": "metadata",
+                    "type": "JSON",
+                    "description": "Data tambahan fleksibel: event type, tags, dsb"
+                },
+                {
+                    "name": "created_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu dibuat"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu diupdate"
+                }
+            ]
+        },
+        {
+            "name": "campaign_promotions",
+            "description": "Pivot table untuk mengaitkan promo ke campaign",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "BIGINT",
+                    "description": "ID unik pivot record"
+                },
+                {
+                    "name": "campaign_id",
+                    "type": "BIGINT",
+                    "description": "FK ke campaigns"
+                },
+                {
+                    "name": "promotion_id",
+                    "type": "BIGINT",
+                    "description": "FK ke promotions"
+                },
+                {
+                    "name": "created_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu dibuat"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "TIMESTAMP",
+                    "description": "Waktu diupdate"
+                }
+            ]
+        }
+    ]
+}

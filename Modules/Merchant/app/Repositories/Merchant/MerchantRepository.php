@@ -2,24 +2,16 @@
 
 namespace Modules\Merchant\Repositories\Merchant;
 
-use Illuminate\Support\Facades\Cache;
 use Modules\Merchant\Models\Merchant;
-use Modules\Merchant\Cache\KeyManager\IKeyManager;
 
 /**
  * Merchant Repository Implementation
  *
- * Handles merchant data operations with caching
+ * Handles merchant data operations
  */
 class MerchantRepository implements IMerchantRepository
 {
-    private IKeyManager $keyManager;
-    private int $cacheTtl = 900; // 15 minutes
-
-    public function __construct(IKeyManager $keyManager)
-    {
-        $this->keyManager = $keyManager;
-    }
+    public function __construct() {}
 
     /**
      * Create a new merchant
@@ -34,11 +26,7 @@ class MerchantRepository implements IMerchantRepository
      */
     public function findById(string $merchantId): ?Merchant
     {
-        $cacheKey = $this->keyManager::getMerchantByIdKey($merchantId);
-
-        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($merchantId) {
-            return Merchant::find($merchantId);
-        });
+        return Merchant::find($merchantId);
     }
 
     /**
@@ -46,16 +34,11 @@ class MerchantRepository implements IMerchantRepository
      */
     public function findByProfileId(string $profileId)
     {
-        $cacheKey = $this->keyManager::getMerchantsByProfileIdKey($profileId);
-
-        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
-            return Merchant::where('profile_id', $profileId)->get();
-        });
+        return Merchant::where('profile_id', $profileId)->get();
     }
 
     /**
      * Update merchant by ID
-     * Note: Cache clearing is handled automatically by MerchantObserver
      */
     public function updateById(string $merchantId, array $data): bool
     {
@@ -70,7 +53,6 @@ class MerchantRepository implements IMerchantRepository
 
     /**
      * Delete merchant by ID
-     * Note: Cache clearing is handled automatically by MerchantObserver
      */
     public function deleteById(string $merchantId): bool
     {
@@ -85,7 +67,6 @@ class MerchantRepository implements IMerchantRepository
 
     /**
      * Count merchants by profile ID
-     * Note: This method bypasses cache to ensure accurate counts for business logic
      */
     public function countByProfileId(string $profileId): int
     {

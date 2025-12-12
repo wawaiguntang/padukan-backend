@@ -2,9 +2,7 @@
 
 namespace Modules\Driver\Repositories\DriverStatus;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Modules\Driver\Models\DriverAvailabilityStatus;
-use Modules\Driver\Cache\KeyManager\IKeyManager;
 
 /**
  * Driver Status Repository Implementation
@@ -21,39 +19,15 @@ class DriverStatusRepository implements IDriverStatusRepository
      */
     protected DriverAvailabilityStatus $model;
 
-    /**
-     * The cache repository instance
-     *
-     * @var Cache
-     */
-    protected Cache $cache;
-
-    /**
-     * The cache key manager instance
-     *
-     * @var IKeyManager
-     */
-    protected IKeyManager $cacheKeyManager;
-
-    /**
-     * Cache TTL in seconds (5 minutes - shorter for status data)
-     *
-     * @var int
-     */
-    protected int $cacheTtl = 300;
 
     /**
      * Constructor
      *
      * @param DriverAvailabilityStatus $model The DriverAvailabilityStatus model instance
-     * @param Cache $cache The cache repository instance
-     * @param IKeyManager $cacheKeyManager The cache key manager instance
      */
-    public function __construct(DriverAvailabilityStatus $model, Cache $cache, IKeyManager $cacheKeyManager)
+    public function __construct(DriverAvailabilityStatus $model)
     {
         $this->model = $model;
-        $this->cache = $cache;
-        $this->cacheKeyManager = $cacheKeyManager;
     }
 
     /**
@@ -61,11 +35,7 @@ class DriverStatusRepository implements IDriverStatusRepository
      */
     public function findByProfileId(string $profileId): ?DriverAvailabilityStatus
     {
-        $cacheKey = $this->cacheKeyManager::driverStatusByProfileId($profileId);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
-            return $this->model->where('profile_id', $profileId)->first();
-        });
+        return $this->model->where('profile_id', $profileId)->first();
     }
 
     /**
@@ -73,11 +43,7 @@ class DriverStatusRepository implements IDriverStatusRepository
      */
     public function findById(string $id): ?DriverAvailabilityStatus
     {
-        $cacheKey = $this->cacheKeyManager::driverStatusById($id);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($id) {
-            return $this->model->find($id);
-        });
+        return $this->model->find($id);
     }
 
     /**
@@ -87,7 +53,7 @@ class DriverStatusRepository implements IDriverStatusRepository
     {
         $driverStatus = $this->model->create($data);
 
-        // Cache invalidation is handled by DriverStatusObserver
+        // Cache operations disabled
 
         return $driverStatus;
     }
@@ -105,7 +71,7 @@ class DriverStatusRepository implements IDriverStatusRepository
 
         $result = $driverStatus->update($data);
 
-        // Cache invalidation is handled by DriverStatusObserver
+        // Cache operations disabled
 
         return $result;
     }
@@ -137,7 +103,7 @@ class DriverStatusRepository implements IDriverStatusRepository
 
         $result = $driverStatus->delete();
 
-        // Cache invalidation is handled by DriverStatusObserver
+        // Cache operations disabled
 
         return $result;
     }

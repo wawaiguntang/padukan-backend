@@ -4,8 +4,6 @@ namespace Modules\Driver\Services\DriverStatus;
 
 use Modules\Driver\Models\DriverAvailabilityStatus;
 use Modules\Driver\Repositories\DriverStatus\IDriverStatusRepository;
-use Modules\Driver\Cache\KeyManager\IKeyManager;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Driver Status Service Implementation
@@ -17,20 +15,14 @@ class DriverStatusService implements IDriverStatusService
      */
     protected IDriverStatusRepository $driverStatusRepository;
 
-    /**
-     * Cache key manager instance
-     */
-    protected IKeyManager $keyManager;
 
     /**
      * Constructor
      */
     public function __construct(
-        IDriverStatusRepository $driverStatusRepository,
-        IKeyManager $keyManager
+        IDriverStatusRepository $driverStatusRepository
     ) {
         $this->driverStatusRepository = $driverStatusRepository;
-        $this->keyManager = $keyManager;
     }
 
     /**
@@ -38,21 +30,17 @@ class DriverStatusService implements IDriverStatusService
      */
     public function getOrCreateStatus(string $profileId): DriverAvailabilityStatus
     {
-        $cacheKey = $this->keyManager->driverStatusByProfileId($profileId);
+        $status = $this->driverStatusRepository->findByProfileId($profileId);
 
-        return Cache::remember($cacheKey, 300, function () use ($profileId) {
-            $status = $this->driverStatusRepository->findByProfileId($profileId);
+        if (!$status) {
+            $status = $this->driverStatusRepository->create([
+                'profile_id' => $profileId,
+                'online_status' => 'offline',
+                'operational_status' => 'available',
+            ]);
+        }
 
-            if (!$status) {
-                $status = $this->driverStatusRepository->create([
-                    'profile_id' => $profileId,
-                    'online_status' => 'offline',
-                    'operational_status' => 'available',
-                ]);
-            }
-
-            return $status;
-        });
+        return $status;
     }
 
     /**
@@ -66,10 +54,6 @@ class DriverStatusService implements IDriverStatusService
             'online_status' => $onlineStatus,
             'last_updated_at' => now(),
         ]);
-
-        // Clear cache and get fresh data
-        $cacheKey = $this->keyManager->driverStatusByProfileId($profileId);
-        Cache::forget($cacheKey);
 
         return $this->driverStatusRepository->findByProfileId($profileId);
     }
@@ -86,10 +70,6 @@ class DriverStatusService implements IDriverStatusService
             'last_updated_at' => now(),
         ]);
 
-        // Clear cache and get fresh data
-        $cacheKey = $this->keyManager->driverStatusByProfileId($profileId);
-        Cache::forget($cacheKey);
-
         return $this->driverStatusRepository->findByProfileId($profileId);
     }
 
@@ -104,10 +84,6 @@ class DriverStatusService implements IDriverStatusService
             'active_service' => $activeService,
             'last_updated_at' => now(),
         ]);
-
-        // Clear cache and get fresh data
-        $cacheKey = $this->keyManager->driverStatusByProfileId($profileId);
-        Cache::forget($cacheKey);
 
         return $this->driverStatusRepository->findByProfileId($profileId);
     }
@@ -125,10 +101,6 @@ class DriverStatusService implements IDriverStatusService
             'last_updated_at' => now(),
         ]);
 
-        // Clear cache and get fresh data
-        $cacheKey = $this->keyManager->driverStatusByProfileId($profileId);
-        Cache::forget($cacheKey);
-
         return $this->driverStatusRepository->findByProfileId($profileId);
     }
 
@@ -142,10 +114,6 @@ class DriverStatusService implements IDriverStatusService
         $updateData = array_merge($data, ['last_updated_at' => now()]);
 
         $this->driverStatusRepository->update($status->id, $updateData);
-
-        // Clear cache and get fresh data
-        $cacheKey = $this->keyManager->driverStatusByProfileId($profileId);
-        Cache::forget($cacheKey);
 
         return $this->driverStatusRepository->findByProfileId($profileId);
     }

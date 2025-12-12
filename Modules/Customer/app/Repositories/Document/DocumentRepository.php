@@ -2,18 +2,16 @@
 
 namespace Modules\Customer\Repositories\Document;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Customer\Enums\DocumentTypeEnum;
 use Modules\Customer\Enums\VerificationStatusEnum;
 use Modules\Customer\Models\Document;
-use Modules\Customer\Cache\KeyManager\IKeyManager;
 
 /**
  * Document Repository Implementation
  *
  * This class handles all document-related database operations
- * for the customer module with caching support.
+ * for the customer module.
  */
 class DocumentRepository implements IDocumentRepository
 {
@@ -25,38 +23,13 @@ class DocumentRepository implements IDocumentRepository
     protected Document $model;
 
     /**
-     * The cache repository instance
-     *
-     * @var Cache
-     */
-    protected Cache $cache;
-
-    /**
-     * The cache key manager instance
-     *
-     * @var IKeyManager
-     */
-    protected IKeyManager $cacheKeyManager;
-
-    /**
-     * Cache TTL in seconds (10 minutes - shorter for document data)
-     *
-     * @var int
-     */
-    protected int $cacheTtl = 600;
-
-    /**
      * Constructor
      *
      * @param Document $model The Document model instance
-     * @param Cache $cache The cache repository instance
-     * @param IKeyManager $cacheKeyManager The cache key manager instance
      */
-    public function __construct(Document $model, Cache $cache, IKeyManager $cacheKeyManager)
+    public function __construct(Document $model)
     {
         $this->model = $model;
-        $this->cache = $cache;
-        $this->cacheKeyManager = $cacheKeyManager;
     }
 
     /**
@@ -64,11 +37,7 @@ class DocumentRepository implements IDocumentRepository
      */
     public function findByProfileId(string $profileId): Collection
     {
-        $cacheKey = $this->cacheKeyManager::documentsByProfileId($profileId);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
-            return $this->model->where('documentable_id', $profileId)->get();
-        });
+        return $this->model->where('documentable_id', $profileId)->get();
     }
 
     /**
@@ -76,11 +45,7 @@ class DocumentRepository implements IDocumentRepository
      */
     public function findById(string $id): ?Document
     {
-        $cacheKey = $this->cacheKeyManager::documentById($id);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($id) {
-            return $this->model->find($id);
-        });
+        return $this->model->find($id);
     }
 
     /**
@@ -88,11 +53,7 @@ class DocumentRepository implements IDocumentRepository
      */
     public function create(array $data): Document
     {
-        $document = $this->model->create($data);
-
-        // Cache invalidation is handled by DocumentObserver
-
-        return $document;
+        return $this->model->create($data);
     }
 
     /**
@@ -106,11 +67,7 @@ class DocumentRepository implements IDocumentRepository
             return false;
         }
 
-        $result = $document->update($data);
-
-        // Cache invalidation is handled by DocumentObserver
-
-        return $result;
+        return $document->update($data);
     }
 
     /**
@@ -124,11 +81,7 @@ class DocumentRepository implements IDocumentRepository
             return false;
         }
 
-        $result = $document->delete();
-
-        // Cache invalidation is handled by DocumentObserver
-
-        return $result;
+        return $document->delete();
     }
 
     /**

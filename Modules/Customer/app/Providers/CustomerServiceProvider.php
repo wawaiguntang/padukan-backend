@@ -32,7 +32,6 @@ class CustomerServiceProvider extends ServiceProvider
 
         $this->registerViews();
         $this->registerMiddleware();
-        $this->registerObservers();
 
         // Only load migrations if not in testing environment
         if (app()->environment() !== 'testing') {
@@ -48,8 +47,6 @@ class CustomerServiceProvider extends ServiceProvider
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
 
-        // Register cache key manager
-        $this->registerCacheKeyManager();
 
         // Register repositories
         $this->registerRepositories();
@@ -258,17 +255,6 @@ class CustomerServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register cache key manager binding
-     */
-    protected function registerCacheKeyManager(): void
-    {
-        $this->app->bind(
-            \Modules\Customer\Cache\KeyManager\IKeyManager::class,
-            \Modules\Customer\Cache\KeyManager\KeyManager::class
-        );
-    }
-
-    /**
      * Register policy bindings
      */
     protected function registerPolicies(): void
@@ -284,17 +270,6 @@ class CustomerServiceProvider extends ServiceProvider
             \Modules\Customer\Policies\AddressManagement\IAddressManagementPolicy::class,
             \Modules\Customer\Policies\AddressManagement\AddressManagementPolicy::class
         );
-    }
-
-    /**
-     * Register model observers
-     */
-    protected function registerObservers(): void
-    {
-        // Register model observers for cache management
-        \Modules\Customer\Models\Profile::observe(\Modules\Customer\Observers\ProfileObserver::class);
-        \Modules\Customer\Models\Document::observe(\Modules\Customer\Observers\DocumentObserver::class);
-        \Modules\Customer\Models\Address::observe(\Modules\Customer\Observers\AddressObserver::class);
     }
 
     /**

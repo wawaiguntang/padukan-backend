@@ -2,12 +2,10 @@
 
 namespace Modules\Driver\Repositories\Document;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Driver\Enums\DocumentTypeEnum;
 use Modules\Driver\Enums\VerificationStatusEnum;
 use Modules\Driver\Models\Document;
-use Modules\Driver\Cache\KeyManager\IKeyManager;
 
 /**
  * Document Repository Implementation
@@ -24,39 +22,15 @@ class DocumentRepository implements IDocumentRepository
      */
     protected Document $model;
 
-    /**
-     * The cache repository instance
-     *
-     * @var Cache
-     */
-    protected Cache $cache;
-
-    /**
-     * The cache key manager instance
-     *
-     * @var IKeyManager
-     */
-    protected IKeyManager $cacheKeyManager;
-
-    /**
-     * Cache TTL in seconds (10 minutes - shorter for document data)
-     *
-     * @var int
-     */
-    protected int $cacheTtl = 600;
 
     /**
      * Constructor
      *
      * @param Document $model The Document model instance
-     * @param Cache $cache The cache repository instance
-     * @param IKeyManager $cacheKeyManager The cache key manager instance
      */
-    public function __construct(Document $model, Cache $cache, IKeyManager $cacheKeyManager)
+    public function __construct(Document $model)
     {
         $this->model = $model;
-        $this->cache = $cache;
-        $this->cacheKeyManager = $cacheKeyManager;
     }
 
     /**
@@ -64,13 +38,9 @@ class DocumentRepository implements IDocumentRepository
      */
     public function findByProfileId(string $profileId): Collection
     {
-        $cacheKey = $this->cacheKeyManager::documentsByProfileId($profileId);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
-            return $this->model->where('documentable_id', $profileId)
-                ->where('documentable_type', \Modules\Driver\Models\Profile::class)
-                ->get();
-        });
+        return $this->model->where('documentable_id', $profileId)
+            ->where('documentable_type', \Modules\Driver\Models\Profile::class)
+            ->get();
     }
 
     /**
@@ -78,11 +48,7 @@ class DocumentRepository implements IDocumentRepository
      */
     public function findById(string $id): ?Document
     {
-        $cacheKey = $this->cacheKeyManager::documentById($id);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($id) {
-            return $this->model->find($id);
-        });
+        return $this->model->find($id);
     }
 
     /**

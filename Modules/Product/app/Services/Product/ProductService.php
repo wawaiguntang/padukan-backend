@@ -15,7 +15,6 @@ use Modules\Product\Repositories\ProductVariant\IProductVariantRepository;
 use Modules\Product\Repositories\Category\ICategoryRepository;
 use Modules\Product\Repositories\ProductImage\IProductImageRepository;
 use Modules\Product\Services\FileUpload\IFileUploadService;
-use Modules\Product\Cache\Product\ProductCacheManager;
 use Modules\Product\Exceptions\ProductNotFoundException;
 use Modules\Product\Exceptions\ProductAccessDeniedException;
 use Modules\Product\Exceptions\ProductValidationException;
@@ -216,11 +215,7 @@ class ProductService implements IProductService
                 }
             });
 
-            // Clear cache
-            ProductCacheManager::invalidateForOperation('update', [
-                'id' => $productId,
-                'merchant_id' => $merchantId
-            ]);
+            // Cache operations disabled
 
             Log::info('Product updated successfully', [
                 'product_id' => $productId,
@@ -274,10 +269,7 @@ class ProductService implements IProductService
                 }
             });
 
-            ProductCacheManager::invalidateForOperation('delete', [
-                'id' => $productId,
-                'merchant_id' => $merchantId
-            ]);
+            // Cache operations disabled
 
             Log::info('Product deleted successfully', [
                 'product_id' => $productId,
@@ -369,11 +361,7 @@ class ProductService implements IProductService
 
         $variant = $this->variantRepository->createForProduct($variantData, $productId, $merchantId);
 
-        // Clear product cache
-        ProductCacheManager::invalidateForOperation('variant_added', [
-            'product_id' => $productId,
-            'merchant_id' => $merchantId
-        ]);
+        // Cache operations disabled
 
         return $variant;
     }
@@ -401,12 +389,7 @@ class ProductService implements IProductService
 
         $result = $this->variantRepository->delete($variantId);
 
-        if ($result) {
-            ProductCacheManager::invalidateForOperation('variant_removed', [
-                'product_id' => $variant->product_id,
-                'merchant_id' => $merchantId
-            ]);
-        }
+        // Cache operations disabled
 
         return $result;
     }

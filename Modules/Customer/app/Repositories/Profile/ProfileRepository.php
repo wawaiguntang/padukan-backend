@@ -2,16 +2,14 @@
 
 namespace Modules\Customer\Repositories\Profile;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Modules\Customer\Enums\GenderEnum;
 use Modules\Customer\Models\Profile;
-use Modules\Customer\Cache\KeyManager\IKeyManager;
 
 /**
  * Profile Repository Implementation
  *
  * This class handles all profile-related database operations
- * for the customer module with caching support.
+ * for the customer module.
  */
 class ProfileRepository implements IProfileRepository
 {
@@ -23,38 +21,13 @@ class ProfileRepository implements IProfileRepository
     protected Profile $model;
 
     /**
-     * The cache repository instance
-     *
-     * @var Cache
-     */
-    protected Cache $cache;
-
-    /**
-     * The cache key manager instance
-     *
-     * @var IKeyManager
-     */
-    protected IKeyManager $cacheKeyManager;
-
-    /**
-     * Cache TTL in seconds (15 minutes - reasonable for profile data)
-     *
-     * @var int
-     */
-    protected int $cacheTtl = 900;
-
-    /**
      * Constructor
      *
      * @param Profile $model The Profile model instance
-     * @param Cache $cache The cache repository instance
-     * @param IKeyManager $cacheKeyManager The cache key manager instance
      */
-    public function __construct(Profile $model, Cache $cache, IKeyManager $cacheKeyManager)
+    public function __construct(Profile $model)
     {
         $this->model = $model;
-        $this->cache = $cache;
-        $this->cacheKeyManager = $cacheKeyManager;
     }
 
     /**
@@ -62,11 +35,7 @@ class ProfileRepository implements IProfileRepository
      */
     public function findByUserId(string $userId): ?Profile
     {
-        $cacheKey = $this->cacheKeyManager::profileByUserId($userId);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($userId) {
-            return $this->model->where('user_id', $userId)->first();
-        });
+        return $this->model->where('user_id', $userId)->first();
     }
 
     /**
@@ -74,11 +43,7 @@ class ProfileRepository implements IProfileRepository
      */
     public function findById(string $id): ?Profile
     {
-        $cacheKey = $this->cacheKeyManager::profileById($id);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($id) {
-            return $this->model->find($id);
-        });
+        return $this->model->find($id);
     }
 
     /**
@@ -86,11 +51,7 @@ class ProfileRepository implements IProfileRepository
      */
     public function create(array $data): Profile
     {
-        $profile = $this->model->create($data);
-
-        // Cache invalidation is handled by ProfileObserver
-
-        return $profile;
+        return $this->model->create($data);
     }
 
     /**
@@ -104,11 +65,7 @@ class ProfileRepository implements IProfileRepository
             return false;
         }
 
-        $result = $profile->update($data);
-
-        // Cache invalidation is handled by ProfileObserver
-
-        return $result;
+        return $profile->update($data);
     }
 
     /**
@@ -122,11 +79,7 @@ class ProfileRepository implements IProfileRepository
             return false;
         }
 
-        $result = $profile->delete();
-
-        // Cache invalidation is handled by ProfileObserver
-
-        return $result;
+        return $profile->delete();
     }
 
     /**

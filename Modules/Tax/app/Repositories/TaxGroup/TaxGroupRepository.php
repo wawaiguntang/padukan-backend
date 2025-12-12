@@ -4,6 +4,7 @@ namespace Modules\Tax\Repositories\TaxGroup;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
+use Modules\Tax\Cache\TaxCacheManager;
 use Modules\Tax\Cache\TaxKeyManager;
 use Modules\Tax\Cache\TaxTtlManager;
 use Modules\Tax\Models\TaxGroup;
@@ -20,9 +21,9 @@ class TaxGroupRepository implements ITaxGroupRepository
     public function findAllActive(): Collection
     {
         $key = TaxKeyManager::allTaxGroups();
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxGroupTtl();
 
-        return Cache::remember($key, $ttl, function () {
+        return Cache::tags(TaxCacheManager::getTag('tax_group'))->remember($key, $ttl, function () {
             return $this->model->where('is_active', true)->get();
         });
     }
@@ -30,9 +31,9 @@ class TaxGroupRepository implements ITaxGroupRepository
     public function findById(string $id): ?TaxGroup
     {
         $key = TaxKeyManager::taxGroupById($id);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxGroupTtl();
 
-        return Cache::remember($key, $ttl, function () use ($id) {
+        return Cache::tags(TaxCacheManager::getTag('tax_group'))->remember($key, $ttl, function () use ($id) {
             return $this->model->find($id);
         });
     }
@@ -40,9 +41,9 @@ class TaxGroupRepository implements ITaxGroupRepository
     public function findByIdWithDetails(string $id): ?TaxGroup
     {
         $key = TaxKeyManager::taxGroupByIdWithDetails($id);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxGroupTtl();
 
-        return Cache::remember($key, $ttl, function () use ($id) {
+        return Cache::tags(TaxCacheManager::getTag('tax_group'))->remember($key, $ttl, function () use ($id) {
             return $this->model->with(['rates.tax', 'assignments'])->find($id);
         });
     }
@@ -50,9 +51,9 @@ class TaxGroupRepository implements ITaxGroupRepository
     public function findByOwner(string $ownerId, string $ownerType): Collection
     {
         $key = TaxKeyManager::taxGroupsByOwner($ownerId, $ownerType);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxGroupTtl();
 
-        return Cache::remember($key, $ttl, function () use ($ownerId, $ownerType) {
+        return Cache::tags(TaxCacheManager::getTag('tax_owner'))->remember($key, $ttl, function () use ($ownerId, $ownerType) {
             return $this->model
                 ->where('owner_id', $ownerId)
                 ->where('owner_type', $ownerType)
@@ -63,9 +64,9 @@ class TaxGroupRepository implements ITaxGroupRepository
     public function findByOwnerWithDetails(string $ownerId, string $ownerType): Collection
     {
         $key = TaxKeyManager::taxGroupsByOwnerWithDetails($ownerId, $ownerType);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxGroupTtl();
 
-        return Cache::remember($key, $ttl, function () use ($ownerId, $ownerType) {
+        return Cache::tags(TaxCacheManager::getTag('tax_owner'))->remember($key, $ttl, function () use ($ownerId, $ownerType) {
             return $this->model
                 ->with(['rates.tax', 'assignments'])
                 ->where('owner_id', $ownerId)
@@ -87,9 +88,9 @@ class TaxGroupRepository implements ITaxGroupRepository
 
         // For other types, use generic query
         $key = TaxKeyManager::taxGroupsByOwner($ownerId ?: '', $ownerType);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxGroupTtl();
 
-        return Cache::remember($key, $ttl, function () use ($ownerId, $ownerType) {
+        return Cache::tags(TaxCacheManager::getTag('tax_owner'))->remember($key, $ttl, function () use ($ownerId, $ownerType) {
             $query = $this->model->where('owner_type', $ownerType);
 
             if ($ownerId) {
@@ -106,9 +107,9 @@ class TaxGroupRepository implements ITaxGroupRepository
     public function findWithAssignments(string $id): ?TaxGroup
     {
         $key = "tax:group:{$id}:with_assignments";
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxGroupTtl();
 
-        return Cache::remember($key, $ttl, function () use ($id) {
+        return Cache::tags(TaxCacheManager::getTag('tax_group'))->remember($key, $ttl, function () use ($id) {
             return $this->model->with('assignments')->find($id);
         });
     }
@@ -119,9 +120,9 @@ class TaxGroupRepository implements ITaxGroupRepository
     public function findByAssignedEntity(string $entityType, string $entityId): Collection
     {
         $key = "tax:groups:assigned:{$entityType}:{$entityId}";
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxGroupTtl();
 
-        return Cache::remember($key, $ttl, function () use ($entityType, $entityId) {
+        return Cache::tags(TaxCacheManager::getTag('tax_assignment'))->remember($key, $ttl, function () use ($entityType, $entityId) {
             return $this->model
                 ->whereHas('assignments', function ($query) use ($entityType, $entityId) {
                     $query->where('assignable_type', $entityType)
@@ -137,9 +138,9 @@ class TaxGroupRepository implements ITaxGroupRepository
     public function findSystemTaxGroups(): Collection
     {
         $key = TaxKeyManager::systemTaxes(); // Reuse system taxes key
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxGroupTtl();
 
-        return Cache::remember($key, $ttl, function () {
+        return Cache::tags(TaxCacheManager::getTag('tax_owner'))->remember($key, $ttl, function () {
             return $this->model
                 ->where('owner_type', 'system')
                 ->whereNull('owner_id')

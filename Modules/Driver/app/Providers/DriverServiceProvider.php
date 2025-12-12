@@ -33,7 +33,6 @@ class DriverServiceProvider extends ServiceProvider
         $this->registerViews();
         $this->registerMiddleware();
         $this->registerFactories();
-        $this->registerObservers();
 
         // Only load migrations if not in testing environment
         if (app()->environment() !== 'testing') {
@@ -48,9 +47,6 @@ class DriverServiceProvider extends ServiceProvider
     {
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
-
-        // Register cache key manager
-        $this->registerCacheKeyManager();
 
         // Register repositories
         $this->registerRepositories();
@@ -282,17 +278,6 @@ class DriverServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register cache key manager binding
-     */
-    protected function registerCacheKeyManager(): void
-    {
-        $this->app->bind(
-            \Modules\Driver\Cache\KeyManager\IKeyManager::class,
-            \Modules\Driver\Cache\KeyManager\KeyManager::class
-        );
-    }
-
-    /**
      * Register policy bindings
      */
     protected function registerPolicies(): void
@@ -326,18 +311,6 @@ class DriverServiceProvider extends ServiceProvider
             \Modules\Driver\Policies\ServiceValidation\IServiceValidationPolicy::class,
             \Modules\Driver\Policies\ServiceValidation\ServiceValidationPolicy::class
         );
-    }
-
-    /**
-     * Register model observers
-     */
-    protected function registerObservers(): void
-    {
-        // Register model observers for cache management
-        \Modules\Driver\Models\Profile::observe(\Modules\Driver\Observers\ProfileObserver::class);
-        \Modules\Driver\Models\Vehicle::observe(\Modules\Driver\Observers\VehicleObserver::class);
-        \Modules\Driver\Models\DriverAvailabilityStatus::observe(\Modules\Driver\Observers\DriverStatusObserver::class);
-        \Modules\Driver\Models\Document::observe(\Modules\Driver\Observers\DocumentObserver::class);
     }
 
     /**

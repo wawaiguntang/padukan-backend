@@ -2,28 +2,20 @@
 
 namespace Modules\Product\Repositories\ProductBundle;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
-use Modules\Product\Cache\KeyManager\IKeyManager;
 use Modules\Product\Models\ProductBundle;
 
 class ProductBundleRepository implements IProductBundleRepository
 {
     protected ProductBundle $model;
-    protected Cache $cache;
-    protected IKeyManager $cacheKeyManager;
-    protected int $cacheTtl = 900; // 15 minutes
 
-    public function __construct(ProductBundle $model, Cache $cache, IKeyManager $cacheKeyManager)
+    public function __construct(ProductBundle $model)
     {
         $this->model = $model;
-        $this->cache = $cache;
-        $this->cacheKeyManager = $cacheKeyManager;
     }
 
     public function findById(string $id): ?ProductBundle
     {
-        $cacheKey = $this->cacheKeyManager::bundleById($id);
-        return $this->cache->remember($cacheKey, $this->cacheTtl, fn() => $this->model->find($id));
+        return $this->model->find($id);
     }
 
     public function create(array $data): ProductBundle

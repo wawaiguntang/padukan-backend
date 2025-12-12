@@ -24,9 +24,9 @@ class TaxAssignmentRepository implements ITaxAssignmentRepository
     public function findByGroup(string $taxGroupId): Collection
     {
         $key = TaxKeyManager::assignmentsByGroup($taxGroupId);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxListTtl();
 
-        return Cache::remember($key, $ttl, function () use ($taxGroupId) {
+        return Cache::tags(TaxCacheManager::getTag('tax_assignment'))->remember($key, $ttl, function () use ($taxGroupId) {
             return $this->model->where('tax_group_id', $taxGroupId)->get();
         });
     }
@@ -38,9 +38,9 @@ class TaxAssignmentRepository implements ITaxAssignmentRepository
     public function findByAssignable(string $assignableType, string $assignableId): Collection
     {
         $key = "tax:assignment:{$assignableType}:{$assignableId}";
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxListTtl();
 
-        return Cache::remember($key, $ttl, function () use ($assignableType, $assignableId) {
+        return Cache::tags(TaxCacheManager::getTag('tax_assignment'))->remember($key, $ttl, function () use ($assignableType, $assignableId) {
             return $this->model
                 ->where('assignable_type', $assignableType)
                 ->where('assignable_id', $assignableId)
@@ -226,8 +226,8 @@ class TaxAssignmentRepository implements ITaxAssignmentRepository
     {
         TaxCacheManager::invalidateAssignmentsByGroup($assignment->tax_group_id);
 
-        // Invalidate entity-specific cache
+        // Invalidate entity-specific cache using tags
         $cacheKey = "tax:assignment:{$assignment->assignable_type}:{$assignment->assignable_id}";
-        Cache::forget($cacheKey);
+        Cache::tags(TaxCacheManager::getTag('tax_assignment'))->forget($cacheKey);
     }
 }

@@ -2,24 +2,16 @@
 
 namespace Modules\Merchant\Repositories\Profile;
 
-use Illuminate\Support\Facades\Cache;
 use Modules\Merchant\Models\Profile;
-use Modules\Merchant\Cache\KeyManager\IKeyManager;
 
 /**
  * Profile Repository Implementation
  *
- * Handles profile data operations with caching
+ * Handles profile data operations
  */
 class ProfileRepository implements IProfileRepository
 {
-    private IKeyManager $keyManager;
-    private int $cacheTtl = 900; // 15 minutes
-
-    public function __construct(IKeyManager $keyManager)
-    {
-        $this->keyManager = $keyManager;
-    }
+    public function __construct() {}
 
     /**
      * Create a new profile
@@ -34,11 +26,7 @@ class ProfileRepository implements IProfileRepository
      */
     public function findByUserId(string $userId): ?Profile
     {
-        $cacheKey = $this->keyManager->getProfileKey($userId);
-
-        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($userId) {
-            return Profile::where('user_id', $userId)->first();
-        });
+        return Profile::where('user_id', $userId)->first();
     }
 
     /**
@@ -46,11 +34,7 @@ class ProfileRepository implements IProfileRepository
      */
     public function findById(string $profileId): ?Profile
     {
-        $cacheKey = $this->keyManager->getProfileByIdKey($profileId);
-
-        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
-            return Profile::find($profileId);
-        });
+        return Profile::find($profileId);
     }
 
     /**
@@ -64,18 +48,7 @@ class ProfileRepository implements IProfileRepository
             return false;
         }
 
-        $updated = $profile->update($data);
-
-        if ($updated) {
-            // Clear cache
-            $cacheKey = $this->keyManager->getProfileKey($userId);
-            Cache::forget($cacheKey);
-
-            $cacheKeyById = $this->keyManager->getProfileByIdKey($profile->id);
-            Cache::forget($cacheKeyById);
-        }
-
-        return $updated;
+        return $profile->update($data);
     }
 
     /**
@@ -89,18 +62,7 @@ class ProfileRepository implements IProfileRepository
             return false;
         }
 
-        $updated = $profile->update($data);
-
-        if ($updated) {
-            // Clear cache
-            $cacheKey = $this->keyManager->getProfileKey($profile->user_id);
-            Cache::forget($cacheKey);
-
-            $cacheKeyById = $this->keyManager->getProfileByIdKey($profileId);
-            Cache::forget($cacheKeyById);
-        }
-
-        return $updated;
+        return $profile->update($data);
     }
 
     /**
@@ -114,18 +76,7 @@ class ProfileRepository implements IProfileRepository
             return false;
         }
 
-        $deleted = $profile->delete();
-
-        if ($deleted) {
-            // Clear cache
-            $cacheKey = $this->keyManager->getProfileKey($userId);
-            Cache::forget($cacheKey);
-
-            $cacheKeyById = $this->keyManager->getProfileByIdKey($profile->id);
-            Cache::forget($cacheKeyById);
-        }
-
-        return $deleted;
+        return $profile->delete();
     }
 
     /**
@@ -139,18 +90,7 @@ class ProfileRepository implements IProfileRepository
             return false;
         }
 
-        $deleted = $profile->delete();
-
-        if ($deleted) {
-            // Clear cache
-            $cacheKey = $this->keyManager->getProfileKey($profile->user_id);
-            Cache::forget($cacheKey);
-
-            $cacheKeyById = $this->keyManager->getProfileByIdKey($profileId);
-            Cache::forget($cacheKeyById);
-        }
-
-        return $deleted;
+        return $profile->delete();
     }
 
     /**
@@ -166,11 +106,7 @@ class ProfileRepository implements IProfileRepository
      */
     public function existsByUserId(string $userId): bool
     {
-        $cacheKey = $this->keyManager->getProfileExistsKey($userId);
-
-        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($userId) {
-            return Profile::where('user_id', $userId)->exists();
-        });
+        return Profile::where('user_id', $userId)->exists();
     }
 
     /**
@@ -178,10 +114,6 @@ class ProfileRepository implements IProfileRepository
      */
     public function countMerchantsByProfileId(string $profileId): int
     {
-        $cacheKey = $this->keyManager->getProfileMerchantsCountKey($profileId);
-
-        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
-            return Profile::find($profileId)?->merchants()->count() ?? 0;
-        });
+        return Profile::find($profileId)?->merchants()->count() ?? 0;
     }
 }

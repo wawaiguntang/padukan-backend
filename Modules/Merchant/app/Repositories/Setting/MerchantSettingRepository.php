@@ -2,24 +2,16 @@
 
 namespace Modules\Merchant\Repositories\Setting;
 
-use Illuminate\Support\Facades\Cache;
 use Modules\Merchant\Models\MerchantSetting;
-use Modules\Merchant\Cache\KeyManager\IKeyManager;
 
 /**
  * Merchant Setting Repository Implementation
  *
- * Handles merchant setting data operations with caching
+ * Handles merchant setting data operations
  */
 class MerchantSettingRepository implements IMerchantSettingRepository
 {
-    private IKeyManager $keyManager;
-    private int $cacheTtl = 900; // 15 minutes
-
-    public function __construct(IKeyManager $keyManager)
-    {
-        $this->keyManager = $keyManager;
-    }
+    public function __construct() {}
 
     /**
      * Create merchant settings
@@ -34,11 +26,7 @@ class MerchantSettingRepository implements IMerchantSettingRepository
      */
     public function findByMerchantId(string $merchantId): ?MerchantSetting
     {
-        $cacheKey = $this->keyManager::getMerchantSettingsByMerchantIdKey($merchantId);
-
-        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($merchantId) {
-            return MerchantSetting::where('merchant_id', $merchantId)->first();
-        });
+        return MerchantSetting::where('merchant_id', $merchantId)->first();
     }
 
     /**
@@ -52,15 +40,7 @@ class MerchantSettingRepository implements IMerchantSettingRepository
             return false;
         }
 
-        $updated = $setting->update($data);
-
-        if ($updated) {
-            // Clear cache
-            $cacheKey = $this->keyManager::getMerchantSettingsByMerchantIdKey($merchantId);
-            Cache::forget($cacheKey);
-        }
-
-        return $updated;
+        return $setting->update($data);
     }
 
     /**
@@ -74,14 +54,6 @@ class MerchantSettingRepository implements IMerchantSettingRepository
             return false;
         }
 
-        $deleted = $setting->delete();
-
-        if ($deleted) {
-            // Clear cache
-            $cacheKey = $this->keyManager::getMerchantSettingsByMerchantIdKey($merchantId);
-            Cache::forget($cacheKey);
-        }
-
-        return $deleted;
+        return $setting->delete();
     }
 }

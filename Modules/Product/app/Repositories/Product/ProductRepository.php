@@ -3,11 +3,7 @@
 namespace Modules\Product\Repositories\Product;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use Modules\Product\Cache\Product\ProductKeyManager;
-use Modules\Product\Cache\Product\ProductCacheManager;
-use Modules\Product\Cache\Product\ProductTtlManager;
 use Modules\Product\Enums\ProductTypeEnum;
 use Modules\Product\Models\Product;
 
@@ -41,12 +37,7 @@ class ProductRepository implements IProductRepository
      */
     public function findById(string $id): ?Product
     {
-        $cacheKey = ProductKeyManager::productById($id);
-        $ttl = ProductTtlManager::productEntity();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($id) {
-            return $this->model->find($id);
-        });
+        return $this->model->find($id);
     }
 
 
@@ -66,19 +57,14 @@ class ProductRepository implements IProductRepository
 
         // If perPage is 0, return collection
         if ($perPage <= 0) {
-            $cacheKey = ProductKeyManager::merchantProducts($merchantId);
-            $ttl = ProductTtlManager::productList();
+            $query = $this->model->where('merchant_id', $merchantId);
 
-            return Cache::remember($cacheKey, $ttl, function () use ($merchantId, $filters) {
-                $query = $this->model->where('merchant_id', $merchantId);
+            $includeExpired = $filters['include_expired'] ?? false;
+            if (!$includeExpired) {
+                $query->where('has_expired', false);
+            }
 
-                $includeExpired = $filters['include_expired'] ?? false;
-                if (!$includeExpired) {
-                    $query->where('has_expired', false);
-                }
-
-                return $query->orderBy('name')->get();
-            });
+            return $query->orderBy('name')->get();
         }
 
         // Build query with filters for pagination
@@ -130,18 +116,13 @@ class ProductRepository implements IProductRepository
      */
     public function getByCategoryId(string $categoryId, bool $includeExpired = false): Collection
     {
-        $cacheKey = ProductKeyManager::categoryProducts($categoryId);
-        $ttl = ProductTtlManager::productList();
+        $query = $this->model->where('category_id', $categoryId);
 
-        return Cache::remember($cacheKey, $ttl, function () use ($categoryId, $includeExpired) {
-            $query = $this->model->where('category_id', $categoryId);
+        if (!$includeExpired) {
+            $query->where('has_expired', false);
+        }
 
-            if (!$includeExpired) {
-                $query->where('has_expired', false);
-            }
-
-            return $query->orderBy('name')->get();
-        });
+        return $query->orderBy('name')->get();
     }
 
 
@@ -160,15 +141,7 @@ class ProductRepository implements IProductRepository
         $data['has_variant'] = $data['has_variant'] ?? false;
         $data['has_expired'] = $data['has_expired'] ?? false;
 
-        $product = $this->model->create($data);
-
-        // Invalidate relevant caches using ProductCacheManager
-        ProductCacheManager::invalidateForOperation('create', [
-            'merchant_id' => $product->merchant_id,
-            'category_id' => $product->category_id
-        ]);
-
-        return $product;
+        return $this->model->create($data);
     }
 
     /**
@@ -182,7 +155,7 @@ class ProductRepository implements IProductRepository
             return false;
         }
 
-        // Store old values for cache invalidation
+        // Store old values for potential future use
         $oldSlug = $product->slug;
         $oldMerchantId = $product->merchant_id;
         $oldCategoryId = $product->category_id;
@@ -197,22 +170,12 @@ class ProductRepository implements IProductRepository
             $data['version'] = $product->version + 1;
         }
 
-        $result = $product->update($data);
-
-        if ($result) {
+        if ($product->update($data)) {
             $product->refresh();
-
-            // Invalidate caches using ProductCacheManager
-            ProductCacheManager::invalidateForOperation('update', [
-                'id' => $id,
-                'data' => $data,
-                'old_slug' => $oldSlug,
-                'old_merchant_id' => $oldMerchantId,
-                'old_category_id' => $oldCategoryId
-            ]);
+            return true;
         }
 
-        return $result;
+        return false;
     }
 
     /**
@@ -226,17 +189,7 @@ class ProductRepository implements IProductRepository
             return false;
         }
 
-        $result = $product->delete();
-
-        if ($result) {
-            // Invalidate caches using ProductCacheManager
-            ProductCacheManager::invalidateForOperation('delete', [
-                'id' => $id,
-                'product' => $product->toArray()
-            ]);
-        }
-
-        return $result;
+        return $product->delete();
     }
 
 
@@ -359,14 +312,9 @@ class ProductRepository implements IProductRepository
      */
     public function findByIdAndMerchant(string $id, string $merchantId): ?Product
     {
-        $cacheKey = ProductKeyManager::productByIdAndMerchant($id, $merchantId);
-        $ttl = ProductTtlManager::productEntity();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($id, $merchantId) {
-            return $this->model->where('id', $id)
-                ->where('merchant_id', $merchantId)
-                ->first();
-        });
+        return $this->model->where('id', $id)
+            ->where('merchant_id', $merchantId)
+            ->first();
     }
 
     /**

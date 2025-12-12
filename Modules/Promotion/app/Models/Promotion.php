@@ -15,45 +15,78 @@ class Promotion extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'promotions';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
+        'code',
         'name',
-        'description',
-        'creator_type',
-        'merchant_id',
-        'image',
-        'start_date',
-        'end_date',
-        'is_active',
-        'usage_limit',
-        'usage_count',
+        'short_description',
+        'terms_conditions',
+        'banner_image',
+        'owner_type',
+        'owner_id',
+        'priority',
+        'stackable',
+        'start_at',
+        'end_at',
+        'status',
+        'rules_json',
+        'actions_json',
+        'metadata',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
-        'is_active' => 'boolean',
-        'start_date' => 'datetime',
-        'end_date' => 'datetime',
-        'usage_limit' => 'integer',
-        'usage_count' => 'integer',
+        'stackable' => 'boolean',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
+        'rules_json' => 'array',
+        'actions_json' => 'array',
+        'metadata' => 'array',
     ];
 
-    public function rules(): HasMany
+    /**
+     * Get the targets for the promotion.
+     */
+    public function targets(): HasMany
     {
-        return $this->hasMany(PromotionRule::class);
+        return $this->hasMany(PromotionTarget::class);
     }
 
-    public function benefits(): HasMany
+    /**
+     * Get the usages for the promotion.
+     */
+    public function usages(): HasMany
     {
-        return $this->hasMany(PromotionBenefit::class);
+        return $this->hasMany(PromotionUsage::class);
     }
 
-    public function coupons(): HasMany
+    /**
+     * The campaigns that belong to the promotion.
+     */
+    public function campaigns()
     {
-        return $this->hasMany(Coupon::class);
+        return $this->belongsToMany(Campaign::class, 'campaign_promotions');
     }
 
     protected static function boot(): void
     {
         parent::boot();
+
         static::creating(function ($model) {
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();

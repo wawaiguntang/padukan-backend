@@ -3,10 +3,6 @@
 namespace Modules\Product\Repositories\AttributeCustom;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Cache;
-use Modules\Product\Cache\AttributeCustom\AttributeCustomKeyManager;
-use Modules\Product\Cache\AttributeCustom\AttributeCustomCacheManager;
-use Modules\Product\Cache\AttributeCustom\AttributeCustomTtlManager;
 use Modules\Product\Models\AttributeCustom;
 
 class AttributeCustomRepository implements IAttributeCustomRepository
@@ -25,23 +21,12 @@ class AttributeCustomRepository implements IAttributeCustomRepository
 
     public function getByMerchantId(string $merchantId): Collection
     {
-        $cacheKey = AttributeCustomKeyManager::merchantAttributes($merchantId);
-        $ttl = AttributeCustomTtlManager::attributeList();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($merchantId) {
-            return $this->model->where('merchant_id', $merchantId)->orderBy('name')->get();
-        });
+        return $this->model->where('merchant_id', $merchantId)->orderBy('name')->get();
     }
 
     public function create(array $data): AttributeCustom
     {
-        $attribute = $this->model->create($data);
-
-        AttributeCustomCacheManager::invalidateForOperation('create', [
-            'merchant_id' => $attribute->merchant_id
-        ]);
-
-        return $attribute;
+        return $this->model->create($data);
     }
 
     public function update(string $id, array $data): bool
@@ -49,20 +34,7 @@ class AttributeCustomRepository implements IAttributeCustomRepository
         $attribute = $this->model->find($id);
         if (!$attribute) return false;
 
-        $oldMerchantId = $attribute->merchant_id;
-        $oldKey = $attribute->key;
-        $result = $attribute->update($data);
-
-        if ($result) {
-            AttributeCustomCacheManager::invalidateForOperation('update', [
-                'id' => $id,
-                'data' => $data,
-                'old_merchant_id' => $oldMerchantId,
-                'old_key' => $oldKey
-            ]);
-        }
-
-        return $result;
+        return $attribute->update($data);
     }
 
     public function delete(string $id): bool
@@ -70,15 +42,7 @@ class AttributeCustomRepository implements IAttributeCustomRepository
         $attribute = $this->model->find($id);
         if (!$attribute) return false;
 
-        $result = $attribute->delete();
-        if ($result) {
-            AttributeCustomCacheManager::invalidateForOperation('delete', [
-                'id' => $id,
-                'attribute' => $attribute->toArray()
-            ]);
-        }
-
-        return $result;
+        return $attribute->delete();
     }
 
     public function existsForMerchant(string $merchantId, string $key, ?string $excludeId = null): bool

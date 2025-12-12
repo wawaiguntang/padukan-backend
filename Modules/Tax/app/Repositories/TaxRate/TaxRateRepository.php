@@ -4,6 +4,7 @@ namespace Modules\Tax\Repositories\TaxRate;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
+use Modules\Tax\Cache\TaxCacheManager;
 use Modules\Tax\Cache\TaxKeyManager;
 use Modules\Tax\Cache\TaxTtlManager;
 use Modules\Tax\Models\TaxRate;
@@ -20,9 +21,9 @@ class TaxRateRepository implements ITaxRateRepository
     public function findAll(): Collection
     {
         $key = TaxKeyManager::allTaxRates();
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxRateTtl();
 
-        return Cache::remember($key, $ttl, function () {
+        return Cache::tags(TaxCacheManager::getTag('tax_rate'))->remember($key, $ttl, function () {
             return $this->model->with(['tax', 'group'])->get();
         });
     }
@@ -30,9 +31,9 @@ class TaxRateRepository implements ITaxRateRepository
     public function findById(string $id): ?TaxRate
     {
         $key = TaxKeyManager::taxRateById($id);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxRateTtl();
 
-        return Cache::remember($key, $ttl, function () use ($id) {
+        return Cache::tags(TaxCacheManager::getTag('tax_rate'))->remember($key, $ttl, function () use ($id) {
             return $this->model->with(['tax', 'group'])->find($id);
         });
     }
@@ -40,9 +41,9 @@ class TaxRateRepository implements ITaxRateRepository
     public function findByGroup(string $taxGroupId): Collection
     {
         $key = TaxKeyManager::taxRatesByGroup($taxGroupId);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxRateTtl();
 
-        return Cache::remember($key, $ttl, function () use ($taxGroupId) {
+        return Cache::tags(TaxCacheManager::getTag('tax_rate'))->remember($key, $ttl, function () use ($taxGroupId) {
             return $this->model->with(['tax', 'group'])
                 ->where('tax_group_id', $taxGroupId)
                 ->orderBy('priority')
@@ -53,9 +54,9 @@ class TaxRateRepository implements ITaxRateRepository
     public function findByTax(string $taxId): Collection
     {
         $key = TaxKeyManager::taxRatesByTax($taxId);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getTaxRateTtl();
 
-        return Cache::remember($key, $ttl, function () use ($taxId) {
+        return Cache::tags(TaxCacheManager::getTag('tax_rate'))->remember($key, $ttl, function () use ($taxId) {
             return $this->model->with(['tax', 'group'])
                 ->where('tax_id', $taxId)
                 ->orderBy('priority')
@@ -66,9 +67,9 @@ class TaxRateRepository implements ITaxRateRepository
     public function findActiveByGroup(string $taxGroupId): Collection
     {
         $key = TaxKeyManager::activeTaxRatesByGroup($taxGroupId);
-        $ttl = TaxTtlManager::taxData();
+        $ttl = TaxTtlManager::getActiveTaxTtl();
 
-        return Cache::remember($key, $ttl, function () use ($taxGroupId) {
+        return Cache::tags(TaxCacheManager::getTag('tax_active'))->remember($key, $ttl, function () use ($taxGroupId) {
             return $this->model->with(['tax', 'group'])
                 ->where('tax_group_id', $taxGroupId)
                 ->where(function ($query) {

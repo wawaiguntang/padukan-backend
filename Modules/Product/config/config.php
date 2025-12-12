@@ -40,22 +40,22 @@ return [
         |
         */
 
-        'enabled' => env('PRODUCT_CACHE_ENABLED', true),
+        'enabled' => env('PRODUCT_CACHE_ENABLED', false),
 
         'ttl' => [
-            'entity' => env('PRODUCT_CACHE_ENTITY_TTL', 900),    // 15 minutes
-            'list' => env('PRODUCT_CACHE_LIST_TTL', 1800),       // 30 minutes
-            'tree' => env('PRODUCT_CACHE_TREE_TTL', 3600),       // 1 hour
-            'stats' => env('PRODUCT_CACHE_STATS_TTL', 7200),     // 2 hours
+            'entity' => env('PRODUCT_CACHE_ENTITY_TTL', 0),    // Disabled
+            'list' => env('PRODUCT_CACHE_LIST_TTL', 0),       // Disabled
+            'tree' => env('PRODUCT_CACHE_TREE_TTL', 0),       // Disabled
+            'stats' => env('PRODUCT_CACHE_STATS_TTL', 0),     // Disabled
         ],
 
-        'prefix' => env('PRODUCT_CACHE_PREFIX', 'product'),
+        'prefix' => env('PRODUCT_CACHE_PREFIX', ''),
 
         'tags' => [
-            'enabled' => env('PRODUCT_CACHE_TAGS_ENABLED', true),
-            'categories' => 'product:categories',
-            'products' => 'product:products',
-            'variants' => 'product:variants',
+            'enabled' => env('PRODUCT_CACHE_TAGS_ENABLED', false),
+            'categories' => '',
+            'products' => '',
+            'variants' => '',
         ],
 
         /*
@@ -68,11 +68,11 @@ return [
         */
 
         'category' => [
-            'enabled' => env('PRODUCT_CATEGORY_CACHE_ENABLED', true),
-            'entity_ttl' => env('PRODUCT_CATEGORY_ENTITY_TTL', 900),    // 15 min
-            'list_ttl' => env('PRODUCT_CATEGORY_LIST_TTL', 1800),       // 30 min
-            'tree_ttl' => env('PRODUCT_CATEGORY_TREE_TTL', 3600),       // 1 hour
-            'max_children_cache' => env('PRODUCT_CATEGORY_MAX_CHILDREN_CACHE', 100),
+            'enabled' => env('PRODUCT_CATEGORY_CACHE_ENABLED', false),
+            'entity_ttl' => env('PRODUCT_CATEGORY_ENTITY_TTL', 0),    // Disabled
+            'list_ttl' => env('PRODUCT_CATEGORY_LIST_TTL', 0),       // Disabled
+            'tree_ttl' => env('PRODUCT_CATEGORY_TREE_TTL', 0),       // Disabled
+            'max_children_cache' => env('PRODUCT_CATEGORY_MAX_CHILDREN_CACHE', 0),
         ],
 
         /*
@@ -85,10 +85,10 @@ return [
         */
 
         'product' => [
-            'enabled' => env('PRODUCT_PRODUCT_CACHE_ENABLED', true),
-            'entity_ttl' => env('PRODUCT_PRODUCT_ENTITY_TTL', 600),     // 10 min
-            'list_ttl' => env('PRODUCT_PRODUCT_LIST_TTL', 1200),        // 20 min
-            'search_ttl' => env('PRODUCT_PRODUCT_SEARCH_TTL', 1800),    // 30 min
+            'enabled' => env('PRODUCT_PRODUCT_CACHE_ENABLED', false),
+            'entity_ttl' => env('PRODUCT_PRODUCT_ENTITY_TTL', 0),     // Disabled
+            'list_ttl' => env('PRODUCT_PRODUCT_LIST_TTL', 0),        // Disabled
+            'search_ttl' => env('PRODUCT_PRODUCT_SEARCH_TTL', 0),    // Disabled
         ],
 
         /*
@@ -101,9 +101,9 @@ return [
         */
 
         'warming' => [
-            'enabled' => env('PRODUCT_CACHE_WARMING_ENABLED', true),
-            'schedule' => env('PRODUCT_CACHE_WARMING_SCHEDULE', '0 */4 * * *'), // Every 4 hours
-            'timeout' => env('PRODUCT_CACHE_WARMING_TIMEOUT', 300),     // 5 minutes
+            'enabled' => env('PRODUCT_CACHE_WARMING_ENABLED', false),
+            'schedule' => env('PRODUCT_CACHE_WARMING_SCHEDULE', ''),
+            'timeout' => env('PRODUCT_CACHE_WARMING_TIMEOUT', 0),
         ],
 
         /*
@@ -116,9 +116,9 @@ return [
         */
 
         'monitoring' => [
-            'enabled' => env('PRODUCT_CACHE_MONITORING_ENABLED', true),
-            'health_check_interval' => env('PRODUCT_CACHE_HEALTH_CHECK_INTERVAL', 300), // 5 min
-            'alert_threshold' => env('PRODUCT_CACHE_ALERT_THRESHOLD', 80), // 80% hit rate
+            'enabled' => env('PRODUCT_CACHE_MONITORING_ENABLED', false),
+            'health_check_interval' => env('PRODUCT_CACHE_HEALTH_CHECK_INTERVAL', 0),
+            'alert_threshold' => env('PRODUCT_CACHE_ALERT_THRESHOLD', 0),
         ],
     ],
 

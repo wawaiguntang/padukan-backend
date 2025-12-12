@@ -3,93 +3,58 @@
 namespace Modules\Product\Repositories\Category;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Cache;
 use Modules\Product\Models\Category;
-use Modules\Product\Cache\Category\CategoryKeyManager;
-use Modules\Product\Cache\Category\CategoryCacheManager;
-use Modules\Product\Cache\Category\CategoryTtlManager;
 
 /**
  * Simple Category Repository
  *
  * Ultra-minimal repository using Eloquent directly.
  * Implements ICategoryRepository interface for consistency.
- * Uses KeyManager and TtlManager for cache operations.
  */
 class CategoryRepository implements ICategoryRepository
 {
     /**
-     * Find category by ID with caching
+     * Find category by ID
      */
     public function find(string $id): ?Category
     {
-        $cacheKey = CategoryKeyManager::categoryById($id);
-        $ttl = CategoryTtlManager::categoryEntity();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($id) {
-            return Category::find($id);
-        });
+        return Category::find($id);
     }
 
     /**
-     * Find category by slug with caching
+     * Find category by slug
      */
     public function findBySlug(string $slug): ?Category
     {
-        $cacheKey = CategoryKeyManager::categoryBySlug($slug);
-        $ttl = CategoryTtlManager::categoryEntity();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($slug) {
-            return Category::where('slug', $slug)->first();
-        });
+        return Category::where('slug', $slug)->first();
     }
 
     /**
-     * Get all categories with caching
+     * Get all categories
      */
     public function all(): Collection
     {
-        $cacheKey = CategoryKeyManager::allCategories();
-        $ttl = CategoryTtlManager::categoryList();
-
-        return Cache::remember($cacheKey, $ttl, function () {
-            return Category::all();
-        });
+        return Category::all();
     }
 
     /**
-     * Create new category and invalidate relevant caches
+     * Create new category
      */
     public function create(array $data): Category
     {
-        $category = Category::create($data);
-
-        // Smart invalidation using CategoryCacheManager
-        CategoryCacheManager::invalidateForOperation('create');
-
-        return $category;
+        return Category::create($data);
     }
 
     /**
-     * Update category and invalidate relevant caches
+     * Update category
      */
     public function update(string $id, array $data): bool
     {
-        $result = Category::where('id', $id)->update($data);
-
-        if ($result) {
-            // Smart invalidation using CategoryCacheManager
-            CategoryCacheManager::invalidateForOperation('update', [
-                'id' => $id,
-                'data' => $data
-            ]);
-        }
-
-        return $result;
+        return Category::where('id', $id)->update($data);
     }
 
     /**
-     * Delete category and invalidate relevant caches
+     * Delete category
      */
     public function delete(string $id): bool
     {
@@ -99,42 +64,22 @@ class CategoryRepository implements ICategoryRepository
             return false;
         }
 
-        $result = $category->delete();
-
-        if ($result) {
-            // Smart invalidation using CategoryCacheManager
-            CategoryCacheManager::invalidateForOperation('delete', [
-                'id' => $id,
-                'category' => $category->toArray()
-            ]);
-        }
-
-        return $result;
+        return $category->delete();
     }
 
     /**
-     * Get root categories with caching
+     * Get root categories
      */
     public function getRoots(): Collection
     {
-        $cacheKey = CategoryKeyManager::categoryRoots();
-        $ttl = CategoryTtlManager::categoryList();
-
-        return Cache::remember($cacheKey, $ttl, function () {
-            return Category::whereNull('parent_id')->get();
-        });
+        return Category::whereNull('parent_id')->get();
     }
 
     /**
-     * Get children of a category with caching
+     * Get children of a category
      */
     public function getChildren(string $parentId): Collection
     {
-        $cacheKey = CategoryKeyManager::categoryChildren($parentId);
-        $ttl = CategoryTtlManager::categoryList();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($parentId) {
-            return Category::where('parent_id', $parentId)->get();
-        });
+        return Category::where('parent_id', $parentId)->get();
     }
 }

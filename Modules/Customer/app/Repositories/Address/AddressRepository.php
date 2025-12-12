@@ -2,17 +2,15 @@
 
 namespace Modules\Customer\Repositories\Address;
 
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Customer\Enums\AddressTypeEnum;
 use Modules\Customer\Models\Address;
-use Modules\Customer\Cache\KeyManager\IKeyManager;
 
 /**
  * Address Repository Implementation
  *
  * This class handles all address-related database operations
- * for the customer module with caching support.
+ * for the customer module.
  */
 class AddressRepository implements IAddressRepository
 {
@@ -24,38 +22,13 @@ class AddressRepository implements IAddressRepository
     protected Address $model;
 
     /**
-     * The cache repository instance
-     *
-     * @var Cache
-     */
-    protected Cache $cache;
-
-    /**
-     * The cache key manager instance
-     *
-     * @var IKeyManager
-     */
-    protected IKeyManager $cacheKeyManager;
-
-    /**
-     * Cache TTL in seconds (15 minutes - reasonable for address data)
-     *
-     * @var int
-     */
-    protected int $cacheTtl = 900;
-
-    /**
      * Constructor
      *
      * @param Address $model The Address model instance
-     * @param Cache $cache The cache repository instance
-     * @param IKeyManager $cacheKeyManager The cache key manager instance
      */
-    public function __construct(Address $model, Cache $cache, IKeyManager $cacheKeyManager)
+    public function __construct(Address $model)
     {
         $this->model = $model;
-        $this->cache = $cache;
-        $this->cacheKeyManager = $cacheKeyManager;
     }
 
     /**
@@ -63,11 +36,7 @@ class AddressRepository implements IAddressRepository
      */
     public function findByProfileId(string $profileId): Collection
     {
-        $cacheKey = $this->cacheKeyManager::addressesByProfileId($profileId);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($profileId) {
-            return $this->model->where('profile_id', $profileId)->get();
-        });
+        return $this->model->where('profile_id', $profileId)->get();
     }
 
     /**
@@ -75,11 +44,7 @@ class AddressRepository implements IAddressRepository
      */
     public function findById(string $id): ?Address
     {
-        $cacheKey = $this->cacheKeyManager::addressById($id);
-
-        return $this->cache->remember($cacheKey, $this->cacheTtl, function () use ($id) {
-            return $this->model->find($id);
-        });
+        return $this->model->find($id);
     }
 
     /**
@@ -87,11 +52,7 @@ class AddressRepository implements IAddressRepository
      */
     public function create(array $data): Address
     {
-        $address = $this->model->create($data);
-
-        // Cache invalidation is handled by AddressObserver
-
-        return $address;
+        return $this->model->create($data);
     }
 
     /**
@@ -105,11 +66,7 @@ class AddressRepository implements IAddressRepository
             return false;
         }
 
-        $result = $address->update($data);
-
-        // Cache invalidation is handled by AddressObserver
-
-        return $result;
+        return $address->update($data);
     }
 
     /**
@@ -123,11 +80,7 @@ class AddressRepository implements IAddressRepository
             return false;
         }
 
-        $result = $address->delete();
-
-        // Cache invalidation is handled by AddressObserver
-
-        return $result;
+        return $address->delete();
     }
 
     /**
@@ -145,11 +98,7 @@ class AddressRepository implements IAddressRepository
         $this->model->where('profile_id', $address->profile_id)->update(['is_primary' => false]);
 
         // Then set this address as primary
-        $result = $address->update(['is_primary' => true]);
-
-        // Cache invalidation is handled by AddressObserver
-
-        return $result;
+        return $address->update(['is_primary' => true]);
     }
 
     /**

@@ -3,10 +3,6 @@
 namespace Modules\Product\Repositories\ProductVariant;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Cache;
-use Modules\Product\Cache\ProductVariant\ProductVariantKeyManager;
-use Modules\Product\Cache\ProductVariant\ProductVariantCacheManager;
-use Modules\Product\Cache\ProductVariant\ProductVariantTtlManager;
 use Modules\Product\Models\ProductVariant;
 
 class ProductVariantRepository implements IProductVariantRepository
@@ -25,47 +21,24 @@ class ProductVariantRepository implements IProductVariantRepository
 
     public function getByProductId(string $productId, bool $includeExpired = false): Collection
     {
-        $cacheKey = ProductVariantKeyManager::productVariants($productId);
-        $ttl = ProductVariantTtlManager::variantList();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($productId, $includeExpired) {
-            $query = $this->model->where('product_id', $productId);
-            if (!$includeExpired) $query->where('has_expired', false);
-            return $query->orderBy('name')->get();
-        });
+        $query = $this->model->where('product_id', $productId);
+        if (!$includeExpired) $query->where('has_expired', false);
+        return $query->orderBy('name')->get();
     }
 
     public function findBySku(string $sku): ?ProductVariant
     {
-        $cacheKey = ProductVariantKeyManager::variantBySku($sku);
-        $ttl = ProductVariantTtlManager::variantLookup();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($sku) {
-            return $this->model->where('sku', $sku)->first();
-        });
+        return $this->model->where('sku', $sku)->first();
     }
 
     public function findByBarcode(string $barcode): ?ProductVariant
     {
-        $cacheKey = ProductVariantKeyManager::variantByBarcode($barcode);
-        $ttl = ProductVariantTtlManager::variantLookup();
-
-        return Cache::remember($cacheKey, $ttl, function () use ($barcode) {
-            return $this->model->where('barcode', $barcode)->first();
-        });
+        return $this->model->where('barcode', $barcode)->first();
     }
 
     public function create(array $data): ProductVariant
     {
-        $variant = $this->model->create($data);
-
-        ProductVariantCacheManager::invalidateForOperation('create', [
-            'product_id' => $variant->product_id,
-            'sku' => $variant->sku,
-            'barcode' => $variant->barcode,
-        ]);
-
-        return $variant;
+        return $this->model->create($data);
     }
 
     public function update(string $id, array $data): bool
@@ -73,20 +46,12 @@ class ProductVariantRepository implements IProductVariantRepository
         $variant = $this->model->find($id);
         if (!$variant) return false;
 
-        $oldData = $variant->toArray();
-        $result = $variant->update($data);
-
-        if ($result) {
+        if ($variant->update($data)) {
             $variant->refresh();
-
-            ProductVariantCacheManager::invalidateForOperation('update', [
-                'id' => $id,
-                'data' => $data,
-                'old_data' => $oldData,
-            ]);
+            return true;
         }
 
-        return $result;
+        return false;
     }
 
     public function delete(string $id): bool
@@ -94,15 +59,7 @@ class ProductVariantRepository implements IProductVariantRepository
         $variant = $this->model->find($id);
         if (!$variant) return false;
 
-        $result = $variant->delete();
-        if ($result) {
-            ProductVariantCacheManager::invalidateForOperation('delete', [
-                'id' => $id,
-                'variant' => $variant->toArray(),
-            ]);
-        }
-
-        return $result;
+        return $variant->delete();
     }
 
     public function existsSku(string $sku, ?string $excludeId = null): bool

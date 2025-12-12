@@ -31,7 +31,6 @@ class MerchantServiceProvider extends ServiceProvider
         $this->app['config']['database.connections.merchant'] = $dbConfig;
 
         $this->registerViews();
-        $this->registerObservers();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
     }
 
@@ -73,11 +72,6 @@ class MerchantServiceProvider extends ServiceProvider
             \Modules\Merchant\Services\Merchant\MerchantService::class
         );
 
-        // Cache Key Manager
-        $this->app->bind(
-            \Modules\Merchant\Cache\KeyManager\IKeyManager::class,
-            \Modules\Merchant\Cache\KeyManager\KeyManager::class
-        );
 
         // Document Services
         $this->app->bind(
@@ -124,16 +118,6 @@ class MerchantServiceProvider extends ServiceProvider
             \App\Shared\Merchant\Services\IMerchantService::class,
             \Modules\Merchant\Services\ForShare\MerchantService::class
         );
-    }
-
-    /**
-     * Register model observers.
-     */
-    protected function registerObservers(): void
-    {
-        \Modules\Merchant\Models\Profile::observe(\Modules\Merchant\Observers\ProfileObserver::class);
-        \Modules\Merchant\Models\Document::observe(\Modules\Merchant\Observers\DocumentObserver::class);
-        \Modules\Merchant\Models\Merchant::observe(\Modules\Merchant\Observers\MerchantObserver::class);
     }
 
     /**

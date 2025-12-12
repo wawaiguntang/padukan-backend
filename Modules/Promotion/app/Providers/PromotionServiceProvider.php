@@ -25,8 +25,19 @@ class PromotionServiceProvider extends ServiceProvider
         $this->registerCommandSchedules();
         $this->registerTranslations();
         $this->registerConfig();
+
+        // Register module database connection
+        $dbConfig = config('promotion.database');
+        $this->app['config']['database.connections.promotion'] = $dbConfig;
+
         $this->registerViews();
-        $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
+        $this->registerMiddleware();
+        $this->registerObservers();
+
+        // Only load migrations if not in testing environment
+        if (app()->environment() !== 'testing') {
+            $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
+        }
     }
 
     /**
@@ -37,10 +48,99 @@ class PromotionServiceProvider extends ServiceProvider
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
 
+        // Register repositories
+        $this->registerRepositories();
+
+        // Register services
+        $this->registerServices();
+
+        // Register shared repositories
+        $this->registerSharedRepositories();
+
+        // Register shared services
+        $this->registerSharedServices();
+    }
+
+    /**
+     * Register repository bindings
+     */
+    protected function registerRepositories(): void
+    {
+        // Promotion Repository
         $this->app->bind(
-            \App\Shared\Promotion\IPromotionService::class,
-            \Modules\Promotion\Services\PromotionService::class
+            \Modules\Promotion\Repositories\Promotion\IPromotionRepository::class,
+            \Modules\Promotion\Repositories\Promotion\PromotionRepository::class
         );
+
+        // Campaign Repository (with caching)
+        $this->app->bind(
+            \Modules\Promotion\Repositories\Campaign\ICampaignRepository::class,
+            \Modules\Promotion\Repositories\Campaign\CachingCampaignRepository::class
+        );
+
+        // Promotion Target Repository
+        $this->app->bind(
+            \Modules\Promotion\Repositories\PromotionTarget\IPromotionTargetRepository::class,
+            \Modules\Promotion\Repositories\PromotionTarget\PromotionTargetRepository::class
+        );
+
+        // Promotion Usage Repository
+        $this->app->bind(
+            \Modules\Promotion\Repositories\PromotionUsage\IPromotionUsageRepository::class,
+            \Modules\Promotion\Repositories\PromotionUsage\PromotionUsageRepository::class
+        );
+
+        // Cache Key Manager
+        $this->app->bind(
+            \Modules\Promotion\Cache\Promotion\PromotionKeyManager::class,
+            \Modules\Promotion\Cache\Promotion\PromotionKeyManager::class
+        );
+
+        // Add policy bindings here if needed
+        // Example:
+        // $this->app->bind(
+        //     \Modules\Promotion\Policies\PromotionOwnership\IPromotionOwnershipPolicy::class,
+        //     \Modules\Promotion\Policies\PromotionOwnership\PromotionOwnershipPolicy::class
+        // );
+    }
+
+    /**
+     * Register service bindings
+     */
+    protected function registerServices(): void
+    {
+        // Add service bindings here if needed
+        // Example:
+        // $this->app->bind(
+        //     \Modules\Promotion\Services\Promotion\IPromotionService::class,
+        //     \Modules\Promotion\Services\Promotion\PromotionService::class
+        // );
+    }
+
+    /**
+     * Register shared repository bindings
+     */
+    protected function registerSharedRepositories(): void
+    {
+        // Add shared repository bindings here if needed
+        // Example:
+        // $this->app->bind(
+        //     \App\Shared\Repositories\IPromotionRepository::class,
+        //     \Modules\Promotion\Repositories\Promotion\PromotionRepository::class
+        // );
+    }
+
+    /**
+     * Register shared service bindings
+     */
+    protected function registerSharedServices(): void
+    {
+        // Add shared service bindings here if needed
+        // Example:
+        // $this->app->bind(
+        //     \App\Shared\Promotion\Services\IPromotionService::class,
+        //     \Modules\Promotion\Services\Promotion\PromotionService::class
+        // );
     }
 
     /**
@@ -48,7 +148,7 @@ class PromotionServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-        // $this->commands([]);
+        $this->commands([]);
     }
 
     /**
@@ -63,6 +163,25 @@ class PromotionServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register cache key manager binding
+     */
+    protected function registerCacheKeyManager(): void
+    {
+        // Cache key manager binding is already handled in registerServices()
+    }
+
+    /**
+     * Register model observers.
+     */
+    protected function registerObservers(): void
+    {
+        // Add model observers here if needed
+        // Example:
+        // \Modules\Promotion\Models\Promotion::observe(\Modules\Promotion\Observers\PromotionObserver::class);
+        // \Modules\Promotion\Models\Campaign::observe(\Modules\Promotion\Observers\CampaignObserver::class);
+    }
+
+    /**
      * Register translations.
      */
     public function registerTranslations(): void
@@ -73,8 +192,12 @@ class PromotionServiceProvider extends ServiceProvider
             $this->loadTranslationsFrom($langPath, $this->nameLower);
             $this->loadJsonTranslationsFrom($langPath);
         } else {
-            $this->loadTranslationsFrom(module_path($this->name, 'lang'), $this->nameLower);
-            $this->loadJsonTranslationsFrom(module_path($this->name, 'lang'));
+            // Load translations from module's resources/lang directory
+            $moduleLangPath = module_path($this->name, 'resources/lang');
+            if (is_dir($moduleLangPath)) {
+                $this->loadTranslationsFrom($moduleLangPath, $this->nameLower);
+                $this->loadJsonTranslationsFrom($moduleLangPath);
+            }
         }
     }
 
@@ -120,6 +243,18 @@ class PromotionServiceProvider extends ServiceProvider
         $module_config = require $path;
 
         config([$key => array_replace_recursive($existing, $module_config)]);
+    }
+
+    /**
+     * Register middleware.
+     */
+    protected function registerMiddleware(): void
+    {
+        $router = $this->app['router'];
+
+        // Register promotion module middleware
+        // $router->aliasMiddleware('auth.jwt', \Modules\Promotion\Http\Middleware\AuthenticationMiddleware::class);
+        // $router->aliasMiddleware('auth.authorization', \Modules\Promotion\Http\Middleware\AuthorizationMiddleware::class);
     }
 
     /**
